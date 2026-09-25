@@ -57,7 +57,7 @@ export default function Home({ name, reminders, myPlants, onOpenSaved, onOpenSam
 
       {plants.length === 0 ? (
         <div className="card empty">
-          <PlantThumb profile={fixtures.monstera} className="hero-thumb" />
+          <PlantThumb profile={fixtures.basil} className="hero-thumb" />
           <h3>Your garden is empty</h3>
           <p className="muted">Scan a plant and Rootsight shows how it will grow, when to water it and what its roots are doing.</p>
           <button className="btn block" onClick={onScan}><ScanIcon /> Scan my first plant</button>
