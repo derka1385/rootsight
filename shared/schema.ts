@@ -52,15 +52,26 @@ export const PlantProfile = z.object({
 });
 export type PlantProfile = z.infer<typeof PlantProfile>;
 
-/** Output of simulate(). */
-export type PlantState = {
-  heightCm: number;
-  leafCount: number;
-  rootDepthCm: number;
-  rootSpreadCm: number;
-  hydration: number; // 0-1
-  wilt: number; // 0-1
-};
+/** Output of simulate(): a snapshot of growth/soil/watering state at a point in time. */
+export const PlantState = z.object({
+  heightCm: z.number().nonnegative(),
+  leafCount: z.number().int().nonnegative(),
+  rootDepthCm: z.number().nonnegative(),
+  rootSpreadCm: z.number().nonnegative(),
+  hydration: z.number().min(0).max(1),
+  wilt: z.number().min(0).max(1),
+});
+export type PlantState = z.infer<typeof PlantState>;
+
+// ---- Persistence ----
+
+/** A scanned/identified plant kept in a user's collection (today: web/src/myPlants.ts, localStorage). */
+export const SavedPlant = z.object({
+  id: z.string().min(1).describe("Stable id for this saved instance, independent of species"),
+  profile: PlantProfile,
+  lastWateredAt: z.number().int().nonnegative().describe("Unix ms timestamp"),
+});
+export type SavedPlant = z.infer<typeof SavedPlant>;
 
 // ---- API payloads ----
 
