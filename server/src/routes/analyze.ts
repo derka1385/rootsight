@@ -12,6 +12,6 @@ export async function analyze(req: Request, res: Response) {
     await sleep(600);
     return res.json(fixtures.monstera);
   }
-  // Opus 5.5 at max effort: this profile drives the 3D render.
-  res.json(await askJson(PlantProfileOut, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this plant." }], "max"));
+  // Opus 5.5 at medium effort: this profile drives the 3D render.
+  res.json(await askJson(PlantProfileOut, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this plant." }], "medium"));
 }

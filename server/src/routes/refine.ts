@@ -27,7 +27,7 @@ export async function refine(req: Request, res: Response) {
     { type: "text", text: "Image 2, our render:" },
     imageBlock(renderScreenshot),
     { type: "text", text: `Current PlantProfile:\n${JSON.stringify(profile)}` },
-  ], "max"); // Opus 5.5 at max effort: this profile drives the 3D render
+  ], "medium"); // Opus 5.5 at medium effort: this profile drives the 3D render
   // Watch convergence during the demo: fewer changed fields per pass = render closer to the photo.
   const diff = changed(profile, next).filter((p) => p !== "facts");
   console.log(`[refine] ${diff.length} field(s) changed in ${Date.now() - t0} ms: ${diff.join(", ") || "none"}`);
