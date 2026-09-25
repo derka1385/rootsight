@@ -1,0 +1,23 @@
+{
+  "common": {
+    "error": "Something went wrong"
+  },
+  "plant": {
+    "title": "Plant",
+    "description": "Take a photo of your plant and see its future.",
+    "testApi": "Test API"
+  },
+  "myPlants": {
+    "title": "My plants",
+    "description": "Your collection and watering reminders."
+  },
+  "discover": {
+    "title": "Discover",
+    "description": "Browse other plants."
+  },
+  "notFound": {
+    "headerTitle": "Not found",
+    "description": "This page doesn't exist.",
+    "buttonText": "Go home"
+  }
+}
