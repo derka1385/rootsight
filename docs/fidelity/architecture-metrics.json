@@ -1,0 +1,154 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "dpr": 1,
+  "errors": [],
+  "renders": [
+    {
+      "name": "vine",
+      "state": "today",
+      "peakCalls": 21,
+      "calls": 21,
+      "triangles": 43202,
+      "geometries": 24,
+      "textures": 14
+    },
+    {
+      "name": "vine",
+      "state": "grown",
+      "peakCalls": 21,
+      "calls": 21,
+      "triangles": 163634,
+      "geometries": 24,
+      "textures": 14
+    },
+    {
+      "name": "vine",
+      "state": "wilt",
+      "peakCalls": 21,
+      "calls": 21,
+      "triangles": 43202,
+      "geometries": 24,
+      "textures": 14
+    },
+    {
+      "name": "vine",
+      "state": "cutaway",
+      "peakCalls": 43,
+      "calls": 43,
+      "triangles": 45446,
+      "geometries": 25,
+      "textures": 14
+    },
+    {
+      "name": "grass",
+      "state": "today",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 20746,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "grass",
+      "state": "grown",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 81866,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "grass",
+      "state": "wilt",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 20746,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "grass",
+      "state": "cutaway",
+      "peakCalls": 39,
+      "calls": 39,
+      "triangles": 22990,
+      "geometries": 24,
+      "textures": 15
+    },
+    {
+      "name": "succulent",
+      "state": "today",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 43666,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "succulent",
+      "state": "grown",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 248418,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "succulent",
+      "state": "wilt",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 43666,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "succulent",
+      "state": "cutaway",
+      "peakCalls": 85,
+      "calls": 85,
+      "triangles": 50446,
+      "geometries": 24,
+      "textures": 15
+    },
+    {
+      "name": "tree",
+      "state": "today",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 30586,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "tree",
+      "state": "grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 89914,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "tree",
+      "state": "wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 30586,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "tree",
+      "state": "cutaway",
+      "peakCalls": 41,
+      "calls": 41,
+      "triangles": 32830,
+      "geometries": 24,
+      "textures": 14
+    }
+  ]
+}
