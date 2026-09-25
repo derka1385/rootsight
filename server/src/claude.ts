@@ -8,6 +8,27 @@ export const useMock = () => process.env.USE_MOCK !== "false";
 
 let client: Anthropic | undefined;
 
+// The full PlantProfile (with `visual`) is too big for strict structured outputs ("compiled grammar is
+// too large"), so the JSON Schema goes in the prompt instead and zod enforces it on the answer
+// (see the retry in askJson). Bounds and patterns stay in the text as hints.
+const schemaText = new WeakMap<z.ZodType, string>();
+function jsonInstructions(schema: z.ZodType): string {
+  let t = schemaText.get(schema);
+  if (!t) schemaText.set(schema, (t = JSON.stringify(zodOutputFormat(schema).schema)));
+  return `\n\nReply with ONLY one JSON object, no prose and no code fences, valid against this JSON Schema:\n${t}`;
+}
+
+/** Tolerates stray prose or ```json fences around the object. */
+function extractJson(text: string): unknown {
+  const start = text.indexOf("{"), end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return undefined;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return undefined;
+  }
+}
+
 export function imageBlock({ imageBase64, mediaType }: ImageInput): Anthropic.ImageBlockParam {
   return { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } };
 }
@@ -31,17 +52,13 @@ export async function askJson<S extends z.ZodType>(
     const res = await client.messages.create({
       model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
       max_tokens: 16000,
-      system,
+      system: system + jsonInstructions(schema),
       messages: [{ role: "user", content: [...content, ...retryNote] }],
       // TODO(claude-owner): tune effort (low = fastest for live demos).
-      output_config: { format: zodOutputFormat(schema), effort: "low" },
+      output_config: { effort: "low" },
     });
     const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-    let json: unknown;
-    try {
-      json = JSON.parse(text);
-    } catch {}
-    const parsed = schema.safeParse(json);
+    const parsed = schema.safeParse(extractJson(text));
     if (parsed.success) return parsed.data;
     error = res.stop_reason === "end_turn" ? parsed.error.message : `stop_reason: ${res.stop_reason}`;
   }
