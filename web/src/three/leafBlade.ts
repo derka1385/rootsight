@@ -7,7 +7,7 @@ export function leafBlade(v: Visual["leaves"], maturity = 1): BufferGeometry {
   const ratio = v.widthToLength;
   const outline: [number, number][] = [];
   const fen = v.fenestration * maturity;
-  const widthAt = (t: number) => {
+  const widthAt = (t: number, side: number) => {
     const exponent = v.tip === "rounded" ? 0.48 : 0.85;
     const shift = v.base === "heart" ? 0.08 + 0.92 * t : v.base === "rounded" ? 0.025 + 0.975 * t : t;
     let w = Math.pow(Math.max(0, Math.sin(Math.PI * Math.pow(shift, 0.78))), exponent);
@@ -15,14 +15,14 @@ export function leafBlade(v: Visual["leaves"], maturity = 1): BufferGeometry {
     if (v.edge === "lobed") w *= 0.73 + 0.27 * Math.cos(t * Math.PI * 10);
     // Narrow, curved sinuses, with rounded fingers between them, never horizontal ladder cuts.
     if (fen > 0) for (let i = 0; i < 4; i++) {
-      const center = 0.28 + i * 0.14;
-      w *= 1 - fen * 0.72 * Math.exp(-(((t - center) / 0.035) ** 2));
+      const center = 0.34 + i * 0.15 + (side > 0 ? 0.075 : 0);
+      w *= 1 - fen * (0.6 + 0.28 * Math.sin(i * 2.4 + side)) * Math.exp(-(((t - center) / 0.045) ** 2));
     }
     return w * ratio / 2;
   };
   for (const side of [-1, 1]) for (let j = 0; j <= 96; j++) {
     const t = side === -1 ? j / 96 : 1 - j / 96;
-    const x = side * widthAt(t);
+    const x = side * widthAt(t, side);
     const z = t - (v.base === "heart" ? 0.13 * Math.pow(1 - t, 7) : 0);
     outline.push([x, z]);
   }

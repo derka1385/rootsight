@@ -89,7 +89,7 @@
     },
     "pot": {
       "material": "terracotta",
-      "color": "#c0673f",
+      "color": "#a8654a",
       "diameterCm": 25,
       "fillRatio": 1
     }

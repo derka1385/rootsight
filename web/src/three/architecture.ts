@@ -92,7 +92,7 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
       });
       path(points, radius * (0.7 + 0.3 * youth) * grow);
       // Blades held just above horizontal, facing up and outward, not hanging.
-      pitch = 1.24 + r[4] * 0.26 + droop * 0.9;
+      pitch = 1.02 + r[4] * 0.24 + droop * 0.9;
     } else if (kind === "grass" || kind === "succulent") {
       const ring = i / Math.max(1, observed);
       pitch = kind === "grass" ? 0.15 + (1 - ring) * 0.6 + droop * 0.5 : 0.55 + (1 - ring) * 0.85 + droop * 0.2;
@@ -109,17 +109,17 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
       const assignedStem = Math.floor(i / pair) % stemOf(i);
       const node = Math.floor(i / (pair * stemOf(i)));
       const totalNodes = Math.max(1, Math.ceil(observed / pair / nStems0));
-      const coverage = Math.min(0.8, Math.max(0.3, v.stems.internodeCm / m.currentHeightCm * Math.max(1, totalNodes - 1))) * (1 - v.condition.legginess * 0.55);
+      const coverage = Math.min(0.92, Math.max(0.72, v.stems.internodeCm / m.currentHeightCm * Math.max(1, totalNodes - 1))) * (1 - v.condition.legginess * 0.55);
       const stage = node - (i >= observed ? 1 - grow : 0);
       const t = Math.min(1.08, 1 - coverage + stage * coverage / Math.max(1, totalNodes - 1));
       highestNode[assignedStem] = Math.max(highestNode[assignedStem], t);
       const axis = bases[assignedStem].clone().lerp(stemTip(assignedStem), t);
       az = node * (pair === 2 ? Math.PI / 2 : GOLDEN) + (i % pair) * Math.PI * 2 / pair + assignedStem * GOLDEN + asym;
       if (v.leaves.arrangement === "rosette") az = i * GOLDEN;
-      const branchL = ((kind === "tree" ? 0.3 : 0.12) * H * (1 - t * 0.5) + spread * 0.32) * grow;
+      const branchL = ((kind === "tree" ? 0.22 : 0.045) * H * (1 - t * 0.5) + spread * 0.14) * grow;
       point = axis.clone().add(new Vector3(Math.sin(az) * branchL, branchL * 0.3, Math.cos(az) * branchL));
-      path([axis, axis.clone().lerp(point, 0.5), point], radius * (kind === "tree" ? 0.55 : 0.34) * grow);
-      pitch = 1.35 + t * 0.3 + droop;
+      path([axis, axis.clone().lerp(point, 0.5), point], radius * (kind === "tree" ? 0.55 : 0.5) * grow);
+      pitch = 1.02 + t * 0.28 + droop;
       size *= 1 - Math.min(0.2, node / Math.max(1, totalNodes) * 0.2);
     }
     const rotation = new Quaternion().setFromEuler(new Euler(0, az, 0)).multiply(new Quaternion().setFromEuler(new Euler(-Math.PI / 2 + pitch, 0, (r[4] - 0.5) * 0.22)));

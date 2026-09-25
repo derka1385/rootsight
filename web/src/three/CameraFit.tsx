@@ -46,11 +46,11 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
             transform.premultiply(object.matrixWorld);
             for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) {
               const point = new Vector3(x, y, z).applyMatrix4(transform).sub(center.current).applyQuaternion(inverse);
-              distance = Math.max(distance, point.z + Math.max(Math.abs(point.y), Math.abs(point.x) / aspect) / Math.tan(20 * Math.PI / 180));
+              distance = Math.max(distance, point.z + Math.max(Math.abs(point.y), Math.abs(point.x) / aspect * 0.7) / Math.tan(20 * Math.PI / 180));
             }
           }
         });
-        goal.current.dist = Math.max(0.15, distance * 1.16);
+        goal.current.dist = Math.max(0.15, distance * 1.02);
         goal.current.y = center.current.y;
       }
       measure.current = false;

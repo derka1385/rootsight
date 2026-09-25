@@ -45,7 +45,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, children }
       {/* Penumbra that widens with distance: the single biggest "not a video game" win. */}
       <SoftShadows size={26} samples={12} focus={0.85} />
       <color attach="background" args={["#e9e1d3"]} />
-      <fog attach="fog" args={["#e9e1d3", 4, 11]} />
+      <fog attach="fog" args={["#e9e1d3", 1.8, 6.5]} />
       <hemisphereLight args={["#fff6e8", "#9c8464", 1.05]} />
       <directionalLight
         position={[-2.2, 4, 2.6]}
@@ -76,7 +76,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, children }
       {/* Oak table the pot stands on */}
       <mesh rotation-x={-Math.PI / 2} position-y={table - 0.001} receiveShadow>
         <circleGeometry args={[6, 64]} />
-        <meshStandardMaterial map={woodTexture()} color="#d9c6ad" roughness={0.75} />
+        <meshStandardMaterial map={woodTexture()} color="#a98d6e" roughness={0.88} />
       </mesh>
       {trailing && <mesh position-y={(table - potD) / 2} receiveShadow castShadow>
         <cylinderGeometry args={[potR * 0.7, potR * 0.85, -table - potD, 24]} />
