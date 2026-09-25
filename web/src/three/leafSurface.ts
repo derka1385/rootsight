@@ -47,11 +47,19 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
   const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.9 - v.leaves.gloss * 0.6, side: DoubleSide, metalness: 0, envMapIntensity: 0.5 + v.leaves.gloss * 1.3, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.04 });
   material.forceSinglePass = true;
   const underside = new Color(v.leaves.undersideColor);
+  // Leaves are thin: light wraps past the terminator and backlit blades glow instead of going flat
+  // black. The replace is a no-op if three renames the chunk, so a version bump just loses the glow.
+  const wrap = (0.35 + v.leaves.gloss * 0.1).toFixed(3);
   material.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "vec3 irradiance = dotNL * directLight.color;",
+      `float wrapNL = clamp((dot(geometryNormal, directLight.direction) + ${wrap}) / ${(1 + Number(wrap)).toFixed(3)}, 0.0, 1.0);
+       vec3 irradiance = mix(dotNL, wrapNL, 0.6) * directLight.color;`,
+    );
     shader.uniforms.underside = { value: underside };
     shader.fragmentShader = "uniform vec3 underside;\n" + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (!gl_FrontFacing) diffuseColor.rgb = mix(diffuseColor.rgb, underside * diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.65);");
   };
-  material.customProgramCacheKey = () => `leaf-underside:${base.getHexString()}`;
+  material.customProgramCacheKey = () => `leaf-translucent:${base.getHexString()}:${wrap}`;
   return material;
 }

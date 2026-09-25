@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import type { Group } from "three";
 import { Canvas } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer, OrbitControls, SoftShadows } from "@react-three/drei";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "../three/visual";
 import Plant from "../three/Plant";
@@ -39,9 +39,11 @@ export default function SceneCanvas({ state, profile, cutaway = true, children }
       frameloop="demand"
       dpr={[1, 2]}
       camera={{ position: [1.6, 1.1, 2.4], fov: 40 }}
-      gl={{ preserveDrawingBuffer: true, antialias: true }}
+      gl={{ preserveDrawingBuffer: true, antialias: true, toneMappingExposure: 1.12 }}
     >
       {children}
+      {/* Penumbra that widens with distance: the single biggest "not a video game" win. */}
+      <SoftShadows size={26} samples={12} focus={0.85} />
       <color attach="background" args={["#e9e1d3"]} />
       <fog attach="fog" args={["#e9e1d3", 4, 11]} />
       <hemisphereLight args={["#fff6e8", "#9c8464", 1.05]} />
