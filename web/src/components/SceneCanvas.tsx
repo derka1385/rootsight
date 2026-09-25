@@ -3,6 +3,7 @@ import { OrbitControls } from "@react-three/drei";
 import type { PlantProfile, PlantState } from "@rootsight/shared/schema";
 import Plant from "../three/Plant";
 import Roots from "../three/Roots";
+import CameraFit from "../three/CameraFit";
 
 // Scene units: 1 = 1 m. Ground at y = 0, roots below.
 // TODO(3d-owner): warm, cozy environment (pot, table, window light following care.light, soft shadows)
@@ -14,7 +15,8 @@ export default function SceneCanvas({ state, profile }: { state: PlantState; pro
       <color attach="background" args={["#0f1411"]} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 5, 2]} intensity={1.6} />
-      <OrbitControls target={[0, 0.3, 0]} />
+      <OrbitControls makeDefault target={[0, 0.3, 0]} />
+      <CameraFit state={state} />
 
       {/* Ground: back half only, so the front is "cut away" */}
       <mesh rotation-x={-Math.PI / 2}>
