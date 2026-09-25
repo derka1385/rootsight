@@ -12,6 +12,10 @@ try {
 const app = express();
 app.use(express.json({ limit: "15mb" })); // base64 photos; no CORS since Vite proxies /api
 
+// Lets the web tell whether it is talking to Claude or to the fixtures (never exposes the key).
+app.get("/api/health", (_req, res) => {
+  res.json({ mock: useMock(), hasKey: !!process.env.ANTHROPIC_API_KEY, model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5" });
+});
 app.post("/api/analyze", analyze);
 app.post("/api/refine", refine);
 app.post("/api/whatif", whatif);
