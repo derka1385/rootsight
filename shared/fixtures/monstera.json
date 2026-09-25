@@ -48,5 +48,50 @@
     "In the wild it climbs trees using aerial roots.",
     "Its ripe fruit tastes like a mix of pineapple and banana."
   ],
-  "healthNotes": "Healthy overall. One lower leaf shows slight yellowing, likely natural ageing."
+  "healthNotes": "Healthy overall. One lower leaf shows slight yellowing, likely natural ageing.",
+  "visual": {
+    "silhouette": {
+      "widthToHeight": 1.2,
+      "leanDeg": 8,
+      "leanDirection": "right",
+      "symmetry": 0.55,
+      "legginess": 0.25
+    },
+    "stems": {
+      "countFromSoil": 3,
+      "thicknessMm": 12,
+      "internodeCm": 6
+    },
+    "leaves": {
+      "arrangement": "alternate",
+      "widthToLength": 0.9,
+      "tip": "acuminate",
+      "edge": "lobed",
+      "fenestration": 0.35,
+      "variegation": "none",
+      "variegationColor": "#e8ecd8",
+      "gloss": 0.7,
+      "colorUnder": "#4f8a55",
+      "droop": 0.25,
+      "sizeVariation": 0.6
+    },
+    "succulent": {
+      "bodyForm": "none",
+      "ribCount": 0,
+      "spineDensity": 0,
+      "spineColor": "#e8c65a",
+      "offsets": 0
+    },
+    "condition": {
+      "yellowing": 0.05,
+      "brownTips": 0,
+      "pests": false
+    },
+    "pot": {
+      "material": "terracotta",
+      "color": "#c0673f",
+      "diameterCm": 25,
+      "fillRatio": 1
+    }
+  }
 }

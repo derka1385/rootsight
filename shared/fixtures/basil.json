@@ -47,5 +47,50 @@
     "It belongs to the mint family.",
     "Basil hates the cold: below 10 °C its leaves turn black."
   ],
-  "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light."
+  "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light.",
+  "visual": {
+    "silhouette": {
+      "widthToHeight": 0.8,
+      "leanDeg": 3,
+      "leanDirection": "none",
+      "symmetry": 0.8,
+      "legginess": 0.15
+    },
+    "stems": {
+      "countFromSoil": 1,
+      "thicknessMm": 5,
+      "internodeCm": 3
+    },
+    "leaves": {
+      "arrangement": "opposite",
+      "widthToLength": 0.6,
+      "tip": "acute",
+      "edge": "wavy",
+      "fenestration": 0,
+      "variegation": "none",
+      "variegationColor": "#e8ecd8",
+      "gloss": 0.55,
+      "colorUnder": "#5fa85a",
+      "droop": 0.1,
+      "sizeVariation": 0.4
+    },
+    "succulent": {
+      "bodyForm": "none",
+      "ribCount": 0,
+      "spineDensity": 0,
+      "spineColor": "#e8c65a",
+      "offsets": 0
+    },
+    "condition": {
+      "yellowing": 0,
+      "brownTips": 0,
+      "pests": false
+    },
+    "pot": {
+      "material": "terracotta",
+      "color": "#c0673f",
+      "diameterCm": 14,
+      "fillRatio": 0.8
+    }
+  }
 }
