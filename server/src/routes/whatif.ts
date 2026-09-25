@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { setTimeout as sleep } from "node:timers/promises";
-import { WhatIfRequest, WhatIfResponse } from "@rootsight/shared/schema";
+import { PlantProfileOut, WhatIfRequest, WhatIfResponse } from "@rootsight/shared/schema";
 import { askJson, useMock } from "../claude";
 import { WHATIF_PROMPT } from "../prompts";
 
@@ -15,7 +15,7 @@ export async function whatif(req: Request, res: Response) {
     } satisfies WhatIfResponse);
   }
   res.json(
-    await askJson(WhatIfResponse, WHATIF_PROMPT, [
+    await askJson(WhatIfResponse.extend({ profile: PlantProfileOut }), WHATIF_PROMPT, [
       { type: "text", text: `PlantProfile:\n${JSON.stringify(profile)}\n\nQuestion: ${question}` },
     ]),
   );

@@ -47,5 +47,50 @@
     "It can take decades to reach full size.",
     "It is endangered in the wild but common in cultivation."
   ],
-  "healthNotes": "Firm and evenly colored. No signs of rot or sunburn."
+  "healthNotes": "Firm and evenly colored. No signs of rot or sunburn.",
+  "visual": {
+    "silhouette": {
+      "widthToHeight": 1.3,
+      "leanDeg": 0,
+      "leanDirection": "none",
+      "symmetry": 0.95,
+      "legginess": 0
+    },
+    "stems": {
+      "countFromSoil": 1,
+      "thicknessMm": 150,
+      "internodeCm": 1
+    },
+    "leaves": {
+      "arrangement": "basal",
+      "widthToLength": 0.05,
+      "tip": "acute",
+      "edge": "smooth",
+      "fenestration": 0,
+      "variegation": "none",
+      "variegationColor": "#e8ecd8",
+      "gloss": 0.3,
+      "colorUnder": "#5a8f4e",
+      "droop": 0,
+      "sizeVariation": 0
+    },
+    "succulent": {
+      "bodyForm": "globe",
+      "ribCount": 22,
+      "spineDensity": 0.8,
+      "spineColor": "#e8c65a",
+      "offsets": 0
+    },
+    "condition": {
+      "yellowing": 0,
+      "brownTips": 0,
+      "pests": false
+    },
+    "pot": {
+      "material": "terracotta",
+      "color": "#c0673f",
+      "diameterCm": 18,
+      "fillRatio": 0.85
+    }
+  }
 }

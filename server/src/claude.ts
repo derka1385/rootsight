@@ -29,7 +29,7 @@ export async function askJson<S extends z.ZodType>(
       : [];
     // API/auth errors throw straight through (the SDK already retries 429/5xx).
     const res = await client.messages.create({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+      model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
       max_tokens: 16000,
       system,
       messages: [{ role: "user", content: [...content, ...retryNote] }],
