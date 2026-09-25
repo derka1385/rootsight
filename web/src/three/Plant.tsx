@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Color } from "three";
 import type { PlantProfile, PlantState } from "@rootsight/shared/schema";
+import Monstera from "./Monstera";
 
 const GOLDEN_ANGLE = 2.39996;
 
@@ -8,6 +9,12 @@ const GOLDEN_ANGLE = 2.39996;
 // TODO(3d-owner): L-system branching (branchingAngleDeg, branchingDepth), leaf geometry per leaf.shape,
 // shape per growthForm (rosette, vine, succulent...), animated wilt.
 export default function Plant({ state, profile }: { state: PlantState; profile: PlantProfile }) {
+  // ponytail: only fenestrated leaves get the art-directed plant; other shapes keep the stub until they get their own.
+  if (profile.morphology.leaf.shape === "fenestrated") return <Monstera state={state} profile={profile} />;
+  return <Stub state={state} profile={profile} />;
+}
+
+function Stub({ state, profile }: { state: PlantState; profile: PlantProfile }) {
   const { stemColor, leaf } = profile.morphology;
   const height = state.heightCm / 100;
   const leafLen = leaf.lengthCm / 100;
