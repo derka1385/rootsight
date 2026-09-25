@@ -10,7 +10,7 @@ photo) and **"what if" questions** ("What if I water every 2 weeks?") where Clau
 A growth tracker tells you when it reaches a given height ("90 cm in ~23 weeks"). **My plants** keeps your
 collection with watering reminders, and **Discover** lets you browse other plants.
 
-The target is an **iPhone app**; for now it's a phone-first web app (see Preview).
+The target is an **iPhone app**: `mobile/` is the Expo (React Native) app. `web/` is the phone-first web prototype, kept until its screens are ported.
 
 ```
 photo -> Claude vision -> PlantProfile JSON -> simulate() -> procedural Three.js
@@ -30,7 +30,7 @@ npm run dev          # API on :8787, web on http://localhost:5173
 API key is needed. For real Claude calls, set `ANTHROPIC_API_KEY` and `USE_MOCK=false` in `server/.env`.
 The key lives **only** in `server/.env` (gitignored). Never put it in `web/`.
 
-Other scripts: `npm run typecheck` (whole repo) and `npm run build` (web bundle).
+Other scripts: `npm run typecheck` (whole repo, incl. mobile), `npm run build` (web bundle) and `npm run dev:mobile` (API + Expo, see below).
 
 ## Preview
 
@@ -40,6 +40,22 @@ Other scripts: `npm run typecheck` (whole repo) and `npm run build` (web bundle)
   In Safari: Share -> **Add to Home Screen** to run it full-screen like an app.
   `dev:phone` exposes the dev server to your whole network, so on shared hackathon Wi-Fi keep `USE_MOCK=true` or stop it after testing.
 
+## Mobile app (Expo)
+
+`mobile/` is an Expo SDK 57 app (React Native 0.86, React 19.2) with Expo Router tabs: Plant / My plants / Discover.
+
+```bash
+npm run dev:mobile   # API on :8787 + Expo dev server with a QR code
+```
+
+- **iPhone:** install Expo Go (SDK 57) and **log in to the same Expo account in Expo Go and in the CLI** (`npx expo login`), which SDK 57 requires.
+  If the App Store build doesn't support SDK 57 yet, `npx eas-cli go` builds Expo Go to your TestFlight. Scan the QR code; phone and Mac on the same Wi-Fi.
+- **iOS simulator:** press `i` in the Expo terminal (needs Xcode).
+- The app calls the API on the machine running Expo (port 8787). Override with `EXPO_PUBLIC_API_URL` (see `mobile/.env.example`); it's bundled into the app, so no secrets.
+- The Plant tab has a temporary **Test API** button that calls `/api/analyze` as a smoke check.
+- React is pinned to Expo's version (`19.2.3`) for the whole repo via root `overrides`: a second copy of React breaks the app at runtime. Check with `npm ls react` after changing deps, and use `npx expo install <pkg>` in `mobile/` so versions match the SDK.
+- 3D will use `expo-gl` + `@react-three/fiber/native` (3d-owner).
+
 ## Layout
 
 | Path | What |
@@ -48,6 +64,7 @@ Other scripts: `npm run typecheck` (whole repo) and `npm run build` (web bundle)
 | `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays) -> PlantState` and `weeksToHeight()` |
 | `shared/fixtures/` | Mock profiles: monstera, basil, cactus |
 | `server/src/` | Express API: `claude.ts` (client + schema-validated JSON helper), `prompts.ts`, `routes/` |
+| `mobile/` | Expo app: `app/` (Expo Router screens, `(tabs)/`), `components/`, `src/api.ts` (API client, same contract as web) |
 | `web/src/` | Vite + React + R3F: `components/` (UI, incl. `MyPlants`, `Discover`), `three/` (procedural plant and roots), `myPlants.ts` (collection in localStorage) |
 
 API (all `POST`, JSON):
