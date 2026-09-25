@@ -1,23 +1,61 @@
-/* Rootsight — a sunny greenhouse: linen, leaf green, terracotta, water blue. */
+/* Rootsight web: same design system as the mobile app (mobile/global.css, KöKoll base): neutral
+   shadcn-style tokens, 12px radii, iOS large titles, Liquid Glass tab bar, automatic dark mode.
+   The old names (--bg, --ink, --leaf...) are kept as aliases so components didn't change. */
 :root {
-  --bg: #f4efe7;
-  --surface: #fffdf9;
-  --surface-2: #f8f3ec;
-  --ink: #1c2a21;
-  --ink-2: #5b685f;
-  --ink-3: #8b958d;
-  --line: #e7dfd3;
-  --leaf: #2f6b45;
-  --leaf-2: #4f8c5f;
-  --leaf-soft: #e2ede3;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --primary: #343434;
+  --primary-foreground: #fafafa;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --border: #cfd6de;
+  --destructive: #ff3366;
+  --overlay: #34343422;
+  --glass: rgba(255, 255, 255, 0.72);
+
+  --bg: var(--background);
+  --surface: var(--card);
+  --surface-2: var(--muted);
+  --ink: var(--foreground);
+  --ink-2: var(--muted-foreground);
+  --ink-3: #a3a3a3;
+  --line: var(--border);
+  --leaf: var(--primary);
+  --leaf-2: #525252;
+  --leaf-soft: var(--muted);
+  --growth: #3f7d4f;
+  --growth-soft: #e6f0e8;
   --clay: #c0673f;
-  --clay-soft: #f6e4da;
-  --water: #3a78b0;
-  --water-soft: #e1ecf6;
-  --radius: 22px;
-  --shadow: 0 1px 2px rgba(40, 30, 20, 0.05), 0 8px 24px -12px rgba(40, 30, 20, 0.18);
-  --round: ui-rounded, "SF Pro Rounded", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  --clay-soft: #f7e7df;
+  --water: #2f7fd0;
+  --water-soft: #e3eefa;
+  --radius: 12px;
+  --shadow: none;
+  --round: -apple-system, "SF Pro Display", system-ui, sans-serif;
   color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #282828;
+    --foreground: #fafafa;
+    --card: #343434;
+    --primary: #fafafa;
+    --primary-foreground: #171717;
+    --muted: #343434;
+    --muted-foreground: #a3a3a3;
+    --border: #353f4f;
+    --overlay: #ffffff22;
+    --glass: rgba(52, 52, 52, 0.7);
+    --ink-3: #8a8a8a;
+    --leaf-2: #d4d4d4;
+    --growth: #7cc28c;
+    --growth-soft: #2f3b32;
+    --clay-soft: #4a3228;
+    --water: #6aaef0;
+    --water-soft: #263447;
+    color-scheme: dark;
+  }
 }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; }
@@ -168,3 +206,50 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border: 6px s
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ================= mobile design system (matches mobile/components/ui) ================= */
+body { background: #e5e5e5; }
+@media (prefers-color-scheme: dark) { body { background: #111; } }
+h1, h2, h3 { letter-spacing: -0.02em; }
+.title { font-size: 34px; font-weight: 700; line-height: 1.12; }
+.section-title { font-size: 22px; font-weight: 700; }
+.eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--muted-foreground); }
+
+/* Cards: bordered, flat, rounded-xl */
+.card, .plant-card, .sample, .list, .metric, .summary .card { border: 1px solid var(--border); box-shadow: none; border-radius: var(--radius); background: var(--card); }
+.plant-card .thumb, .sample .thumb { border-radius: 10px; background: var(--muted); }
+
+/* Buttons: h-14 rounded-xl primary / outline */
+.btn { border-radius: var(--radius); min-height: 56px; font-weight: 500; font-size: 17px; background: var(--primary); color: var(--primary-foreground); }
+.btn:active { transform: none; opacity: 0.8; }
+.btn.small { min-height: 40px; font-size: 16px; border-radius: 10px; }
+.btn.ghost { background: var(--background); color: var(--foreground); box-shadow: none; border: 1px solid var(--border); }
+.btn.water { background: var(--water); color: #fff; }
+.icon-btn { background: var(--glass); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); color: var(--foreground); }
+.chip { border-radius: 8px; background: var(--muted); border-color: transparent; }
+.chip.leaf { background: var(--growth-soft); color: var(--growth); }
+.progress { background: var(--muted); }
+.progress i { background: var(--growth); }
+.slider output { color: var(--foreground); }
+input[type="range"]::-webkit-slider-runnable-track { background: var(--muted); }
+input[type="range"]::-webkit-slider-thumb { background: #fff; box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.25), 0 3px 8px rgba(0, 0, 0, 0.15); }
+.slider.water input[type="range"]::-webkit-slider-thumb { box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.25), 0 3px 8px rgba(0, 0, 0, 0.15); }
+.ask input, .tracker input { border-radius: var(--radius); background: var(--background); border-color: var(--border); }
+.avatar { background: var(--primary); color: var(--primary-foreground); }
+.switch[aria-checked="true"] { background: #34c759; }
+.alert { border-radius: var(--radius); }
+.explanation { border-radius: var(--radius); background: var(--growth-soft); color: var(--foreground); }
+.list-item .ico { background: var(--muted); color: var(--foreground); }
+.care svg { color: var(--foreground); }
+.sheet { background: var(--background); }
+.detail { background: var(--background); }
+
+/* Liquid Glass tab bar: a floating translucent capsule, selected tab on a tinted pill */
+.screen { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.tabbar { position: absolute; left: 16px; right: 16px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 4; gap: 2px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 999px; background: var(--glass); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.tabbar button { padding: 7px 0 5px; border-radius: 999px; color: var(--muted-foreground); font-size: 10.5px; font-weight: 600; transition: background 0.25s, color 0.25s; }
+.tabbar button svg { width: 25px; height: 25px; }
+.tabbar button[aria-current] { color: var(--primary); background: var(--overlay); }
+.tabbar .scan-tab span.bubble { width: auto; height: auto; margin: 0; border-radius: 0; background: none; color: inherit; box-shadow: none; }
+.tabbar .scan-tab[aria-current] span.bubble { background: none; }
+@media (prefers-color-scheme: dark) { .tabbar { border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.6); } }
