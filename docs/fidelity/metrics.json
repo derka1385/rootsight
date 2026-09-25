@@ -1,0 +1,226 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "dpr": 1,
+  "errors": [],
+  "renders": [
+    {
+      "name": "monstera",
+      "state": "today",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 24098,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "monstera",
+      "state": "grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 73058,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "monstera",
+      "state": "wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 24098,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "monstera",
+      "state": "cutaway",
+      "peakCalls": 41,
+      "calls": 41,
+      "triangles": 26342,
+      "geometries": 24,
+      "textures": 15
+    },
+    {
+      "name": "basil",
+      "state": "today",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 27738,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "basil",
+      "state": "grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 81858,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "basil",
+      "state": "wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 27738,
+      "geometries": 23,
+      "textures": 15
+    },
+    {
+      "name": "basil",
+      "state": "cutaway",
+      "peakCalls": 87,
+      "calls": 87,
+      "triangles": 34518,
+      "geometries": 24,
+      "textures": 15
+    },
+    {
+      "name": "cactus",
+      "state": "today",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 40738,
+      "geometries": 21,
+      "textures": 11
+    },
+    {
+      "name": "cactus",
+      "state": "grown",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 40738,
+      "geometries": 21,
+      "textures": 11
+    },
+    {
+      "name": "cactus",
+      "state": "wilt",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 40738,
+      "geometries": 21,
+      "textures": 11
+    },
+    {
+      "name": "cactus",
+      "state": "cutaway",
+      "peakCalls": 83,
+      "calls": 83,
+      "triangles": 47518,
+      "geometries": 23,
+      "textures": 11
+    },
+    {
+      "name": "photo-monstera",
+      "state": "today",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 46850,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-monstera",
+      "state": "grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 117986,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-monstera",
+      "state": "wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 46850,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-monstera",
+      "state": "cutaway",
+      "peakCalls": 41,
+      "calls": 41,
+      "triangles": 49094,
+      "geometries": 24,
+      "textures": 14
+    },
+    {
+      "name": "photo-basil",
+      "state": "today",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 94178,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-basil",
+      "state": "grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 207338,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-basil",
+      "state": "wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 94178,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "name": "photo-basil",
+      "state": "cutaway",
+      "peakCalls": 87,
+      "calls": 87,
+      "triangles": 100958,
+      "geometries": 24,
+      "textures": 14
+    },
+    {
+      "name": "photo-cactus",
+      "state": "today",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 23906,
+      "geometries": 21,
+      "textures": 10
+    },
+    {
+      "name": "photo-cactus",
+      "state": "grown",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 23906,
+      "geometries": 21,
+      "textures": 10
+    },
+    {
+      "name": "photo-cactus",
+      "state": "wilt",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 23906,
+      "geometries": 21,
+      "textures": 10
+    },
+    {
+      "name": "photo-cactus",
+      "state": "cutaway",
+      "peakCalls": 83,
+      "calls": 83,
+      "triangles": 30686,
+      "geometries": 23,
+      "textures": 10
+    }
+  ]
+}

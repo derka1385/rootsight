@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import { MeshStandardMaterial, SphereGeometry } from "three";
-import type { PlantProfile, PlantState } from "@rootsight/shared/schema";
+import type { PlantState } from "@rootsight/shared/schema";
+import type { RenderProfile as PlantProfile } from "./visual";
 import { seededRandom } from "./procedural";
 import { Chain, type Seg } from "./parts";
 

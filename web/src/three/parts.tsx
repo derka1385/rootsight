@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import type { Material } from "three";
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
+import { Euler, InstancedMesh, Matrix4, type Material } from "three";
 import { SEGMENT, leafGeometry, type LeafForm } from "./procedural";
 
 /** One stem segment: length, base radius and bend (radians) applied at its base. */
@@ -11,20 +11,29 @@ export type Seg = { len: number; r: number; bx: number; bz?: number; ry?: number
  * (curvature, gravity, wilt) is what makes stems and petioles read as organic.
  */
 export function Chain({ segs, material, at, tip }: { segs: Seg[]; material: Material; at?: Record<number, ReactNode>; tip?: ReactNode }) {
-  const render = (i: number): ReactNode => {
-    if (i === segs.length) return tip ?? null;
-    const s = segs[i];
-    return (
-      <group rotation={[s.bx, s.ry ?? 0, s.bz ?? 0]}>
-        <mesh geometry={SEGMENT} material={material} scale={[s.r, s.len, s.r]} castShadow />
-        <group position-y={s.len}>
-          {at?.[i]}
-          {render(i + 1)}
-        </group>
-      </group>
-    );
-  };
-  return <>{render(0)}</>;
+  const mesh = useRef<InstancedMesh>(null);
+  const frames = useMemo(() => {
+    const current = new Matrix4();
+    return segs.map(s => {
+      current.multiply(new Matrix4().makeRotationFromEuler(new Euler(s.bx, s.ry ?? 0, s.bz ?? 0)));
+      const segment = current.clone().multiply(new Matrix4().makeScale(s.r, s.len, s.r));
+      current.multiply(new Matrix4().makeTranslation(0, s.len, 0));
+      return { segment, end: current.clone() };
+    });
+  }, [segs]);
+  useLayoutEffect(() => {
+    if (!mesh.current) return;
+    frames.forEach((frame, i) => mesh.current!.setMatrixAt(i, frame.segment));
+    mesh.current.instanceMatrix.needsUpdate = true;
+    mesh.current.computeBoundingBox(); mesh.current.computeBoundingSphere();
+  }, [frames]);
+  useEffect(() => { const instance = mesh.current; return () => instance?.dispose(); }, [segs.length]);
+  return <>
+    {frames.length > 0 && <instancedMesh ref={mesh} args={[SEGMENT, material, frames.length]} dispose={null} castShadow />}
+    {frames.map((frame, i) => <group key={i} matrix={frame.end} matrixAutoUpdate={false}>{at?.[i]}{i === frames.length - 1 && tip}</group>)}
+    {frames.length === 0 && tip}
+  </>;
+
 }
 
 /** Evenly split `length` into n segments tapering from r0, with a constant bend per joint. */
