@@ -7,6 +7,7 @@ import {
 import type { PlantProfile, PlantState } from "@rootsight/shared/schema";
 import { clamp01, seededRandom, smoothstep, type LeafForm } from "./procedural";
 import { Chain, Leaf, taper, type Seg } from "./parts";
+import { leafTexture } from "./textures";
 
 const GOLDEN_ANGLE = 2.39996;
 const DRY = new Color("#8f7a45");
@@ -45,7 +46,8 @@ function useMaterials(p: PlantProfile, wilt: number): Mats {
     const leaves = [0.09, 0.04, 0, -0.04].map((dl, i) => {
       const c = new Color().setHSL(hsl.h + (i === 0 ? 0.02 : 0), hsl.s * 0.82 * (1 - 0.35 * w), hsl.l + dl);
       c.lerp(DRY, w * 0.55);
-      return new MeshStandardMaterial({ color: c, roughness: 0.78, metalness: 0, side: DoubleSide });
+      // A little self-glow stands in for light passing through the blade, so undersides never go black.
+      return new MeshStandardMaterial({ color: c, map: leafTexture(), emissive: c.clone().multiplyScalar(0.22), emissiveMap: leafTexture(), roughness: 0.62 + i * 0.04, metalness: 0, side: DoubleSide });
     });
     const stemC = new Color(p.morphology.stemColor).lerp(DRY, w * 0.35);
     return {
@@ -305,7 +307,7 @@ function Cactus({ profile, state, mats }: { profile: PlantProfile; state: PlantS
   const nArms = genes.kind === "column" ? Math.min(3, m.branchingDepth + 1) : 0;
   return (
     <group>
-      <mesh geometry={body} material={mats.stem} scale={[R, H, R]} />
+      <mesh geometry={body} material={mats.stem} scale={[R, H, R]} castShadow receiveShadow />
       <instancedMesh key={genes.ribs} ref={spines} args={[SPINE, undefined, genes.ribs * SPINE_ROWS]} material={mats.spine} />
       {genes.arms.slice(0, nArms).map((a, k) => {
         const show = smoothstep(0.35 + 0.15 * k, 0.6 + 0.15 * k, gp);
@@ -315,11 +317,18 @@ function Cactus({ profile, state, mats }: { profile: PlantProfile; state: PlantS
         return (
           <group key={k} position-y={H * (0.35 + 0.15 * a.h)} rotation-y={a.az * Math.PI * 2}>
             {/* elbow growing out sideways, then the arm turning upward */}
-            <mesh geometry={body} material={mats.stem} position-x={R * 0.5} rotation-z={-Math.PI / 2 * 0.9} scale={[ar * show, R * 1.4 * show, ar * show]} />
-            <mesh geometry={body} material={mats.stem} position-x={R * 0.5 + R * 1.25 * show} position-y={-ar * 0.2} scale={[ar * show, up, ar * show]} />
+            <mesh castShadow geometry={body} material={mats.stem} position-x={R * 0.5} rotation-z={-Math.PI / 2 * 0.9} scale={[ar * show, R * 1.4 * show, ar * show]} />
+            <mesh castShadow geometry={body} material={mats.stem} position-x={R * 0.5 + R * 1.25 * show} position-y={-ar * 0.2} scale={[ar * show, up, ar * show]} />
           </group>
         );
       })}
     </group>
   );
+}
+
+/** Rough radius of the plant at soil level, so the pot is never narrower than a barrel cactus. */
+export function baseRadius(profile: PlantProfile, state: PlantState): number {
+  if (archetypeOf(profile) !== "cactus") return 0;
+  const H = state.heightCm / 100, m = profile.morphology;
+  return m.matureHeightCm <= 100 && m.branchingDepth <= 1 ? 0.012 + 0.6 * H : 0.03 + 0.11 * H;
 }

@@ -48,6 +48,7 @@ export function leafGeometry(form: LeafForm, split = false): BufferGeometry {
   const rows = split ? 20 : 12;
   const cols = 8; // across the blade, midrib in the middle
   const pos: number[] = [];
+  const uv: number[] = [];
   const idx: number[] = [];
   const ratio = WIDTH[form];
 
@@ -66,6 +67,7 @@ export function leafGeometry(form: LeafForm, split = false): BufferGeometry {
       // Margins sit slightly higher than the midrib; the tip arches down.
       const y = 0.09 * ratio * Math.abs(s) * w - 0.12 * t * t;
       pos.push(x, y, z);
+      uv.push((s + 1) / 2, t);
     }
   }
 
@@ -82,6 +84,7 @@ export function leafGeometry(form: LeafForm, split = false): BufferGeometry {
 
   const g = new BufferGeometry();
   g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
   g.computeVertexNormals();
   cache.set(key, g);

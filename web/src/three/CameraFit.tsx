@@ -7,20 +7,23 @@ type Controls = { target: Vector3; update: () => void };
 
 /**
  * Keeps a 15 cm basil and a 2 m monstera both framed: when the plant's size changes, glide the orbit
- * target and distance to fit plant + roots, then hand the camera back to the user.
+ * target and distance to fit plant + pot, then hand the camera back to the user.
+ * Works with frameloop="demand": it asks for frames only while gliding.
  */
-export default function CameraFit({ state }: { state: PlantState }) {
+export default function CameraFit({ state, bottom = 0 }: { state: PlantState; bottom?: number }) {
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
   const controls = useThree((s) => s.controls) as unknown as Controls | null;
   const goal = useRef({ y: 0.3, dist: 2.9, until: 0 });
 
   const h = state.heightCm / 100;
-  const d = state.rootDepthCm / 100;
+  const d = Math.max(state.rootDepthCm / 100, bottom);
   const spread = state.rootSpreadCm / 100;
   useEffect(() => {
     const span = Math.max(h + d, spread * 0.8, 0.25);
-    goal.current = { y: (h - d) / 2, dist: Math.max(0.55, (span * 1.35) / 0.83), until: performance.now() + 900 };
-  }, [h, d, spread]);
+    goal.current = { y: (h - d) / 2, dist: Math.max(0.55, (span * 1.35) / 0.75), until: performance.now() + 900 };
+    invalidate();
+  }, [h, d, spread, invalidate]);
 
   const dir = useRef(new Vector3());
   useFrame(() => {
@@ -32,6 +35,7 @@ export default function CameraFit({ state }: { state: PlantState }) {
     dir.current.setLength(len + (goal.current.dist - len) * 0.12);
     camera.position.copy(t).add(dir.current);
     controls.update();
+    invalidate();
   });
   return null;
 }

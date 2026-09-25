@@ -16,7 +16,7 @@ export function Chain({ segs, material, at, tip }: { segs: Seg[]; material: Mate
     const s = segs[i];
     return (
       <group rotation={[s.bx, s.ry ?? 0, s.bz ?? 0]}>
-        <mesh geometry={SEGMENT} material={material} scale={[s.r, s.len, s.r]} />
+        <mesh geometry={SEGMENT} material={material} scale={[s.r, s.len, s.r]} castShadow />
         <group position-y={s.len}>
           {at?.[i]}
           {render(i + 1)}
@@ -45,7 +45,7 @@ export function Leaf({ form, split, size, pitch, roll, material }: { form: LeafF
   return (
     <group rotation={[-Math.PI / 2 + pitch, 0, 0]}>
       <group rotation-z={roll}>
-        <mesh geometry={leafGeometry(form, split)} material={material} scale={size} />
+        <mesh geometry={leafGeometry(form, split)} material={material} scale={size} castShadow receiveShadow />
       </group>
     </group>
   );
