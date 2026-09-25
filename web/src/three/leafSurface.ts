@@ -9,7 +9,7 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
   canvas.width = 128; canvas.height = 256;
   const ctx = canvas.getContext("2d")!;
   const pixels = ctx.createImageData(128, 256);
-  const base = new Color(p.morphology.leaf.color).offsetHSL(0, -0.045, (3 - age) * 0.009);
+  const base = new Color(p.morphology.leaf.color).offsetHSL(0, -0.05, (3 - age) * 0.03);
   const yellow = new Color("#b7a044"), brown = new Color("#755039"), patch = new Color(v.leaves.variegationColor);
   const c = new Color();
   const random = seededRandom(v.seed + ":surface:" + age);
@@ -44,7 +44,7 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
     ctx.beginPath(); ctx.moveTo(64, y); ctx.quadraticCurveTo(64 + side * 24, y - 10, 64 + side * 56, y - 40); ctx.stroke();
   }
   const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace; map.anisotropy = 2;
-  const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.92 - v.leaves.gloss * 0.62, side: DoubleSide, metalness: 0, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.12 });
+  const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.9 - v.leaves.gloss * 0.6, side: DoubleSide, metalness: 0, envMapIntensity: 0.5 + v.leaves.gloss * 1.3, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.04 });
   material.forceSinglePass = true;
   const underside = new Color(v.leaves.undersideColor);
   material.onBeforeCompile = shader => {

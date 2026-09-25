@@ -13,7 +13,7 @@
   },
   "morphology": {
     "growthForm": "upright-branching",
-    "currentHeightCm": 15,
+    "currentHeightCm": 22,
     "matureHeightCm": 50,
     "stemColor": "#6b8e3a",
     "branchingAngleDeg": 35,
@@ -21,8 +21,8 @@
     "leaf": {
       "shape": "ovate",
       "color": "#3f9b3a",
-      "lengthCm": 5,
-      "countNow": 14
+      "lengthCm": 6,
+      "countNow": 48
     }
   },
   "growth": {
@@ -45,21 +45,21 @@
   "facts": [
     "Pinching off flower buds keeps the leaves sweet.",
     "It belongs to the mint family.",
-    "Basil hates the cold: below 10 °C its leaves turn black."
+    "Basil hates the cold: below 10 \u00b0C its leaves turn black."
   ],
   "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light.",
   "visual": {
     "silhouette": {
-      "widthToHeight": 0.8,
+      "widthToHeight": 1.05,
       "leanDeg": 3,
       "leanDirection": "none",
       "symmetry": 0.8,
       "legginess": 0.15
     },
     "stems": {
-      "countFromSoil": 1,
-      "thicknessMm": 5,
-      "internodeCm": 3
+      "countFromSoil": 4,
+      "thicknessMm": 3.5,
+      "internodeCm": 2.2
     },
     "leaves": {
       "arrangement": "opposite",
@@ -69,10 +69,10 @@
       "fenestration": 0,
       "variegation": "none",
       "variegationColor": "#e8ecd8",
-      "gloss": 0.55,
+      "gloss": 0.34,
       "colorUnder": "#5fa85a",
-      "droop": 0.1,
-      "sizeVariation": 0.4
+      "droop": 0.12,
+      "sizeVariation": 0.3
     },
     "succulent": {
       "bodyForm": "none",

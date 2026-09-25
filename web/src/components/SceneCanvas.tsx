@@ -44,13 +44,14 @@ export default function SceneCanvas({ state, profile, cutaway = true, children }
       {children}
       <color attach="background" args={["#e9e1d3"]} />
       <fog attach="fog" args={["#e9e1d3", 4, 11]} />
-      <hemisphereLight args={["#fff6e8", "#a07a58", 0.7]} />
+      <hemisphereLight args={["#fff6e8", "#9c8464", 1.05]} />
       <directionalLight
         position={[-2.2, 4, 2.6]}
-        intensity={light * 0.72}
-        color="#fff5e6"
+        intensity={light * 0.6}
+        color="#fff0d9"
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
+        shadow-radius={4}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
         shadow-camera-left={-1.6}
@@ -59,11 +60,11 @@ export default function SceneCanvas({ state, profile, cutaway = true, children }
         shadow-camera-bottom={-1}
         shadow-camera-far={12}
       />
-      <directionalLight position={[2.5, 1.5, -2]} intensity={0.35} color="#cfe0ff" />
+      <directionalLight position={[2.5, 1.5, -2]} intensity={0.5} color="#cfe0ff" />
       {/* Soft studio reflections built in-scene (no HDR download). */}
       <Environment resolution={64}>
-        <Lightformer form="rect" intensity={2} color="#fff1dc" position={[-3, 3, 2]} scale={[3, 2, 1]} />
-        <Lightformer form="rect" intensity={0.8} color="#dfe8ff" position={[3, 2, -2]} scale={[3, 2, 1]} />
+        <Lightformer form="rect" intensity={2.6} color="#fff1dc" position={[-3, 3, 2]} scale={[3, 2, 1]} />
+        <Lightformer form="rect" intensity={1.1} color="#dfe8ff" position={[3, 2, -2]} scale={[3, 2, 1]} />
         <Lightformer form="circle" intensity={0.6} color="#ffffff" position={[0, 5, 0]} scale={3} />
       </Environment>
 

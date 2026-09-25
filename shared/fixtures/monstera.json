@@ -51,29 +51,29 @@
   "healthNotes": "Healthy overall. One lower leaf shows slight yellowing, likely natural ageing.",
   "visual": {
     "silhouette": {
-      "widthToHeight": 1.2,
+      "widthToHeight": 1.3,
       "leanDeg": 8,
       "leanDirection": "right",
       "symmetry": 0.55,
       "legginess": 0.25
     },
     "stems": {
-      "countFromSoil": 3,
-      "thicknessMm": 12,
+      "countFromSoil": 1,
+      "thicknessMm": 9,
       "internodeCm": 6
     },
     "leaves": {
-      "arrangement": "alternate",
-      "widthToLength": 0.9,
+      "arrangement": "rosette",
+      "widthToLength": 0.86,
       "tip": "acuminate",
-      "edge": "lobed",
-      "fenestration": 0.35,
+      "edge": "smooth",
+      "fenestration": 0.72,
       "variegation": "none",
       "variegationColor": "#e8ecd8",
-      "gloss": 0.7,
+      "gloss": 0.82,
       "colorUnder": "#4f8a55",
-      "droop": 0.25,
-      "sizeVariation": 0.6
+      "droop": 0.18,
+      "sizeVariation": 0.28
     },
     "succulent": {
       "bodyForm": "none",

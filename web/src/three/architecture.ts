@@ -66,15 +66,19 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     let point = bases[stem].clone(), pitch = 0.7;
     const droop = v.leaves.droop * 0.8 + state.wilt * 0.9;
     if (kind === "aroid") {
-      const level = 0.40 + 0.44 * r[2];
-      const reach = spread * (0.35 + r[3] * 0.65);
+      // Oldest leaves sit low and reach furthest out; new ones unfurl high and close to the crown.
+      const older = 1 - Math.min(1, rank / Math.max(1, perStem - 1));
+      const level = 0.30 + 0.52 * (1 - older) + 0.14 * r[2];
+      const reach = spread * (0.45 + older * 0.55 + r[3] * 0.25);
       point.add(new Vector3(Math.sin(az) * reach, H * level * grow, Math.cos(az) * reach));
-      const points = Array.from({ length: 6 }, (_, j) => {
-        const t = j / 5;
-        return bases[stem].clone().lerp(point, t).add(new Vector3(0, Math.sin(t * Math.PI) * H * 0.08, 0));
+      const points = Array.from({ length: 8 }, (_, j) => {
+        const t = j / 7;
+        // Petioles leave the base steeply and arch over: rise first, then bend out to the blade.
+        return bases[stem].clone().lerp(point, Math.pow(t, 1.35)).add(new Vector3(0, Math.sin(t * Math.PI) * H * (0.1 + 0.2 * older), 0));
       });
       path(points, radius * (0.7 + 0.3 * youth) * grow);
-      pitch = 1.75 + r[4] * 0.4 + droop;
+      // Blades held just above horizontal, facing up and outward, not hanging.
+      pitch = 1.24 + r[4] * 0.26 + droop * 0.9;
     } else if (kind === "grass" || kind === "succulent") {
       const ring = i / Math.max(1, observed);
       pitch = kind === "grass" ? 0.15 + (1 - ring) * 0.6 + droop * 0.5 : 0.55 + (1 - ring) * 0.85 + droop * 0.2;
