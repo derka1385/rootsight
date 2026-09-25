@@ -27,7 +27,13 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
   const kind = architectureOf(p, v), m = p.morphology;
   const H = state.heightCm / 100, initialH = m.currentHeightCm / 100;
   const growth = H / initialH;
-  const observed = Math.min(160, m.leaf.countNow);
+  // Claude reports the leaves it can individually resolve in a photo, which badly undercounts a
+  // bushy plant: a rose came back as 4 stems and 4 leaves and rendered as 4 bare sticks. Keep the
+  // photo's number whenever it is already dense, otherwise fill each stem out to a plausible
+  // minimum so a leafy plant never reads as bare wood.
+  const perStemFloor = kind === "aroid" ? 3 : kind === "grass" ? 6 : 8;
+  const floor = m.leaf.countNow > 0 ? v.stems.count * perStemFloor : 0;
+  const observed = Math.min(160, Math.max(m.leaf.countNow, floor));
   const count = Math.min(160, observed * growth);
   const length = m.leaf.lengthCm / 100 * Math.min(1.6, Math.pow(growth, 0.28));
   const radius = v.stems.thicknessCm / 200 * Math.sqrt(growth);

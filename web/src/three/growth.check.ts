@@ -21,3 +21,16 @@ for (const name of ["basil", "monstera"] as const) {
   assert(later.spread > 1.4, `${name}: future leaves are all the same size (${later.spread.toFixed(2)}x)`);
 }
 console.log("growth check OK");
+
+// A photo-derived profile that undercounts leaves must still render a leafy plant, not bare sticks.
+{
+  const rose = JSON.parse(JSON.stringify(fixtures.basil));
+  rose.morphology = { ...rose.morphology, growthForm: "upright-branching", currentHeightCm: 45, leaf: { shape: "ovate", color: "#2f6b33", lengthCm: 6, countNow: 4 } };
+  rose.visual.stems.countFromSoil = 4;
+  rose.visual.leaves.arrangement = "alternate";
+  const l = plantLayout(rose, { heightCm: 45, wilt: 0, rootDepthCm: 10, rootSpreadCm: 10 } as any, visualOf(rose));
+  const leaves = l.leaves.flat().length;
+  console.log("undercounted rose ->", leaves, "leaves,", l.stems.length, "segments");
+  assert(leaves >= 24, `a 4-stem shrub rendered only ${leaves} leaves (bare sticks)`);
+}
+console.log("density check OK");
