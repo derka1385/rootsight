@@ -1,0 +1,29 @@
+{
+  "species": { "commonName": "Swiss cheese plant", "scientificName": "Monstera deliciosa", "confidence": 0.94 },
+  "morphology": {
+    "growthForm": "upright-branching",
+    "currentHeightCm": 60,
+    "matureHeightCm": 250,
+    "stemColor": "#4f6b2f",
+    "branchingAngleDeg": 45,
+    "branchingDepth": 2,
+    "leaf": { "shape": "fenestrated", "color": "#2e6b34", "lengthCm": 35, "countNow": 7 }
+  },
+  "growth": { "rateCmPerMonth": 5, "monthsToMaturity": 36 },
+  "roots": { "type": "aerial", "maxDepthCm": 40, "maxSpreadCm": 50 },
+  "care": {
+    "waterIntervalDays": 7,
+    "light": "bright-indirect",
+    "humidity": "high",
+    "tempMinC": 18,
+    "tempMaxC": 30,
+    "soil": "Chunky aroid mix: bark, perlite and peat"
+  },
+  "facts": [
+    "The holes in its leaves are called fenestrations.",
+    "Young leaves are solid; splits appear as the plant matures.",
+    "In the wild it climbs trees using aerial roots.",
+    "Its ripe fruit tastes like a mix of pineapple and banana."
+  ],
+  "healthNotes": "Healthy overall. One lower leaf shows slight yellowing, likely natural ageing."
+}

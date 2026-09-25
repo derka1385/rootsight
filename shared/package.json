@@ -1,0 +1,13 @@
+{
+  "name": "@rootsight/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schema": "./schema.ts",
+    "./simulation": "./simulation.ts",
+    "./fixtures": "./fixtures/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "species": { "commonName": "Sweet basil", "scientificName": "Ocimum basilicum", "confidence": 0.91 },
+  "morphology": {
+    "growthForm": "upright-branching",
+    "currentHeightCm": 15,
+    "matureHeightCm": 50,
+    "stemColor": "#6b8e3a",
+    "branchingAngleDeg": 35,
+    "branchingDepth": 3,
+    "leaf": { "shape": "ovate", "color": "#3f9b3a", "lengthCm": 5, "countNow": 14 }
+  },
+  "growth": { "rateCmPerMonth": 8, "monthsToMaturity": 4 },
+  "roots": { "type": "fibrous", "maxDepthCm": 25, "maxSpreadCm": 30 },
+  "care": {
+    "waterIntervalDays": 2,
+    "light": "full-sun",
+    "humidity": "medium",
+    "tempMinC": 15,
+    "tempMaxC": 32,
+    "soil": "Rich, well-draining potting mix"
+  },
+  "facts": [
+    "Pinching off flower buds keeps the leaves sweet.",
+    "It belongs to the mint family.",
+    "Basil hates the cold: below 10 °C its leaves turn black."
+  ],
+  "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light."
+}
