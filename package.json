@@ -8,17 +8,23 @@
   "workspaces": [
     "shared",
     "server",
-    "web"
+    "web",
+    "mobile"
   ],
   "scripts": {
     "dev": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
     "dev:phone": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web -- --host\"",
     "build": "npm run build -w web",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p . && npm run typecheck -w mobile",
+    "dev:mobile": "concurrently -k -n server,mobile -c blue,magenta \"npm run dev -w server\" \"npm run start -w mobile\""
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
     "concurrently": "^10.0.5",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }
