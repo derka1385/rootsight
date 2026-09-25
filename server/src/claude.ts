@@ -41,6 +41,7 @@ export async function askJson<S extends z.ZodType>(
   schema: S,
   system: string,
   content: Anthropic.ContentBlockParam[],
+  effort: NonNullable<Anthropic.Messages.OutputConfig["effort"]> = "low",
 ): Promise<z.infer<S>> {
   client ??= new Anthropic(); // reads ANTHROPIC_API_KEY
   let error = "";
@@ -49,14 +50,14 @@ export async function askJson<S extends z.ZodType>(
       ? [{ type: "text", text: `Your previous answer failed validation:\n${error}\nReturn corrected JSON.` }]
       : [];
     // API/auth errors throw straight through (the SDK already retries 429/5xx).
-    const res = await client.messages.create({
+    const res = await client.messages.stream({
       model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
-      max_tokens: 16000,
+      max_tokens: effort === "low" ? 16000 : 32000,
       system: system + jsonInstructions(schema),
       messages: [{ role: "user", content: [...content, ...retryNote] }],
-      // TODO(claude-owner): tune effort (low = fastest for live demos).
-      output_config: { effort: "low" },
-    });
+      // "max" for the profile the 3D is built from; "low" keeps demo Q&A fast.
+      output_config: { effort },
+    }).finalMessage(); // streaming: max effort can exceed the SDK non-streaming limit
     const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
     const parsed = schema.safeParse(extractJson(text));
     if (parsed.success) return parsed.data;
