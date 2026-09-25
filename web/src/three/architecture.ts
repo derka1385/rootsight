@@ -34,8 +34,14 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
   const soilR = potDimensions(p).radius;
   const spread = Math.max(0, H * v.silhouette.widthToHeight / 2 - length * 0.42);
   const stems: Matrix4[] = [], leaves: Matrix4[][] = [[], [], [], []];
-  const nStems = Math.min(v.stems.count, Math.max(1, observed));
-  const bases = Array.from({ length: nStems }, (_, i) => new Vector3(Math.sin(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems), 0, Math.cos(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems)));
+  // New side branches keep appearing as the plant grows. Observed leaves stay indexed against the
+  // stem count they were photographed with, so nothing reshuffles when a branch is born, and the
+  // base positions divide by maxStems so the existing bases never slide outward either.
+  const nStems0 = Math.min(v.stems.count, Math.max(1, observed));
+  const maxStems = Math.min(12, Math.round(nStems0 * 2.4));
+  const nStems = Math.min(maxStems, Math.max(nStems0, Math.round(nStems0 * Math.pow(growth, 0.8))), Math.max(1, Math.ceil(count)));
+  const stemOf = (i: number) => (i < observed ? nStems0 : nStems);
+  const bases = Array.from({ length: nStems }, (_, i) => new Vector3(Math.sin(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / maxStems), 0, Math.cos(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / maxStems)));
   const path = (points: Vector3[], r: number) => {
     for (let i = 0; i < points.length - 1; i++) stems.push(segmentMatrix(points[i], points[i + 1], r * (1 - i / points.length * 0.55)));
   };
@@ -53,14 +59,16 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
 
   for (let i = 0; i < Math.ceil(count); i++) {
     const random = seededRandom(v.seed + ":leaf:" + i);
-    const r = [random(), random(), random(), random(), random()];
+    const r = [random(), random(), random(), random(), random(), random()];
     // Existing leaves are full size; future slots emerge continuously from zero at integer boundaries.
-    const grow = i < observed ? 1 : smoothstep(0, 1, count - i);
+    // Future leaves unfurl out of order, each on its own schedule, instead of one clean queue.
+    const grow = i < observed ? 1 : smoothstep(0, 1, count - i - r[5] * 0.9);
     if (grow < 1e-8) continue;
-    const stem = i % nStems, rank = Math.floor(i / nStems);
-    const perStem = Math.max(1, observed / nStems);
+    const stem = i % stemOf(i), rank = Math.floor(i / stemOf(i));
+    const perStem = Math.max(1, observed / nStems0);
     const youth = 0.74 + 0.26 * (1 - Math.min(1, rank / perStem));
-    let size = length * youth * (1 + (r[0] - 0.5) * v.leaves.sizeVariation) * grow;
+    // New growth is not a clone of the old: each future leaf settles at its own mature size.
+    let size = length * youth * (1 + (r[0] - 0.5) * v.leaves.sizeVariation) * (i < observed ? 1 : 0.72 + r[5] * 0.62) * grow;
     const asym = (r[1] - 0.5) * (1 - v.silhouette.symmetry);
     let az = i * GOLDEN + asym * 2;
     let point = bases[stem].clone(), pitch = 0.7;
@@ -92,9 +100,9 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     } else {
       const pair = v.leaves.arrangement === "opposite" ? 2 : v.leaves.arrangement === "whorled" ? 3 : 1;
       // Allocate paired leaves to a shared stem/node before moving to the next stem.
-      const assignedStem = Math.floor(i / pair) % nStems;
-      const node = Math.floor(i / (pair * nStems));
-      const totalNodes = Math.max(1, Math.ceil(observed / pair / nStems));
+      const assignedStem = Math.floor(i / pair) % stemOf(i);
+      const node = Math.floor(i / (pair * stemOf(i)));
+      const totalNodes = Math.max(1, Math.ceil(observed / pair / nStems0));
       const coverage = Math.min(0.8, Math.max(0.3, v.stems.internodeCm / m.currentHeightCm * Math.max(1, totalNodes - 1))) * (1 - v.condition.legginess * 0.55);
       const stage = node - (i >= observed ? 1 - grow : 0);
       const t = Math.min(1.08, 1 - coverage + stage * coverage / Math.max(1, totalNodes - 1));
@@ -113,6 +121,7 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     leaves[age].push(new Matrix4().compose(point, rotation, new Vector3(size, size, size)));
   }
   if (["branching", "tree"].includes(kind)) bases.forEach((base, i) => {
+    if (highestNode[i] <= 0) return; // a branch slot no leaf has reached yet has no stem to draw
     const tip = base.clone().lerp(stemTip(i), highestNode[i]);
     path(Array.from({ length: 6 }, (_, j) => base.clone().lerp(tip, j / 5)), radius * (kind === "tree" ? 1.4 : 1));
   });
