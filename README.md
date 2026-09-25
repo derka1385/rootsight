@@ -45,15 +45,25 @@ Other scripts: `npm run typecheck` (whole repo, incl. mobile), `npm run build` (
 `mobile/` is an Expo SDK 57 app (React Native 0.86, React 19.2) with Expo Router tabs: Plant / My plants / Discover.
 
 ```bash
-npm run dev:mobile   # API on :8787 + Expo dev server with a QR code
+npm run ios -w mobile   # first time: builds + installs the dev build on the simulator
+npm run dev:mobile      # after that: API on :8787 + Metro
 ```
 
-- **iPhone:** install Expo Go (SDK 57) and **log in to the same Expo account in Expo Go and in the CLI** (`npx expo login`), which SDK 57 requires.
-  If the App Store build doesn't support SDK 57 yet, `npx eas-cli go` builds Expo Go to your TestFlight. Scan the QR code; phone and Mac on the same Wi-Fi.
-- **iOS simulator:** press `i` in the Expo terminal (needs Xcode).
+- **Development build, not Expo Go.** The tab bar is expo-router's native tabs (real `UITabBarController`, Liquid Glass on iOS 26+), which Expo Go can't run.
+  Needs **Xcode 26.4+** (SDK 57's native code uses Swift 6.3).
+- **iOS simulator:** `npm run ios -w mobile` (runs `expo run:ios`, the first build takes a few minutes), plus `npm run dev -w server` for the API.
+  After that, `npm run dev:mobile` is enough; the installed dev build connects to Metro.
+- **iPhone:** plug it in and run `npx expo run:ios --device` from `mobile/` (needs a free Apple developer signing team in Xcode).
+- **Structure** (same base as KöKoll): `app/_layout.tsx` (providers + theme) -> `app/app/_layout.tsx` (Stack) -> `app/app/(tabs)/` (`NativeTabs`),
+  and each tab folder has its own `Stack` with a large transparent iOS header. Styling is **NativeWind v5 + Tailwind v4** (`className`, tokens in `global.css`),
+  UI primitives are in `components/ui/`, API calls in `features/<name>/api.ts`, data fetching via React Query, strings via i18next (`lib/i18n/locales/en.json`).
+- **Adding a tab:** create `app/app/(tabs)/<name>/_layout.tsx` (a Stack, copy an existing one) + `index.tsx`, add a `NativeTabs.Trigger` in
+  `app/app/(tabs)/_layout.tsx`, and add its strings to `en.json`. Screens that should cover the tab bar (sheets, camera) go in `app/app/_layout.tsx`.
+  The native tabs API is still `unstable-`, so trigger props may change between SDKs.
+- `npm run lint -w mobile` runs ESLint (eslint-config-expo).
 - The app calls the API on the machine running Expo (port 8787). Override with `EXPO_PUBLIC_API_URL` (see `mobile/.env.example`); it's bundled into the app, so no secrets.
 - The Plant tab has a temporary **Test API** button that calls `/api/analyze` as a smoke check.
-- React is pinned to Expo's version (`19.2.3`) for the whole repo via root `overrides`: a second copy of React breaks the app at runtime. Check with `npm ls react` after changing deps, and use `npx expo install <pkg>` in `mobile/` so versions match the SDK.
+- Root `overrides` pin React to Expo's `19.2.3` (a second copy of React breaks the app at runtime) and `lightningcss` to `1.30.1` (newer versions break NativeWind's CSS compile). The repo uses TypeScript 6 everywhere, because TS 7 has no JS API and ESLint needs one. Check with `npm ls react` after changing deps, and use `npx expo install <pkg>` in `mobile/` so versions match the SDK.
 - 3D will use `expo-gl` + `@react-three/fiber/native` (3d-owner).
 
 ## Layout
@@ -64,7 +74,7 @@ npm run dev:mobile   # API on :8787 + Expo dev server with a QR code
 | `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays) -> PlantState` and `weeksToHeight()` |
 | `shared/fixtures/` | Mock profiles: monstera, basil, cactus |
 | `server/src/` | Express API: `claude.ts` (client + schema-validated JSON helper), `prompts.ts`, `routes/` |
-| `mobile/` | Expo app: `app/` (Expo Router screens, `(tabs)/`), `components/`, `src/api.ts` (API client, same contract as web) |
+| `mobile/` | Expo app: `app/` (Expo Router: `app/(tabs)/<tab>/`), `components/ui/`, `features/plants/api.ts` (same contract as web), `lib/` (API client, i18n, React Query, theme), `global.css` (Tailwind tokens) |
 | `web/src/` | Vite + React + R3F: `components/` (UI, incl. `MyPlants`, `Discover`), `three/` (procedural plant and roots), `myPlants.ts` (collection in localStorage) |
 
 API (all `POST`, JSON):

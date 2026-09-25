@@ -21,10 +21,11 @@
   "devDependencies": {
     "@types/node": "^26.6.2",
     "concurrently": "^10.0.5",
-    "typescript": "^7.0.2"
+    "typescript": "~6.0.3"
   },
   "overrides": {
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "lightningcss": "1.30.1"
   }
 }
