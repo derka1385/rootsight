@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
+    "dev:phone": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web -- --host\"",
     "build": "npm run build -w web",
     "typecheck": "tsc -p ."
   },

@@ -5,6 +5,7 @@ The output drives a procedural 3D renderer, so numbers must be physically plausi
 
 export const ANALYZE_PROMPT = `You are a botanist. Identify the plant in the photo and describe it as a PlantProfile.
 - species.confidence: your honest 0-1 certainty in the identification.
+- wiki: botanical family, native region, a 2-3 sentence encyclopedia-style summary, care difficulty, and whether it is toxic to cats/dogs.
 - morphology: describe the plant as it looks NOW in the photo (currentHeightCm, countNow), and matureHeightCm for a typical mature specimen grown indoors.
 - stemColor and leaf.color: sample the actual colors visible in the photo.
 - roots: typical root system for this species (you cannot see them; infer).

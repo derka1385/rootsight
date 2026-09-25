@@ -1,5 +1,16 @@
 {
-  "species": { "commonName": "Swiss cheese plant", "scientificName": "Monstera deliciosa", "confidence": 0.94 },
+  "species": {
+    "commonName": "Swiss cheese plant",
+    "scientificName": "Monstera deliciosa",
+    "confidence": 0.94
+  },
+  "wiki": {
+    "family": "Araceae",
+    "nativeRegion": "Tropical forests from southern Mexico to Panama",
+    "summary": "Monstera deliciosa is a climbing aroid famous for its split, hole-filled leaves. In the wild it scrambles up trees on aerial roots; indoors it is one of the most popular and forgiving houseplants.",
+    "difficulty": "easy",
+    "toxicToPets": true
+  },
   "morphology": {
     "growthForm": "upright-branching",
     "currentHeightCm": 60,
@@ -7,10 +18,22 @@
     "stemColor": "#4f6b2f",
     "branchingAngleDeg": 45,
     "branchingDepth": 2,
-    "leaf": { "shape": "fenestrated", "color": "#2e6b34", "lengthCm": 35, "countNow": 7 }
+    "leaf": {
+      "shape": "fenestrated",
+      "color": "#2e6b34",
+      "lengthCm": 35,
+      "countNow": 7
+    }
   },
-  "growth": { "rateCmPerMonth": 5, "monthsToMaturity": 36 },
-  "roots": { "type": "aerial", "maxDepthCm": 40, "maxSpreadCm": 50 },
+  "growth": {
+    "rateCmPerMonth": 5,
+    "monthsToMaturity": 36
+  },
+  "roots": {
+    "type": "aerial",
+    "maxDepthCm": 40,
+    "maxSpreadCm": 50
+  },
   "care": {
     "waterIntervalDays": 7,
     "light": "bright-indirect",

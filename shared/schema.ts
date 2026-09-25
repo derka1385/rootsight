@@ -9,6 +9,13 @@ export const PlantProfile = z.object({
     scientificName: z.string(),
     confidence: z.number().min(0).max(1),
   }),
+  wiki: z.object({
+    family: z.string(),
+    nativeRegion: z.string(),
+    summary: z.string().describe("2-3 sentence encyclopedia-style introduction"),
+    difficulty: z.enum(["easy", "medium", "hard"]),
+    toxicToPets: z.boolean(),
+  }),
   morphology: z.object({
     growthForm: z.enum(["rosette", "upright-branching", "vine", "succulent", "tree", "grass"]),
     currentHeightCm: z.number().positive(),

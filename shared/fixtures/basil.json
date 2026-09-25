@@ -1,5 +1,16 @@
 {
-  "species": { "commonName": "Sweet basil", "scientificName": "Ocimum basilicum", "confidence": 0.91 },
+  "species": {
+    "commonName": "Sweet basil",
+    "scientificName": "Ocimum basilicum",
+    "confidence": 0.91
+  },
+  "wiki": {
+    "family": "Lamiaceae",
+    "nativeRegion": "Tropical Asia and Africa",
+    "summary": "Sweet basil is a fast-growing culinary herb from the mint family, prized for its fragrant leaves. It loves sun and warmth and is usually grown as an annual.",
+    "difficulty": "easy",
+    "toxicToPets": false
+  },
   "morphology": {
     "growthForm": "upright-branching",
     "currentHeightCm": 15,
@@ -7,10 +18,22 @@
     "stemColor": "#6b8e3a",
     "branchingAngleDeg": 35,
     "branchingDepth": 3,
-    "leaf": { "shape": "ovate", "color": "#3f9b3a", "lengthCm": 5, "countNow": 14 }
+    "leaf": {
+      "shape": "ovate",
+      "color": "#3f9b3a",
+      "lengthCm": 5,
+      "countNow": 14
+    }
   },
-  "growth": { "rateCmPerMonth": 8, "monthsToMaturity": 4 },
-  "roots": { "type": "fibrous", "maxDepthCm": 25, "maxSpreadCm": 30 },
+  "growth": {
+    "rateCmPerMonth": 8,
+    "monthsToMaturity": 4
+  },
+  "roots": {
+    "type": "fibrous",
+    "maxDepthCm": 25,
+    "maxSpreadCm": 30
+  },
   "care": {
     "waterIntervalDays": 2,
     "light": "full-sun",

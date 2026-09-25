@@ -5,7 +5,8 @@ import Plant from "../three/Plant";
 import Roots from "../three/Roots";
 
 // Scene units: 1 = 1 m. Ground at y = 0, roots below.
-// TODO(3d-owner): proper soil cut-away (clipping planes), nicer lighting/shadows, pot.
+// TODO(3d-owner): warm, cozy environment (pot, table, window light following care.light, soft shadows)
+// and a proper soil cut-away (clipping planes) so the roots stay visible.
 export default function SceneCanvas({ state, profile }: { state: PlantState; profile: PlantProfile }) {
   return (
     // preserveDrawingBuffer lets the UI screenshot the canvas for /api/refine

@@ -3,10 +3,13 @@ import type { ImageInput, PlantProfile } from "@rootsight/shared/schema";
 import { simulate } from "@rootsight/shared/simulation";
 import { fixtures } from "@rootsight/shared/fixtures";
 import * as api from "./api";
+import { useMyPlants } from "./myPlants";
 import PhotoUpload from "./components/PhotoUpload";
 import PlantInfoPanel from "./components/PlantInfoPanel";
 import Controls from "./components/Controls";
 import SceneCanvas from "./components/SceneCanvas";
+import MyPlants from "./components/MyPlants";
+import Discover from "./components/Discover";
 
 // TODO(ui-owner): capture via the R3F gl ref instead of querying the DOM.
 function screenshotCanvas(): ImageInput {
@@ -14,7 +17,15 @@ function screenshotCanvas(): ImageInput {
   return { imageBase64: url.split(",")[1], mediaType: "image/jpeg" };
 }
 
+const TABS = [
+  ["plant", "🪴 Plant"],
+  ["mine", "🌿 My plants"],
+  ["discover", "🔍 Discover"],
+] as const;
+type Tab = (typeof TABS)[number][0];
+
 export default function App() {
+  const [tab, setTab] = useState<Tab>("plant");
   const [profile, setProfile] = useState<PlantProfile>(fixtures.monstera);
   const [photo, setPhoto] = useState<ImageInput | null>(null);
   const [month, setMonth] = useState(0);
@@ -22,6 +33,7 @@ export default function App() {
   const [explanation, setExplanation] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const myPlants = useMyPlants();
 
   const state = useMemo(() => simulate(profile, month, waterIntervalDays), [profile, month, waterIntervalDays]);
 
@@ -37,14 +49,19 @@ export default function App() {
     }
   }
 
+  function open(p: PlantProfile) {
+    setProfile(p);
+    setPhoto(null);
+    setWaterIntervalDays(p.care.waterIntervalDays);
+    setMonth(0);
+    setExplanation("");
+    setTab("plant");
+  }
+
   const onPhoto = (img: ImageInput) =>
     run("Identifying plant…", async () => {
+      open(await api.analyze(img));
       setPhoto(img);
-      const p = await api.analyze(img);
-      setProfile(p);
-      setWaterIntervalDays(p.care.waterIntervalDays);
-      setMonth(0);
-      setExplanation("");
     });
 
   const onWhatIf = (question: string) =>
@@ -59,32 +76,56 @@ export default function App() {
       setProfile(await api.refine(photo!, screenshotCanvas(), profile));
     });
 
+  const saved = myPlants.plants.some((p) => p.profile === profile);
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gridTemplateRows: "1fr auto", height: "100%" }}>
-      <aside style={{ overflowY: "auto", padding: 16, borderRight: "1px solid #253029" }}>
-        <h1 style={{ margin: "0 0 4px", fontSize: 22 }}>Rootsight</h1>
-        <p style={{ margin: "0 0 16px", opacity: 0.7 }}>Take a photo of your plant and see its future.</p>
-        <PhotoUpload onPhoto={onPhoto} disabled={!!busy} />
-        {busy && <p>{busy}</p>}
-        {error && <p style={{ color: "#ff8a80" }}>{error}</p>}
-        <PlantInfoPanel profile={profile} state={state} />
-      </aside>
-      <main style={{ minHeight: 0 }}>
-        <SceneCanvas state={state} profile={profile} />
-      </main>
-      <footer style={{ gridColumn: "1 / -1", padding: 12, borderTop: "1px solid #253029" }}>
-        <Controls
-          month={month}
-          onMonth={setMonth}
-          waterIntervalDays={waterIntervalDays}
-          onWaterIntervalDays={setWaterIntervalDays}
-          onWhatIf={onWhatIf}
-          onRefine={onRefine}
-          canRefine={!!photo && !busy}
-          busy={!!busy}
-          explanation={explanation}
-        />
-      </footer>
+    <div className="app">
+      {tab === "plant" && (
+        <>
+          <div style={{ height: "45%", flexShrink: 0 }}>
+            <SceneCanvas state={state} profile={profile} />
+          </div>
+          <div className="scroll">
+            <PhotoUpload onPhoto={onPhoto} disabled={!!busy} />
+            {busy && <p>{busy}</p>}
+            {error && <p style={{ color: "#ff8a80" }}>{error}</p>}
+            <Controls
+              month={month}
+              onMonth={setMonth}
+              waterIntervalDays={waterIntervalDays}
+              onWaterIntervalDays={setWaterIntervalDays}
+              onWhatIf={onWhatIf}
+              onRefine={onRefine}
+              canRefine={!!photo && !busy}
+              busy={!!busy}
+              explanation={explanation}
+            />
+            <p>
+              <button disabled={saved} onClick={() => myPlants.add(profile)}>
+                {saved ? "✓ In my plants" : "＋ Save to my plants"}
+              </button>
+            </p>
+            <PlantInfoPanel key={profile.species.scientificName} profile={profile} state={state} waterIntervalDays={waterIntervalDays} />
+          </div>
+        </>
+      )}
+      {tab === "mine" && (
+        <div className="scroll">
+          <MyPlants myPlants={myPlants} onOpen={open} />
+        </div>
+      )}
+      {tab === "discover" && (
+        <div className="scroll">
+          <Discover onOpen={open} />
+        </div>
+      )}
+      <nav className="tabbar">
+        {TABS.map(([id, label]) => (
+          <button key={id} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

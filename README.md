@@ -2,11 +2,15 @@
 
 > **Take a photo of your plant and see its future.**
 
-Snap or upload a photo of a plant. Claude (vision) identifies it and returns a strict JSON `PlantProfile`.
-The web app grows that plant procedurally in 3D: a time slider simulates months of growth, a soil
+Snap or upload a photo of a plant. Claude (vision) identifies it and returns a strict JSON `PlantProfile`
+(species, a mini wiki, care, morphology). The app grows that plant procedurally in 3D: a time slider simulates months of growth, a soil
 cut-away shows the roots spreading, and a watering slider makes it wilt if you neglect it. Two twists:
 a **self-check loop** (we screenshot our own render and Claude corrects the profile until it matches the
 photo) and **"what if" questions** ("What if I water every 2 weeks?") where Claude adjusts the plant and explains why.
+A growth tracker tells you when it reaches a given height ("90 cm in ~23 weeks"). **My plants** keeps your
+collection with watering reminders, and **Discover** lets you browse other plants.
+
+The target is an **iPhone app**; for now it's a phone-first web app (see Preview).
 
 ```
 photo -> Claude vision -> PlantProfile JSON -> simulate() -> procedural Three.js
@@ -28,15 +32,23 @@ The key lives **only** in `server/.env` (gitignored). Never put it in `web/`.
 
 Other scripts: `npm run typecheck` (whole repo) and `npm run build` (web bundle).
 
+## Preview
+
+- **Mac browser:** `npm run dev`, open http://localhost:5173 (shows as a phone-sized frame).
+- **Inside VS Code:** no extension needed. `Cmd+Shift+P` -> **Simple Browser: Show** -> `http://localhost:5173`.
+- **Your iPhone** (same Wi-Fi): `npm run dev:phone`, then open the `Network:` URL Vite prints (e.g. `http://192.168.1.12:5173`).
+  In Safari: Share -> **Add to Home Screen** to run it full-screen like an app.
+  `dev:phone` exposes the dev server to your whole network, so on shared hackathon Wi-Fi keep `USE_MOCK=true` or stop it after testing.
+
 ## Layout
 
 | Path | What |
 |---|---|
 | `shared/schema.ts` | **The contract.** zod `PlantProfile` + API payloads. Announce every change to the team. |
-| `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays) -> PlantState` |
+| `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays) -> PlantState` and `weeksToHeight()` |
 | `shared/fixtures/` | Mock profiles: monstera, basil, cactus |
 | `server/src/` | Express API: `claude.ts` (client + schema-validated JSON helper), `prompts.ts`, `routes/` |
-| `web/src/` | Vite + React + R3F: `components/` (UI) and `three/` (procedural plant and roots) |
+| `web/src/` | Vite + React + R3F: `components/` (UI, incl. `MyPlants`, `Discover`), `three/` (procedural plant and roots), `myPlants.ts` (collection in localStorage) |
 
 API (all `POST`, JSON):
 - `/api/analyze` `{imageBase64, mediaType}` -> `PlantProfile`
@@ -53,8 +65,8 @@ Search for your tag: `TODO(claude-owner)`, `TODO(3d-owner)`, `TODO(ui-owner)`.
 | Owner | Owns |
 |---|---|
 | **claude-owner** | `prompts.ts`, `claude.ts`, routes, refine loop, what-if |
-| **3d-owner** | `shared/simulation.ts`, `web/src/three/*`, `SceneCanvas` (L-system branching, leaf shapes per growthForm, roots per root type, wilt animation) |
-| **ui-owner** | App layout, `PhotoUpload`, `PlantInfoPanel`, `Controls`, canvas screenshot for `/api/refine`, demo polish, loading states |
+| **3d-owner** | `shared/simulation.ts`, `web/src/three/*`, `SceneCanvas` (L-system branching, leaf shapes per growthForm, warm environment around the plant, roots, wilt animation) |
+| **ui-owner** | App layout (iPhone-first), `PhotoUpload`, `PlantInfoPanel`, `Controls`, `MyPlants`, `Discover`, canvas screenshot for `/api/refine`, demo polish, loading states |
 
 Shared contract = `shared/schema.ts`. Changes to it must be announced to the team.
 

@@ -1,5 +1,16 @@
 {
-  "species": { "commonName": "Golden barrel cactus", "scientificName": "Echinocactus grusonii", "confidence": 0.88 },
+  "species": {
+    "commonName": "Golden barrel cactus",
+    "scientificName": "Echinocactus grusonii",
+    "confidence": 0.88
+  },
+  "wiki": {
+    "family": "Cactaceae",
+    "nativeRegion": "Central Mexico",
+    "summary": "The golden barrel cactus is a slow-growing globe covered in golden spines. Nearly extinct in the wild, it is one of the most widely cultivated cacti in the world.",
+    "difficulty": "easy",
+    "toxicToPets": false
+  },
   "morphology": {
     "growthForm": "succulent",
     "currentHeightCm": 12,
@@ -7,10 +18,22 @@
     "stemColor": "#5a8f4e",
     "branchingAngleDeg": 0,
     "branchingDepth": 1,
-    "leaf": { "shape": "needle", "color": "#e8c65a", "lengthCm": 3, "countNow": 0 }
+    "leaf": {
+      "shape": "needle",
+      "color": "#e8c65a",
+      "lengthCm": 3,
+      "countNow": 0
+    }
   },
-  "growth": { "rateCmPerMonth": 0.3, "monthsToMaturity": 180 },
-  "roots": { "type": "fibrous", "maxDepthCm": 15, "maxSpreadCm": 40 },
+  "growth": {
+    "rateCmPerMonth": 0.3,
+    "monthsToMaturity": 180
+  },
+  "roots": {
+    "type": "fibrous",
+    "maxDepthCm": 15,
+    "maxSpreadCm": 40
+  },
   "care": {
     "waterIntervalDays": 21,
     "light": "full-sun",
