@@ -1,41 +1,31 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { ImageInput, PlantProfile } from "@rootsight/shared/schema";
-import { simulate } from "@rootsight/shared/simulation";
-import { fixtures } from "@rootsight/shared/fixtures";
 import * as api from "./api";
-import { useMyPlants } from "./myPlants";
-import PhotoUpload from "./components/PhotoUpload";
-import PlantInfoPanel from "./components/PlantInfoPanel";
-import Controls from "./components/Controls";
-import SceneCanvas from "./components/SceneCanvas";
-import MyPlants from "./components/MyPlants";
-import Discover from "./components/Discover";
+import { useMyPlants, type SavedPlant } from "./myPlants";
+import { useAccount } from "./account";
+import Home from "./components/Home";
+import Scan from "./components/Scan";
+import Account from "./components/Account";
+import PlantDetail from "./components/PlantDetail";
+import { HomeIcon, ScanIcon, UserIcon } from "./components/icons";
 
-// TODO(ui-owner): capture via the R3F gl ref instead of querying the DOM.
 function screenshotCanvas(): ImageInput {
   const url = document.querySelector("canvas")!.toDataURL("image/jpeg", 0.85);
   return { imageBase64: url.split(",")[1], mediaType: "image/jpeg" };
 }
 
-const TABS = [
-  ["plant", "🪴 Plant"],
-  ["mine", "🌿 My plants"],
-  ["discover", "🔍 Discover"],
-] as const;
-type Tab = (typeof TABS)[number][0];
+type Tab = "home" | "scan" | "account";
+/** The plant open in the detail screen; savedId links it to the garden. */
+type Open = { profile: PlantProfile; savedId: string | null; photo: ImageInput | null };
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("plant");
-  const [profile, setProfile] = useState<PlantProfile>(fixtures.monstera);
-  const [photo, setPhoto] = useState<ImageInput | null>(null);
-  const [month, setMonth] = useState(0);
-  const [waterIntervalDays, setWaterIntervalDays] = useState(profile.care.waterIntervalDays);
-  const [explanation, setExplanation] = useState("");
+  const [tab, setTab] = useState<Tab>("home");
+  const [open, setOpen] = useState<Open | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [explanation, setExplanation] = useState("");
   const myPlants = useMyPlants();
-
-  const state = useMemo(() => simulate(profile, month, waterIntervalDays), [profile, month, waterIntervalDays]);
+  const [account, setAccount] = useAccount();
 
   async function run(label: string, task: () => Promise<void>) {
     setBusy(label);
@@ -49,83 +39,65 @@ export default function App() {
     }
   }
 
-  function open(p: PlantProfile) {
-    setProfile(p);
-    setPhoto(null);
-    setWaterIntervalDays(p.care.waterIntervalDays);
-    setMonth(0);
+  const show = (o: Open) => {
+    setOpen(o);
     setExplanation("");
-    setTab("plant");
-  }
+    setError("");
+  };
+  const openSaved = (p: SavedPlant) => show({ profile: p.profile, savedId: p.id, photo: null });
+  const openSample = (profile: PlantProfile) => show({ profile, savedId: null, photo: null });
 
   const onPhoto = (img: ImageInput) =>
-    run("Identifying plant…", async () => {
-      open(await api.analyze(img));
-      setPhoto(img);
+    run("Identifying your plant…", async () => {
+      show({ profile: await api.analyze(img), savedId: null, photo: img });
     });
 
-  const onWhatIf = (question: string) =>
-    run("Thinking about it…", async () => {
-      const r = await api.whatIf(profile, question);
-      setProfile(r.profile);
-      setExplanation(r.explanation);
-    });
-
-  const onRefine = () =>
-    run("Comparing render to photo…", async () => {
-      setProfile(await api.refine(photo!, screenshotCanvas(), profile));
-    });
-
-  const saved = myPlants.plants.some((p) => p.profile === profile);
+  const saved = open?.savedId ? (myPlants.plants.find((p) => p.id === open.savedId) ?? null) : null;
 
   return (
     <div className="app">
-      {tab === "plant" && (
-        <>
-          <div style={{ height: "45%", flexShrink: 0 }}>
-            <SceneCanvas state={state} profile={profile} />
-          </div>
-          <div className="scroll">
-            <PhotoUpload onPhoto={onPhoto} disabled={!!busy} />
-            {busy && <p>{busy}</p>}
-            {error && <p style={{ color: "#ff8a80" }}>{error}</p>}
-            <Controls
-              month={month}
-              onMonth={setMonth}
-              waterIntervalDays={waterIntervalDays}
-              onWaterIntervalDays={setWaterIntervalDays}
-              onWhatIf={onWhatIf}
-              onRefine={onRefine}
-              canRefine={!!photo && !busy}
-              busy={!!busy}
-              explanation={explanation}
-            />
-            <p>
-              <button disabled={saved} onClick={() => myPlants.add(profile)}>
-                {saved ? "✓ In my plants" : "＋ Save to my plants"}
-              </button>
-            </p>
-            <PlantInfoPanel key={profile.species.scientificName} profile={profile} state={state} waterIntervalDays={waterIntervalDays} />
-          </div>
-        </>
+      {tab === "home" && (
+        <Home name={account.name} reminders={account.reminders} myPlants={myPlants} onOpenSaved={openSaved} onOpenSample={openSample} onScan={() => setTab("scan")} />
       )}
-      {tab === "mine" && (
-        <div className="scroll">
-          <MyPlants myPlants={myPlants} onOpen={open} />
-        </div>
-      )}
-      {tab === "discover" && (
-        <div className="scroll">
-          <Discover onOpen={open} />
-        </div>
-      )}
-      <nav className="tabbar">
-        {TABS.map(([id, label]) => (
-          <button key={id} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
+      {tab === "scan" && <Scan busy={open ? null : busy} error={open ? "" : error} onPhoto={onPhoto} onSample={openSample} />}
+      {tab === "account" && <Account account={account} onChange={setAccount} myPlants={myPlants} />}
+
+      <nav className="tabbar" aria-label="Main">
+        <button aria-current={tab === "home" ? "page" : undefined} onClick={() => setTab("home")}><HomeIcon />Home</button>
+        <button className="scan-tab" aria-current={tab === "scan" ? "page" : undefined} onClick={() => setTab("scan")}><span className="bubble"><ScanIcon /></span>Scan</button>
+        <button aria-current={tab === "account" ? "page" : undefined} onClick={() => setTab("account")}><UserIcon />Account</button>
       </nav>
+
+      {open && (
+        <PlantDetail
+          key={open.profile.species.scientificName + (open.savedId ?? "")}
+          profile={open.profile}
+          saved={saved}
+          busy={busy}
+          error={error}
+          explanation={explanation}
+          canRefine={!!open.photo && !busy}
+          onBack={() => setOpen(null)}
+          onSave={() => {
+            const id = myPlants.add(open.profile);
+            setOpen({ ...open, savedId: id });
+          }}
+          onWater={() => saved && myPlants.water(saved.id)}
+          onWhatIf={(question) =>
+            run("Thinking about it…", async () => {
+              const r = await api.whatIf(open.profile, question);
+              setOpen((o) => o && { ...o, profile: r.profile });
+              setExplanation(r.explanation);
+            })
+          }
+          onRefine={() =>
+            run("Comparing the 3D with your photo…", async () => {
+              const profile = await api.refine(open.photo!, screenshotCanvas(), open.profile);
+              setOpen((o) => o && { ...o, profile });
+            })
+          }
+        />
+      )}
     </div>
   );
 }

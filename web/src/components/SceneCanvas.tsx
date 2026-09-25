@@ -59,7 +59,7 @@ export default function SceneCanvas({ state, profile }: { state: PlantState; pro
       </Environment>
 
       <OrbitControls makeDefault target={[0, 0.3, 0]} minPolarAngle={0.2} maxPolarAngle={Math.PI / 2 - 0.05} enablePan={false} />
-      <CameraFit state={state} bottom={potD} />
+      <CameraFit state={state} bottom={potD} width={Math.max(potR * 2.2, baseRadius(profile, state) * 2)} />
 
       {/* Oak table the pot stands on */}
       <mesh rotation-x={-Math.PI / 2} position-y={table - 0.001} receiveShadow>

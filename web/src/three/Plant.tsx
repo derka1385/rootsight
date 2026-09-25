@@ -16,7 +16,7 @@ type Archetype = "rosette" | "branching" | "cactus";
 type Mats = { leaves: MeshStandardMaterial[]; stem: MeshStandardMaterial; petiole: MeshStandardMaterial; spine: MeshStandardMaterial };
 
 /** Pick the plant architecture from existing profile fields only. */
-function archetypeOf(p: PlantProfile): Archetype {
+export function archetypeOf(p: PlantProfile): Archetype {
   const { growthForm, leaf } = p.morphology;
   if (growthForm === "succulent" || (leaf.shape === "needle" && leaf.countNow === 0)) return "cactus";
   if (growthForm === "rosette" || growthForm === "grass") return "rosette";

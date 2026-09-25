@@ -27,8 +27,11 @@ export function useMyPlants() {
   return {
     plants,
     // Date.now id, not crypto.randomUUID: that one is missing over plain http (iPhone on LAN).
-    add: (profile: PlantProfile) =>
-      setPlants((ps) => [...ps, { id: Date.now().toString(36), profile, lastWateredAt: Date.now() }]),
+    add: (profile: PlantProfile) => {
+      const id = Date.now().toString(36);
+      setPlants((ps) => [...ps, { id, profile, lastWateredAt: Date.now() }]);
+      return id;
+    },
     water: (id: string) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, lastWateredAt: Date.now() } : p))),
     remove: (id: string) => setPlants((ps) => ps.filter((p) => p.id !== id)),
   };
