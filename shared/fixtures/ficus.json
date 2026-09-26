@@ -1,0 +1,112 @@
+{
+  "identity": {
+    "commonName": "Rubber plant",
+    "scientificName": "Ficus elastica",
+    "family": "Moraceae",
+    "confidence": 0.92,
+    "aliases": [
+      "Rubber fig",
+      "Rubber tree"
+    ]
+  },
+  "observation": {
+    "archetype": "tree",
+    "frame": {
+      "plantHeightCm": 70,
+      "canopyWidthCm": 42,
+      "leanDeg": 3,
+      "leanDirection": "right",
+      "symmetry": 0.7
+    },
+    "pot": {
+      "visible": true,
+      "shape": "tapered",
+      "material": "terracotta",
+      "color": "#b86a48",
+      "rimDiameterCm": 20,
+      "heightCm": 18
+    },
+    "structure": {
+      "axes": [
+        {
+          "kind": "stem",
+          "heightCm": 60,
+          "thicknessMm": 14,
+          "leanDeg": 3,
+          "direction": "right"
+        }
+      ],
+      "leafClusters": [
+        {
+          "height": 0.6,
+          "direction": "center",
+          "share": 1
+        }
+      ],
+      "branching": 0.05
+    },
+    "leaves": {
+      "count": 14,
+      "density": 0.5,
+      "lengthCmMin": 12,
+      "lengthCmMax": 24,
+      "widthToLength": 0.5,
+      "shape": "ovate",
+      "arrangement": "alternate",
+      "orientation": "spreading",
+      "tip": "acute",
+      "edge": "smooth",
+      "fenestration": 0,
+      "gloss": 0.9,
+      "variegation": "none"
+    },
+    "colors": {
+      "leaf": "#1f3d1c",
+      "leafYoung": "#6b3a2e",
+      "underside": "#3f5a2c",
+      "stem": "#6f7a4a",
+      "variegation": "#e8ecd8",
+      "soil": "#3d2c20"
+    },
+    "succulent": {
+      "bodyForm": "none",
+      "ribCount": 0,
+      "spineDensity": 0,
+      "spineColor": "#e8c65a",
+      "offsets": 0
+    },
+    "health": {
+      "vigor": 0.85,
+      "wilt": 0,
+      "yellowing": 0,
+      "brownTips": 0,
+      "pests": false,
+      "notes": "Healthy, glossy leaves; a reddish new leaf sheath at the top."
+    },
+    "maturity": 0.3,
+    "stage": "JUVENILE",
+    "confidence": {
+      "structure": 0.85,
+      "size": 0.7
+    }
+  },
+  "wiki": {
+    "nativeRegion": "Northeast India to Indonesia",
+    "summary": "Ficus elastica is a fig tree grown indoors for its large, thick, glossy leaves. In the wild it becomes a huge banyan-like tree; in a pot it forms a slow upright stem that turns woody and branches with age.",
+    "difficulty": "easy",
+    "toxicToPets": true
+  },
+  "care": {
+    "waterIntervalDays": 10,
+    "light": "bright-indirect",
+    "humidity": "medium",
+    "tempMinC": 15,
+    "tempMaxC": 30,
+    "soil": "Well-draining houseplant compost with bark"
+  },
+  "facts": [
+    "Its milky latex was once tapped for rubber.",
+    "New leaves unfurl from a red protective sheath.",
+    "In the wild it grows aerial roots that become trunks."
+  ]
+}

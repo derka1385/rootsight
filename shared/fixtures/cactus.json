@@ -1,54 +1,13 @@
 {
-  "profile": {
-    "species": {
-      "commonName": "Golden barrel cactus",
-      "scientificName": "Echinocactus grusonii",
-      "confidence": 0.88
-    },
-    "wiki": {
-      "family": "Cactaceae",
-      "nativeRegion": "Central Mexico",
-      "summary": "The golden barrel cactus is a slow-growing globe covered in golden spines. Nearly extinct in the wild, it is one of the most widely cultivated cacti in the world.",
-      "difficulty": "easy",
-      "toxicToPets": false
-    },
-    "morphology": {
-      "growthForm": "succulent",
-      "currentHeightCm": 12,
-      "matureHeightCm": 60,
-      "stemColor": "#5a8f4e",
-      "branchingAngleDeg": 0,
-      "branchingDepth": 1,
-      "leaf": {
-        "shape": "needle",
-        "color": "#e8c65a",
-        "lengthCm": 3,
-        "countNow": 0
-      }
-    },
-    "growth": {
-      "rateCmPerMonth": 0.3,
-      "monthsToMaturity": 180
-    },
-    "roots": {
-      "type": "fibrous",
-      "maxDepthCm": 15,
-      "maxSpreadCm": 40
-    },
-    "care": {
-      "waterIntervalDays": 21,
-      "light": "full-sun",
-      "humidity": "low",
-      "tempMinC": 5,
-      "tempMaxC": 40,
-      "soil": "Gritty cactus mix with plenty of sand"
-    },
-    "facts": [
-      "Its golden spines are modified leaves.",
-      "It can take decades to reach full size.",
-      "It is endangered in the wild but common in cultivation."
-    ],
-    "healthNotes": "Firm and evenly colored. No signs of rot or sunburn."
+  "identity": {
+    "commonName": "Golden barrel cactus",
+    "scientificName": "Echinocactus grusonii",
+    "family": "Cactaceae",
+    "confidence": 0.88,
+    "aliases": [
+      "Golden barrel cactus",
+      "Mother-in-law's cushion"
+    ]
   },
   "observation": {
     "archetype": "cactus",
@@ -131,55 +90,23 @@
       "size": 0.6
     }
   },
-  "growth": {
-    "habit": "columnar",
-    "stages": [
-      {
-        "stage": "JUVENILE",
-        "monthsFromNow": 0,
-        "heightCm": 12,
-        "canopyWidthCm": 13.200000000000001,
-        "leafCount": 0,
-        "leafLengthCm": 0,
-        "maturity": 0.3,
-        "axes": 1,
-        "fenestration": 0,
-        "changes": [],
-        "confidence": 0.8
-      },
-      {
-        "stage": "YOUNG",
-        "monthsFromNow": 36,
-        "heightCm": 21.6,
-        "canopyWidthCm": 24,
-        "leafCount": 0,
-        "leafLengthCm": 0,
-        "maturity": 0.55,
-        "axes": 1,
-        "fenestration": 0,
-        "changes": [
-          "Wider, flatter-topped globe",
-          "Woolly crown and more ribs"
-        ],
-        "confidence": 0.6
-      },
-      {
-        "stage": "MATURE",
-        "monthsFromNow": 120,
-        "heightCm": 60,
-        "canopyWidthCm": 66.0,
-        "leafCount": 0,
-        "leafLengthCm": 0,
-        "maturity": 0.9,
-        "axes": 2,
-        "fenestration": 0,
-        "changes": [
-          "Yellow flowers ring the woolly crown",
-          "Pups may appear at the base"
-        ],
-        "confidence": 0.4
-      }
-    ],
-    "source": "mock"
-  }
+  "wiki": {
+    "nativeRegion": "Central Mexico",
+    "summary": "The golden barrel cactus is a slow-growing globe covered in golden spines. Nearly extinct in the wild, it is one of the most widely cultivated cacti in the world.",
+    "difficulty": "easy",
+    "toxicToPets": false
+  },
+  "care": {
+    "waterIntervalDays": 21,
+    "light": "full-sun",
+    "humidity": "low",
+    "tempMinC": 5,
+    "tempMaxC": 40,
+    "soil": "Gritty cactus mix with plenty of sand"
+  },
+  "facts": [
+    "Its golden spines are modified leaves.",
+    "It can take decades to reach full size.",
+    "It is endangered in the wild but common in cultivation."
+  ]
 }

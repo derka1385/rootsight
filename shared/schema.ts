@@ -1,22 +1,55 @@
-// Shared contract between server and web. Announce any change here to the whole team.
+// Shared contract between server, web and mobile.
+//
+//   PlantIdentity           which species this is (from the photo)
+//   PlantObservation        what THIS plant looks like in the photo, today
+//   SpeciesMorphologyPrior  how the species is built (from curated/live references), for rendering
+//   SpeciesStage            how the species changes over its life, relative to maturity
+//   GrowthStageReference    those stages personalised to this plant (today first, then the future)
+//   PlantProfile            everything above plus wiki/care: the app-facing contract
+//   PlantState              simulate(profile, month, waterIntervalDays): the plant at a moment
 import { z } from "zod";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).describe("Hex color like #3a7d44");
-
 const unit = (what = "0 to 1") => z.number().min(0).max(1).describe(what);
-
-// ---- A. Species knowledge -------------------------------------------------------------------
-// PlantProfile (below) is what is true of the SPECIES: identity, wiki, care, typical morphology
-// and roots. It never describes the photographed individual; PlantObservation does.
+const range = z.object({ min: z.number().min(0), max: z.number().min(0) });
 
 export const Archetype = z.enum(["aroid", "cane", "herb", "shrub", "succulent", "cactus", "vine", "grass", "tree"])
-  .describe("Renderer family by visual architecture: aroid = Monstera/Philodendron-like leaves on long petioles from a crown; cane = Dracaena/Yucca-like woody canes topped by leaf rosettes; herb = soft branching stems (basil, mint); shrub = woody branching; succulent = leafy rosette (Echeveria, Aloe); cactus = leafless ribbed body; vine = trailing/climbing; grass = strap leaves from the base; tree = single trunk with a canopy");
+  .describe("Renderer family by visual architecture: aroid = Monstera/Philodendron-like leaves on long petioles from a crown; cane = Dracaena/Yucca-like woody canes topped by leaf rosettes; herb = soft branching stems (basil, mint); shrub = woody branching; succulent = leafy rosette (Echeveria, Aloe); cactus = leafless ribbed body; vine = trailing/climbing; grass = strap leaves from the base (also snake plant, spider plant); tree = woody trunk with a branched canopy (Ficus)");
 export type Archetype = z.infer<typeof Archetype>;
 
 export const GrowthStage = z.enum(["SEEDLING", "JUVENILE", "YOUNG", "MATURE", "LARGE_MATURE"]);
 export type GrowthStage = z.infer<typeof GrowthStage>;
+export const STAGES = GrowthStage.options;
 
-// ---- B. This plant, as photographed today -----------------------------------------------------
+// ---- 1. Identity -------------------------------------------------------------------------------
+
+export const PlantIdentity = z.object({
+  commonName: z.string(),
+  scientificName: z.string().describe("Binomial, e.g. 'Monstera deliciosa'"),
+  family: z.string(),
+  confidence: unit("Honest certainty in the identification"),
+  aliases: z.array(z.string()).max(5).describe("Other common names or synonyms"),
+});
+export type PlantIdentity = z.infer<typeof PlantIdentity>;
+
+export const PlantWiki = z.object({
+  nativeRegion: z.string(),
+  summary: z.string().describe("2-3 sentence encyclopedia-style introduction"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  toxicToPets: z.boolean(),
+});
+
+export const PlantCare = z.object({
+  waterIntervalDays: z.number().positive(),
+  light: z.enum(["low", "medium", "bright-indirect", "full-sun"]),
+  humidity: z.enum(["low", "medium", "high"]),
+  tempMinC: z.number(),
+  tempMaxC: z.number(),
+  soil: z.string(),
+});
+export type PlantCare = z.infer<typeof PlantCare>;
+
+// ---- 2. Observation: this plant, as photographed today ---------------------------------------
 
 const direction = z.enum(["center", "left", "right", "toward", "away"]).describe("Relative to the camera");
 
@@ -103,116 +136,153 @@ export const PlantObservation = z.object({
 });
 export type PlantObservation = z.infer<typeof PlantObservation>;
 
-// ---- D. How this plant could develop ------------------------------------------------------------
+// ---- 3. Species morphology prior ----------------------------------------------------------------
 
-/** One stage on the plant's likely path, anchored on today's observation, grounded in species priors. */
-export const GrowthStagePlan = z.object({
+/** How the species is built, for rendering. Comes from the curated library or normalised references. */
+export const SpeciesMorphologyPrior = z.object({
+  archetype: Archetype,
+  growthHabit: z.enum(["upright", "bushy", "rosette", "climbing", "trailing", "columnar", "clumping", "tree"]),
+  branchingPattern: z.enum(["none", "basal-clump", "monopodial", "sympodial", "opposite-pairs", "offsets"]).describe("none = one unbranched axis/crown; basal-clump = new shoots from the base; offsets = pups (cacti, succulents)"),
+  leafArrangement: z.enum(["alternate", "opposite", "whorled", "rosette", "basal", "none"]),
+  leafShape: z.enum(["ovate", "cordate", "lanceolate", "strap", "palmate", "needle", "round", "fenestrated"]),
+  leafLengthCm: z.object({ juvenile: range, mature: range }),
+  leafWidthToLength: z.number().min(0.02).max(3),
+  stem: z.object({
+    structure: z.enum(["crown", "herbaceous", "semi-woody", "woody", "cane", "succulent-body"]),
+    matureThicknessMm: z.number().positive(),
+  }),
+  petiole: z.object({ present: z.boolean(), lengthToBlade: z.number().min(0).max(4).describe("Petiole length / blade length on mature leaves") }),
+  canopyForm: z.enum(["dome", "vase", "column", "spreading", "rosette", "cascading", "globe"]),
+  canopyWidthToHeight: z.number().min(0.1).max(5).describe("Typical mature canopy width / height"),
+  roots: z.object({ type: z.enum(["taproot", "fibrous", "rhizome", "tuberous", "aerial"]), maxDepthCm: z.number().positive(), maxSpreadCm: z.number().positive() }),
+  matureHeightCm: z.number().positive().describe("Typical mature height grown indoors"),
+  monthsToMaturity: z.number().positive().describe("Indoors, from a young plant to mature form"),
+  fenestrationMature: unit("Split/hole share on mature leaves (0 for most species)"),
+  juvenileVsMature: z.string().describe("How juvenile and adult plants differ visibly"),
+  notes: z.array(z.string()).max(6).describe("Rendering-relevant traits (leaf posture, surface, stem marks...)"),
+});
+export type SpeciesMorphologyPrior = z.infer<typeof SpeciesMorphologyPrior>;
+
+/** One life stage of the SPECIES, relative to its maturity (age and height as fractions). */
+export const SpeciesStage = z.object({
   stage: GrowthStage,
-  monthsFromNow: z.number().min(0).describe("0 for the current stage"),
+  relativeAge: unit("Fraction of monthsToMaturity"),
+  relativeHeight: unit("Height / matureHeightCm"),
+  canopyWidthToHeight: z.number().min(0.1).max(5),
+  leafCount: range.describe("Leaves typically kept at this stage"),
+  leafMaturity: unit("0 juvenile leaf form, 1 adult leaf form"),
+  fenestration: unit(),
+  axes: z.number().min(1).max(40).describe("Stems/canes/crowns/offsets"),
+  branchDensity: unit("0 unbranched, 1 densely branched"),
+  morphologicalNotes: z.array(z.string()).max(4),
+});
+export type SpeciesStage = z.infer<typeof SpeciesStage>;
+
+export const KnowledgeSource = z.object({
+  provider: z.enum(["library", "wikipedia", "wikimedia-commons", "claude", "generic"]),
+  title: z.string(),
+  url: z.string().optional(),
+  license: z.string().optional(),
+});
+export type KnowledgeSource = z.infer<typeof KnowledgeSource>;
+
+/** What the enrichment pipeline knows about a species (cached per scientific name). */
+export const SpeciesKnowledge = z.object({
+  scientificName: z.string(),
+  prior: SpeciesMorphologyPrior,
+  stages: z.array(SpeciesStage).min(2).max(6),
+  sources: z.array(KnowledgeSource),
+});
+export type SpeciesKnowledge = z.infer<typeof SpeciesKnowledge>;
+
+// ---- 4. Growth stage references, personalised ---------------------------------------------------
+
+/** A species stage mapped onto THIS plant: stage 0 is today (the observation), later ones are its future. */
+export const GrowthStageReference = z.object({
+  stage: GrowthStage,
+  relativeAge: unit(),
+  monthsFromNow: z.number().min(0),
+  relativeHeight: unit(),
   heightCm: z.number().positive(),
   canopyWidthCm: z.number().positive(),
-  leafCount: z.number().int().min(0),
-  leafLengthCm: z.number().min(0).describe("Typical newest-leaf length at this stage"),
-  maturity: unit("Leaf-form / structural maturity at this stage"),
-  axes: z.number().int().min(1).max(20).describe("Stems/canes/crowns at this stage"),
-  fenestration: unit("Split/hole share on new leaves (aroids), 0 otherwise"),
-  changes: z.array(z.string()).max(4).describe("Visible structural changes on the way to this stage, short phrases"),
+  expectedLeafCount: range,
+  leafCount: z.number().min(0).describe("Target count for this plant (its own density, not the species average)"),
+  leafLengthCm: z.number().min(0),
+  leafMaturity: unit(),
+  fenestration: unit(),
+  axes: z.number().min(1).max(40),
+  branchDensity: unit(),
+  stemThicknessMm: z.number().positive(),
+  morphologicalNotes: z.array(z.string()).max(4),
   confidence: unit(),
+  source: z.enum(["observation", "library", "reference", "generic"]),
 });
-export type GrowthStagePlan = z.infer<typeof GrowthStagePlan>;
+export type GrowthStageReference = z.infer<typeof GrowthStageReference>;
 
-export const GrowthPlan = z.object({
-  habit: z.enum(["upright", "bushy", "rosette", "climbing", "trailing", "columnar", "clumping"]),
-  stages: z.array(GrowthStagePlan).min(2).max(6).describe("Today's stage first (monthsFromNow 0, matching the observation), then likely future stages in order"),
-  source: z.enum(["claude", "reference", "mock"]).describe("Where the stages came from"),
-});
-export type GrowthPlan = z.infer<typeof GrowthPlan>;
+// ---- 5. The profile -----------------------------------------------------------------------------
 
-export const PlantProfile = z.object({
-  species: z.object({
-    commonName: z.string(),
-    scientificName: z.string(),
-    confidence: z.number().min(0).max(1),
-  }),
-  wiki: z.object({
-    family: z.string(),
-    nativeRegion: z.string(),
-    summary: z.string().describe("2-3 sentence encyclopedia-style introduction"),
-    difficulty: z.enum(["easy", "medium", "hard"]),
-    toxicToPets: z.boolean(),
-  }),
-  morphology: z.object({
-    growthForm: z.enum(["rosette", "upright-branching", "vine", "succulent", "tree", "grass"]),
-    currentHeightCm: z.number().positive(),
-    matureHeightCm: z.number().positive(),
-    stemColor: hexColor,
-    branchingAngleDeg: z.number().min(0).max(90),
-    branchingDepth: z.number().int().min(1).max(5),
-    leaf: z.object({
-      shape: z.enum(["ovate", "lanceolate", "palmate", "needle", "round", "fenestrated"]),
-      color: hexColor,
-      lengthCm: z.number().positive(),
-      countNow: z.number().int().min(0),
-    }),
-  }),
-  growth: z.object({
-    rateCmPerMonth: z.number().min(0),
-    monthsToMaturity: z.number().positive(),
-  }),
-  roots: z.object({
-    type: z.enum(["taproot", "fibrous", "rhizome", "tuberous", "aerial"]),
-    maxDepthCm: z.number().positive(),
-    maxSpreadCm: z.number().positive(),
-  }),
-  care: z.object({
-    waterIntervalDays: z.number().positive(),
-    light: z.enum(["low", "medium", "bright-indirect", "full-sun"]),
-    humidity: z.enum(["low", "medium", "high"]),
-    tempMinC: z.number(),
-    tempMaxC: z.number(),
-    soil: z.string(),
-  }),
+/** What Claude reads from the photo: identity, the visible plant, and the care/wiki card. */
+export const PlantIdentification = z.object({
+  identity: PlantIdentity,
+  observation: PlantObservation,
+  wiki: PlantWiki,
+  care: PlantCare,
   facts: z.array(z.string()).min(3).max(5),
-  healthNotes: z.string().describe("Species-level health advice; what THIS plant shows goes in observation.health"),
+});
+export type PlantIdentification = z.infer<typeof PlantIdentification>;
+
+/** The app-facing contract: the identification enriched with species knowledge and personalised stages. */
+export const PlantProfile = PlantIdentification.extend({
+  prior: SpeciesMorphologyPrior,
+  stages: z.array(GrowthStageReference).min(2).max(7).describe("stages[0] is today"),
+  sources: z.array(KnowledgeSource),
 });
 export type PlantProfile = z.infer<typeof PlantProfile>;
 
-// ---- The scan: everything the app knows about one photographed plant ---------------------------
+// ---- 6. State -----------------------------------------------------------------------------------
 
-/** A = species knowledge, B = this plant today, D = its likely future. C (the render plan) is derived client-side. */
-export const PlantScan = z.object({
-  profile: PlantProfile,
-  observation: PlantObservation,
-  growth: GrowthPlan,
-});
-export type PlantScan = z.infer<typeof PlantScan>;
-
-/** Future-mode conditions a what-if can change. */
+/** Growing conditions a what-if can change. */
 export const GrowthConditions = z.object({
   waterIntervalDays: z.number().positive(),
   light: z.enum(["low", "medium", "bright-indirect", "full-sun"]),
   potDiameterCm: z.number().positive().describe("Repotting changes this"),
+  pace: z.number().min(0.1).max(3).describe("Other care (feeding, humidity, warmth) as a growth-rate multiplier, 1 = typical"),
 });
 export type GrowthConditions = z.infer<typeof GrowthConditions>;
 
-/** Output of simulate(): a snapshot of growth/soil/watering state at a point in time. */
+/** Output of simulate(): the plant's morphology at a moment. Pure and deterministic. */
 export const PlantState = z.object({
+  stage: GrowthStage,
+  stageIndex: z.number().min(0).describe("Continuous position between stages[i] and stages[i+1]"),
   heightCm: z.number().nonnegative(),
+  canopyWidthCm: z.number().nonnegative(),
   leafCount: z.number().int().nonnegative(),
+  leaves: z.number().nonnegative().describe("Continuous leaf count, so new leaves emerge gradually"),
+  leafLengthCm: z.number().nonnegative(),
+  leafMaturity: unit(),
+  fenestration: unit(),
+  axes: z.number().min(1),
+  branchingDensity: unit(),
+  stemThicknessMm: z.number().nonnegative(),
+  rootMass: unit("Share of the pot volume filled by roots"),
   rootDepthCm: z.number().nonnegative(),
   rootSpreadCm: z.number().nonnegative(),
-  hydration: z.number().min(0).max(1),
-  wilt: z.number().min(0).max(1),
+  hydration: unit(),
+  wilt: unit(),
+  droop: unit("Structural droop from wilt and weight"),
+  vitality: unit("0 dying, 1 thriving: colour and vigour"),
+  effectiveMonths: z.number().nonnegative().describe("Months of healthy growth achieved (slower under stress)"),
+  changes: z.array(z.string()).describe("Morphological changes of the stage being approached"),
 });
 export type PlantState = z.infer<typeof PlantState>;
 
 // ---- Persistence ----
 
-/** A scanned plant kept in a user's collection (today: web/src/myPlants.ts, localStorage). */
+/** A scanned plant kept in a user's collection (web: localStorage). */
 export const SavedPlant = z.object({
   id: z.string().min(1).describe("Stable id for this saved instance, independent of species"),
-  scan: PlantScan,
-  photoThumb: z.string().optional().describe("Small JPEG data URL of the scanned photo, for the Scanned view"),
+  profile: PlantProfile,
+  photoThumb: z.string().optional().describe("Small JPEG data URL of the scanned photo"),
   lastWateredAt: z.number().int().nonnegative().describe("Unix ms timestamp"),
 });
 export type SavedPlant = z.infer<typeof SavedPlant>;
@@ -230,32 +300,48 @@ export const AnalyzeRequest = ImageInput;
 export const RefineRequest = z.object({
   photo: ImageInput,
   renderScreenshot: ImageInput,
-  scan: PlantScan,
+  profile: PlantProfile,
 });
 
-/** Refine corrects the reconstruction of today's plant (and its stage), never the species card. */
-export const RefineResponse = z.object({
-  observation: PlantObservation,
-  growth: GrowthPlan,
-  corrections: z.array(z.string()).max(8).describe("What was visibly off in the render and how it was fixed, short phrases"),
+/**
+ * Refine may only adjust what the render gets visibly wrong about TODAY's plant. Every field is
+ * optional; absent means "keep". The species card, prior and growth path are never rewritten: the
+ * stages are re-personalised from the patched observation on the server.
+ */
+export const RefinePatch = z.object({
+  frame: PlantObservation.shape.frame.partial().optional(),
+  pot: PlantObservation.shape.pot.partial().optional(),
+  structure: z.object({
+    axes: PlantObservation.shape.structure.shape.axes.optional(),
+    leafClusters: PlantObservation.shape.structure.shape.leafClusters.optional(),
+    branching: unit().optional(),
+  }).optional(),
+  leaves: PlantObservation.shape.leaves.pick({ count: true, density: true, lengthCmMin: true, lengthCmMax: true, widthToLength: true, orientation: true, fenestration: true, gloss: true }).partial().optional(),
+  colors: PlantObservation.shape.colors.partial().optional(),
+  maturity: unit().optional(),
+  stage: GrowthStage.optional(),
+  corrections: z.array(z.string()).min(1).max(8).describe("What was visibly off and how it was fixed, short phrases"),
 });
-export type RefineResponse = z.infer<typeof RefineResponse>;
+export type RefinePatch = z.infer<typeof RefinePatch>;
 
-/** What /api/refine returns to the app: the scan with its reconstruction corrected, and what changed. */
-export const RefineResult = z.object({ scan: PlantScan, corrections: z.array(z.string()) });
+export const RefineResult = z.object({ profile: PlantProfile, corrections: z.array(z.string()), changed: z.array(z.string()) });
 export type RefineResult = z.infer<typeof RefineResult>;
 
 export const WhatIfRequest = z.object({
-  scan: PlantScan,
+  profile: PlantProfile,
   conditions: GrowthConditions,
   question: z.string().min(1).max(500),
 });
 
-/** A what-if changes the future, not today: new conditions, a re-planned growth path, and why. */
-export const WhatIfResponse = z.object({
+/** What Claude decides for a scenario: new conditions in simulation terms, and why. */
+export const WhatIfAnswer = z.object({
   conditions: GrowthConditions,
-  growth: GrowthPlan,
-  vigor: unit("Expected vigor under the scenario"),
-  explanation: z.string(),
+  explanation: z.string().describe("2-3 friendly sentences on what would happen to THIS plant and why"),
+});
+
+/** The scenario plus the simulated plant a year out, so the app shows exactly what it explains. */
+export const WhatIfResponse = WhatIfAnswer.extend({
+  inAYear: PlantState,
+  baseline: PlantState,
 });
 export type WhatIfResponse = z.infer<typeof WhatIfResponse>;

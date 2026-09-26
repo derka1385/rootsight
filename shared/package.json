@@ -5,7 +5,9 @@
   "exports": {
     "./schema": "./schema.ts",
     "./simulation": "./simulation.ts",
-    "./fixtures": "./fixtures/index.ts"
+    "./fixtures": "./fixtures/index.ts",
+    "./knowledge": "./knowledge.ts",
+    "./species": "./species/library.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

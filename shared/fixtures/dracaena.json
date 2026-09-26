@@ -1,0 +1,136 @@
+{
+  "identity": {
+    "commonName": "Corn plant",
+    "scientificName": "Dracaena fragrans",
+    "family": "Asparagaceae",
+    "confidence": 0.9,
+    "aliases": [
+      "Mass cane",
+      "Dracaena massangeana"
+    ]
+  },
+  "observation": {
+    "archetype": "cane",
+    "frame": {
+      "plantHeightCm": 110,
+      "canopyWidthCm": 80,
+      "leanDeg": 4,
+      "leanDirection": "center",
+      "symmetry": 0.6
+    },
+    "pot": {
+      "visible": true,
+      "shape": "cylinder",
+      "material": "ceramic",
+      "color": "#d9d4ca",
+      "rimDiameterCm": 24,
+      "heightCm": 22
+    },
+    "structure": {
+      "axes": [
+        {
+          "kind": "cane",
+          "heightCm": 80,
+          "thicknessMm": 45,
+          "leanDeg": 3,
+          "direction": "center"
+        },
+        {
+          "kind": "cane",
+          "heightCm": 55,
+          "thicknessMm": 40,
+          "leanDeg": 10,
+          "direction": "left"
+        },
+        {
+          "kind": "cane",
+          "heightCm": 30,
+          "thicknessMm": 38,
+          "leanDeg": 12,
+          "direction": "right"
+        }
+      ],
+      "leafClusters": [
+        {
+          "height": 0.9,
+          "direction": "center",
+          "share": 0.4
+        },
+        {
+          "height": 0.65,
+          "direction": "left",
+          "share": 0.33
+        },
+        {
+          "height": 0.4,
+          "direction": "right",
+          "share": 0.27
+        }
+      ],
+      "branching": 0
+    },
+    "leaves": {
+      "count": 36,
+      "density": 0.7,
+      "lengthCmMin": 25,
+      "lengthCmMax": 45,
+      "widthToLength": 0.12,
+      "shape": "strap",
+      "arrangement": "whorled",
+      "orientation": "arching",
+      "tip": "acuminate",
+      "edge": "smooth",
+      "fenestration": 0,
+      "gloss": 0.6,
+      "variegation": "streaks"
+    },
+    "colors": {
+      "leaf": "#2f5d2a",
+      "leafYoung": "#5f8f3a",
+      "underside": "#4a7040",
+      "stem": "#7a6a4f",
+      "variegation": "#c9c46a",
+      "soil": "#3d2c20"
+    },
+    "succulent": {
+      "bodyForm": "none",
+      "ribCount": 0,
+      "spineDensity": 0,
+      "spineColor": "#e8c65a",
+      "offsets": 0
+    },
+    "health": {
+      "vigor": 0.8,
+      "wilt": 0,
+      "yellowing": 0.05,
+      "brownTips": 0.15,
+      "pests": false,
+      "notes": "Healthy; a few dry brown tips on older leaves, typical of dry indoor air."
+    },
+    "maturity": 0.55,
+    "stage": "YOUNG",
+    "confidence": {
+      "structure": 0.8,
+      "size": 0.7
+    }
+  },
+  "wiki": {
+    "nativeRegion": "Tropical Africa",
+    "summary": "Dracaena fragrans is an evergreen shrub whose woody canes carry dense rosettes of arching, often striped leaves. Sold as 'mass cane', it tolerates low light and neglect.",
+    "difficulty": "easy",
+    "toxicToPets": true
+  },
+  "care": {
+    "waterIntervalDays": 10,
+    "light": "medium",
+    "humidity": "medium",
+    "tempMinC": 15,
+    "tempMaxC": 29,
+    "soil": "Free-draining peat-free houseplant compost"
+  },
+  "facts": [
+    "Its flowers open at night and smell of honey.",
+    "Canes can be cut and will sprout new crowns.",
+    "It has been tested in NASA's clean-air study."
+  ]
+}

@@ -1,54 +1,12 @@
 {
-  "profile": {
-    "species": {
-      "commonName": "Sweet basil",
-      "scientificName": "Ocimum basilicum",
-      "confidence": 0.91
-    },
-    "wiki": {
-      "family": "Lamiaceae",
-      "nativeRegion": "Tropical Asia and Africa",
-      "summary": "Sweet basil is a fast-growing culinary herb from the mint family, prized for its fragrant leaves. It loves sun and warmth and is usually grown as an annual.",
-      "difficulty": "easy",
-      "toxicToPets": false
-    },
-    "morphology": {
-      "growthForm": "upright-branching",
-      "currentHeightCm": 18,
-      "matureHeightCm": 50,
-      "stemColor": "#6b8e3a",
-      "branchingAngleDeg": 35,
-      "branchingDepth": 3,
-      "leaf": {
-        "shape": "ovate",
-        "color": "#3d7a34",
-        "lengthCm": 7,
-        "countNow": 48
-      }
-    },
-    "growth": {
-      "rateCmPerMonth": 8,
-      "monthsToMaturity": 4
-    },
-    "roots": {
-      "type": "fibrous",
-      "maxDepthCm": 25,
-      "maxSpreadCm": 30
-    },
-    "care": {
-      "waterIntervalDays": 2,
-      "light": "full-sun",
-      "humidity": "medium",
-      "tempMinC": 15,
-      "tempMaxC": 32,
-      "soil": "Rich, well-draining potting mix"
-    },
-    "facts": [
-      "Pinching off flower buds keeps the leaves sweet.",
-      "It belongs to the mint family.",
-      "Basil hates the cold: below 10 \u00b0C its leaves turn black."
-    ],
-    "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light."
+  "identity": {
+    "commonName": "Sweet basil",
+    "scientificName": "Ocimum basilicum",
+    "family": "Lamiaceae",
+    "confidence": 0.91,
+    "aliases": [
+      "Sweet basil"
+    ]
   },
   "observation": {
     "archetype": "herb",
@@ -166,55 +124,23 @@
       "size": 0.7
     }
   },
-  "growth": {
-    "habit": "bushy",
-    "source": "mock",
-    "stages": [
-      {
-        "stage": "YOUNG",
-        "monthsFromNow": 0,
-        "heightCm": 25,
-        "canopyWidthCm": 26,
-        "leafCount": 54,
-        "leafLengthCm": 8,
-        "maturity": 0.6,
-        "axes": 6,
-        "fenestration": 0,
-        "changes": [],
-        "confidence": 0.8
-      },
-      {
-        "stage": "MATURE",
-        "monthsFromNow": 2,
-        "heightCm": 40,
-        "canopyWidthCm": 38,
-        "leafCount": 110,
-        "leafLengthCm": 9,
-        "maturity": 0.85,
-        "axes": 8,
-        "fenestration": 0,
-        "changes": [
-          "Side shoots from every leaf node if pinched",
-          "Canopy fills out into a dome"
-        ],
-        "confidence": 0.6
-      },
-      {
-        "stage": "LARGE_MATURE",
-        "monthsFromNow": 4,
-        "heightCm": 55,
-        "canopyWidthCm": 45,
-        "leafCount": 140,
-        "leafLengthCm": 7,
-        "maturity": 1,
-        "axes": 10,
-        "fenestration": 0,
-        "changes": [
-          "Flower spikes at the stem tips",
-          "Smaller, tougher leaves; woody base"
-        ],
-        "confidence": 0.5
-      }
-    ]
-  }
+  "wiki": {
+    "nativeRegion": "Tropical Asia and Africa",
+    "summary": "Sweet basil is a fast-growing culinary herb from the mint family, prized for its fragrant leaves. It loves sun and warmth and is usually grown as an annual.",
+    "difficulty": "easy",
+    "toxicToPets": false
+  },
+  "care": {
+    "waterIntervalDays": 2,
+    "light": "full-sun",
+    "humidity": "medium",
+    "tempMinC": 15,
+    "tempMaxC": 32,
+    "soil": "Rich, well-draining potting mix"
+  },
+  "facts": [
+    "Pinching off flower buds keeps the leaves sweet.",
+    "It belongs to the mint family.",
+    "Basil hates the cold: below 10 \u00b0C its leaves turn black."
+  ]
 }

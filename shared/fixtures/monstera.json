@@ -1,55 +1,13 @@
 {
-  "profile": {
-    "species": {
-      "commonName": "Swiss cheese plant",
-      "scientificName": "Monstera deliciosa",
-      "confidence": 0.94
-    },
-    "wiki": {
-      "family": "Araceae",
-      "nativeRegion": "Tropical forests from southern Mexico to Panama",
-      "summary": "Monstera deliciosa is a climbing aroid famous for its split, hole-filled leaves. In the wild it scrambles up trees on aerial roots; indoors it is one of the most popular and forgiving houseplants.",
-      "difficulty": "easy",
-      "toxicToPets": true
-    },
-    "morphology": {
-      "growthForm": "upright-branching",
-      "currentHeightCm": 60,
-      "matureHeightCm": 250,
-      "stemColor": "#4f6b2f",
-      "branchingAngleDeg": 45,
-      "branchingDepth": 2,
-      "leaf": {
-        "shape": "fenestrated",
-        "color": "#2e6b34",
-        "lengthCm": 35,
-        "countNow": 7
-      }
-    },
-    "growth": {
-      "rateCmPerMonth": 5,
-      "monthsToMaturity": 36
-    },
-    "roots": {
-      "type": "aerial",
-      "maxDepthCm": 40,
-      "maxSpreadCm": 50
-    },
-    "care": {
-      "waterIntervalDays": 7,
-      "light": "bright-indirect",
-      "humidity": "high",
-      "tempMinC": 18,
-      "tempMaxC": 30,
-      "soil": "Chunky aroid mix: bark, perlite and peat"
-    },
-    "facts": [
-      "The holes in its leaves are called fenestrations.",
-      "Young leaves are solid; splits appear as the plant matures.",
-      "In the wild it climbs trees using aerial roots.",
-      "Its ripe fruit tastes like a mix of pineapple and banana."
-    ],
-    "healthNotes": "Healthy overall. One lower leaf shows slight yellowing, likely natural ageing."
+  "identity": {
+    "commonName": "Swiss cheese plant",
+    "scientificName": "Monstera deliciosa",
+    "family": "Araceae",
+    "confidence": 0.94,
+    "aliases": [
+      "Swiss cheese plant",
+      "Split-leaf philodendron"
+    ]
   },
   "observation": {
     "archetype": "aroid",
@@ -142,57 +100,24 @@
       "size": 0.6
     }
   },
-  "growth": {
-    "habit": "climbing",
-    "stages": [
-      {
-        "stage": "YOUNG",
-        "monthsFromNow": 0,
-        "heightCm": 60,
-        "canopyWidthCm": 75,
-        "leafCount": 7,
-        "leafLengthCm": 35,
-        "maturity": 0.45,
-        "axes": 1,
-        "fenestration": 0.55,
-        "changes": [],
-        "confidence": 0.8
-      },
-      {
-        "stage": "MATURE",
-        "monthsFromNow": 12,
-        "heightCm": 110,
-        "canopyWidthCm": 110,
-        "leafCount": 11,
-        "leafLengthCm": 50,
-        "maturity": 0.75,
-        "axes": 1,
-        "fenestration": 0.75,
-        "changes": [
-          "Deeper splits and a second row of holes",
-          "First aerial roots from the stem",
-          "Lower leaves shed as the stem lengthens"
-        ],
-        "confidence": 0.6
-      },
-      {
-        "stage": "LARGE_MATURE",
-        "monthsFromNow": 30,
-        "heightCm": 200,
-        "canopyWidthCm": 150,
-        "leafCount": 14,
-        "leafLengthCm": 70,
-        "maturity": 1,
-        "axes": 2,
-        "fenestration": 0.85,
-        "changes": [
-          "Climbs a moss pole on a thick stem",
-          "Huge fully fenestrated leaves up top",
-          "A second growing point"
-        ],
-        "confidence": 0.45
-      }
-    ],
-    "source": "mock"
-  }
+  "wiki": {
+    "nativeRegion": "Tropical forests from southern Mexico to Panama",
+    "summary": "Monstera deliciosa is a climbing aroid famous for its split, hole-filled leaves. In the wild it scrambles up trees on aerial roots; indoors it is one of the most popular and forgiving houseplants.",
+    "difficulty": "easy",
+    "toxicToPets": true
+  },
+  "care": {
+    "waterIntervalDays": 7,
+    "light": "bright-indirect",
+    "humidity": "high",
+    "tempMinC": 18,
+    "tempMaxC": 30,
+    "soil": "Chunky aroid mix: bark, perlite and peat"
+  },
+  "facts": [
+    "The holes in its leaves are called fenestrations.",
+    "Young leaves are solid; splits appear as the plant matures.",
+    "In the wild it climbs trees using aerial roots.",
+    "Its ripe fruit tastes like a mix of pineapple and banana."
+  ]
 }
