@@ -9,7 +9,7 @@ type Props = { account: AccountData; onChange: (patch: Partial<AccountData>) => 
 export default function Account({ account, onChange, myPlants }: Props) {
   const [confirmClear, setConfirmClear] = useState(false);
   const plants = myPlants.plants;
-  const mature = plants.filter((p) => stateToday(p).maturity >= 0.75).length;
+  const mature = plants.filter((p) => stateToday(p).leafMaturity >= 0.75).length;
   const initials = account.name.trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "🌱";
 
   const exportPlants = () => {
@@ -31,7 +31,7 @@ export default function Account({ account, onChange, myPlants }: Props) {
       <div className="summary">
         <div className="card"><b>{plants.length}</b><span className="small muted">plants</span></div>
         <div className="card"><b>{mature}</b><span className="small muted">mature</span></div>
-        <div className="card"><b>{new Set(plants.map((p) => p.scan.profile.wiki.family)).size}</b><span className="small muted">families</span></div>
+        <div className="card"><b>{new Set(plants.map((p) => p.profile.identity.family)).size}</b><span className="small muted">families</span></div>
       </div>
 
       <h2 className="section-title">Preferences</h2>

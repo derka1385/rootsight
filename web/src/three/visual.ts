@@ -1,6 +1,4 @@
-import type { PlantProfile } from "@rootsight/shared/schema";
-
-/** Renderer bridge until the shared schema owner adds the optional visual contract. */
+/** Parameters of the generic architectures (architecture.ts), resolved from a render plan. */
 export type Visual = {
   seed: string;
   silhouette: { widthToHeight: number; leanDeg: number; leanDirectionDeg: number; symmetry: number };
@@ -18,8 +16,17 @@ export type Visual = {
   pot: { color: string; material: "terracotta" | "ceramic" | "plastic" | "none"; diameterToHeight: number; heightToDiameter: number; soilVisible: boolean };
 };
 export type VisualInput = { seed?: string } & { [K in Exclude<keyof Visual, "seed">]?: Partial<Visual[K]> };
-export type RenderProfile = Omit<PlantProfile, "visual"> & { visual?: unknown };
-export type VisualProfile = Omit<PlantProfile, "visual"> & { visual?: VisualInput };
+/** The subset of plant data the generic architectures, cactus and roots read (built by renderPlan.ts). */
+export type RenderProfile = {
+  species: { scientificName: string };
+  morphology: {
+    growthForm: "rosette" | "upright-branching" | "vine" | "succulent" | "tree" | "grass";
+    currentHeightCm: number; matureHeightCm: number; stemColor: string;
+    leaf: { shape: "ovate" | "lanceolate" | "palmate" | "needle" | "round" | "fenestrated"; color: string; lengthCm: number; countNow: number };
+  };
+  roots: { type: "taproot" | "fibrous" | "rhizome" | "tuberous" | "aerial"; maxDepthCm: number; maxSpreadCm: number };
+  visual?: unknown;
+};
 
 const obj = (v: unknown): Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : {};
 const num = (v: unknown, fallback: number, min: number, max: number) => typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;

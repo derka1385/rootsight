@@ -13,7 +13,11 @@ collection with watering reminders, and **Discover** lets you browse other plant
 The target is an **iPhone app**: `mobile/` is the Expo (React Native) app. `web/` is the phone-first web prototype, kept until its screens are ported.
 
 ```
-photo -> Claude vision -> PlantProfile JSON -> simulate() -> procedural Three.js
+photo -> identifyPlant (Claude vision: identity + what this plant looks like)
+      -> enrichSpeciesKnowledge (cache -> curated library -> Wikipedia + Commons photos normalised by Claude -> generic)
+      -> buildPlantProfile (species stages personalised to this plant; stage 0 = the photo)
+      -> simulate(profile, month, waterIntervalDays) -> PlantState (morphology, not just size)
+      -> renderPlanOf -> species archetype renderer (aroid, cane, tree, herb, cactus, ...) in a studio scene
 ```
 
 ## Quickstart
@@ -60,17 +64,22 @@ npm run dev:mobile   # API on :8787 + Expo dev server with a QR code
 
 | Path | What |
 |---|---|
-| `shared/schema.ts` | **The contract.** zod `PlantProfile` + API payloads. Announce every change to the team. |
-| `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays) -> PlantState` and `weeksToHeight()` |
-| `shared/fixtures/` | Mock profiles: monstera, basil, cactus |
-| `server/src/` | Express API: `claude.ts` (client + schema-validated JSON helper), `prompts.ts`, `routes/` |
+| `shared/schema.ts` | **The contract.** `PlantIdentity`, `PlantObservation`, `SpeciesMorphologyPrior`, `SpeciesStage`, `GrowthStageReference`, `PlantProfile`, `PlantState`, API payloads |
+| `shared/knowledge.ts` | Pure personalisation: species stages -> this plant's stages; generic fallback prior |
+| `shared/species/library.ts` | Curated species priors and stages (Monstera, basil, golden barrel, Dracaena, Ficus, pothos, snake plant, spider plant) |
+| `shared/simulation.ts` | Pure `simulate(profile, month, waterIntervalDays, conditions?) -> PlantState` and `monthsToHeight()` |
+| `shared/fixtures/` | Mock identifications (monstera, basil, ficus, dracaena, cactus), built into profiles through the real pipeline |
+| `server/src/` | `app.ts` (routes), `pipeline.ts` (identify / analyze / refine / what-if), `knowledge/` (providers, enrichment, cache in `server/.cache/`), `claude.ts`, `prompts.ts` |
 | `mobile/` | Expo app: `app/` (Expo Router screens, `(tabs)/`), `components/`, `src/api.ts` (API client, same contract as web) |
 | `web/src/` | Vite + React + R3F: `components/` (UI, incl. `MyPlants`, `Discover`), `three/` (procedural plant and roots), `myPlants.ts` (collection in localStorage) |
 
 API (all `POST`, JSON):
 - `/api/analyze` `{imageBase64, mediaType}` -> `PlantProfile`
-- `/api/refine` `{photo, renderScreenshot, profile}` -> `PlantProfile`
-- `/api/whatif` `{profile, question}` -> `{profile, explanation}`
+- `/api/refine` `{photo, renderScreenshot, profile}` -> `{profile, corrections, changed}` (Claude returns a constrained `RefinePatch` of today's observation; stages are re-personalised)
+- `/api/whatif` `{profile, conditions, question}` -> `{conditions, explanation, inAYear, baseline}` (conditions are simulation inputs; the states are `simulate()` outputs)
+
+`USE_MOCK=true` (default) swaps only the Claude calls for fixtures; enrichment (library) and personalisation run for real.
+`ENRICH_LIVE=false` keeps a real-mode server off the web for species outside the library. `npm test` runs the node:test suites.
 
 Real-mode responses are validated with zod. On failure the server retries once with the error appended,
 then returns `502 {error, details}`.

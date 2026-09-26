@@ -7,7 +7,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ContactShadows, Environment, Lightformer, OrbitControls, SoftShadows } from "@react-three/drei";
-import type { GrowthConditions, PlantScan } from "@rootsight/shared/schema";
+import type { GrowthConditions, PlantProfile } from "@rootsight/shared/schema";
 import Plant from "../three/Plant";
 import Roots from "../three/Roots";
 import Pot from "../three/Pot";
@@ -39,8 +39,8 @@ function backdrop() {
 // Scene units: 1 = 1 m. Soil surface at y = 0, plant above, roots and pot below.
 // A studio product shot: soft window key, cool rim for leaf translucency, shadow-only floor on a warm
 // backdrop, the pot intact. Roots (a cut-away pot) are an opt-in x-ray, never the hero view.
-export default function SceneCanvas({ scan, mode = "scanned", months = 0, conditions, roots = false, padBottom = 0, children }: {
-  scan: PlantScan;
+export default function SceneCanvas({ profile, mode = "scanned", months = 0, conditions, roots = false, padBottom = 0, children }: {
+  profile: PlantProfile;
   /** "scanned": today's plant rebuilt from the photo. "future": the same plant grown `months` ahead. */
   mode?: RenderMode;
   months?: number;
@@ -51,8 +51,8 @@ export default function SceneCanvas({ scan, mode = "scanned", months = 0, condit
   children?: ReactNode;
 }) {
   const subject = useRef<Group>(null);
-  const spec = useMemo(() => renderPlanOf(scan, mode, months, conditions), [scan, mode, months, conditions]);
-  const { state, profile } = spec;
+  const spec = useMemo(() => renderPlanOf(profile, mode, months, conditions), [profile, mode, months, conditions]);
+  const { state } = spec;
   const cutaway = roots;
   const background = useMemo(backdrop, []);
   const hdri = useEnvironmentFile();
@@ -123,7 +123,7 @@ export default function SceneCanvas({ scan, mode = "scanned", months = 0, condit
       <group ref={subject}>
         {spec.pot.material !== "none" && <Pot radius={potR} depth={potD} appearance={visual.pot} shape={spec.pot.shape} cutaway={cutaway} />}
         <Plant plan={spec} />
-        {cutaway && spec.pot.material !== "none" && <Roots state={state} profile={profile} bounds={rootBounds} />}
+        {cutaway && spec.pot.material !== "none" && <Roots state={state} profile={spec.profile} bounds={rootBounds} />}
       </group>
     </Canvas>
   );

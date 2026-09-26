@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GrowthConditions, ImageInput, PlantScan } from "@rootsight/shared/schema";
+import type { GrowthConditions, ImageInput, PlantProfile } from "@rootsight/shared/schema";
 import { defaultConditions } from "@rootsight/shared/simulation";
 import * as api from "./api";
 import { useMyPlants, type SavedPlant } from "./myPlants";
@@ -31,7 +31,7 @@ async function thumbnail(photo: ImageInput, side = 320): Promise<string> {
 type Tab = "home" | "scan" | "account";
 /** The plant open in the detail screen; savedId links it to the garden. */
 type Open = {
-  scan: PlantScan;
+  profile: PlantProfile;
   savedId: string | null;
   /** The photo it was scanned from (this session only; refine needs it at full size). */
   photo: ImageInput | null;
@@ -61,22 +61,22 @@ export default function App() {
     }
   }
 
-  const show = (scan: PlantScan, savedId: string | null, photo: ImageInput | null, photoUrl: string | null) => {
-    setOpen({ scan, savedId, photo, photoUrl, conditions: defaultConditions(scan), explanation: "", corrections: [] });
+  const show = (profile: PlantProfile, savedId: string | null, photo: ImageInput | null, photoUrl: string | null) => {
+    setOpen({ profile, savedId, photo, photoUrl, conditions: defaultConditions(profile), explanation: "", corrections: [] });
     setError("");
   };
-  const openSaved = (p: SavedPlant) => show(p.scan, p.id, null, p.photoThumb ?? null);
-  const openSample = (scan: PlantScan) => show(scan, null, null, null);
+  const openSaved = (p: SavedPlant) => show(p.profile, p.id, null, p.photoThumb ?? null);
+  const openSample = (profile: PlantProfile) => show(profile, null, null, null);
 
   const onPhoto = (img: ImageInput) =>
     run("Reading your plant…", async () => {
       show(await api.analyze(img), null, img, `data:${img.mediaType};base64,${img.imageBase64}`);
     });
 
-  /** Keep the open scan and its saved copy in sync (refine and what-if improve the scan). */
-  const updateScan = (scan: PlantScan, patch: Partial<Open> = {}) => {
-    setOpen((o) => o && { ...o, ...patch, scan });
-    if (open?.savedId) myPlants.update(open.savedId, scan);
+  /** Keep the open profile and its saved copy in sync (refine improves the reconstruction). */
+  const updateProfile = (profile: PlantProfile, patch: Partial<Open> = {}) => {
+    setOpen((o) => o && { ...o, ...patch, profile });
+    if (open?.savedId) myPlants.update(open.savedId, profile);
   };
 
   const saved = open?.savedId ? (myPlants.plants.find((p) => p.id === open.savedId) ?? null) : null;
@@ -97,8 +97,8 @@ export default function App() {
 
       {open && (
         <PlantDetail
-          key={open.scan.profile.species.scientificName + (open.savedId ?? "")}
-          scan={open.scan}
+          key={open.profile.identity.scientificName + (open.savedId ?? "")}
+          profile={open.profile}
           photoUrl={open.photoUrl}
           saved={saved}
           busy={busy}
@@ -110,20 +110,20 @@ export default function App() {
           canRefine={!!open.photo && !busy}
           onBack={() => setOpen(null)}
           onSave={async () => {
-            const id = myPlants.add(open.scan, open.photo ? await thumbnail(open.photo) : undefined);
+            const id = myPlants.add(open.profile, open.photo ? await thumbnail(open.photo) : undefined);
             setOpen((o) => o && { ...o, savedId: id });
           }}
           onWater={() => saved && myPlants.water(saved.id)}
           onWhatIf={(question) =>
             run("Thinking about it…", async () => {
-              const r = await api.whatIf(open.scan, open.conditions, question);
-              updateScan({ ...open.scan, growth: r.growth }, { conditions: r.conditions, explanation: r.explanation });
+              const r = await api.whatIf(open.profile, open.conditions, question);
+              setOpen((o) => o && { ...o, conditions: r.conditions, explanation: r.explanation });
             })
           }
           onRefine={() =>
             run("Comparing the 3D with your photo…", async () => {
-              const r = await api.refine(open.photo!, screenshotCanvas(), open.scan);
-              updateScan(r.scan, { corrections: r.corrections });
+              const r = await api.refine(open.photo!, screenshotCanvas(), open.profile);
+              updateProfile(r.profile, { corrections: r.corrections });
             })
           }
         />

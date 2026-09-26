@@ -1,5 +1,5 @@
 import { useEffect, useState, type DragEvent } from "react";
-import type { ImageInput, PlantScan } from "@rootsight/shared/schema";
+import type { ImageInput, PlantProfile } from "@rootsight/shared/schema";
 import * as api from "../api";
 import SceneCanvas from "../components/SceneCanvas";
 
@@ -58,7 +58,7 @@ function Fields({ obj, highlight, prefix }: { obj: Record<string, unknown>; high
 export default function Lab() {
   const [health, setHealth] = useState<Health | null>(null);
   const [photo, setPhoto] = useState<ImageInput | null>(null);
-  const [scan, setScan] = useState<PlantScan | null>(null);
+  const [scan, setScan] = useState<PlantProfile | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [elapsed, setElapsed] = useState(0);
@@ -106,7 +106,7 @@ export default function Lab() {
   const refine = () =>
     run("Claude is comparing the render with the photo", async () => {
       const t0 = performance.now();
-      const { scan: next, corrections } = await api.refine(photo!, screenshot(), scan!);
+      const { profile: next, corrections } = await api.refine(photo!, screenshot(), scan!);
       setPasses((ps) => [...ps, { n: ps.length + 1, ms: performance.now() - t0, changed: changed(scan!.observation, next.observation).map((p) => `observation.${p}`), corrections }]);
       setScan(next);
     });
@@ -143,7 +143,7 @@ export default function Lab() {
           <span className="lab-tag">Photo</span>
         </label>
         <div className="lab-render">
-          {scan ? <SceneCanvas scan={scan} mode="scanned" /> : <span className="lab-hint">{busy ? "…" : "The 3D render appears here"}</span>}
+          {scan ? <SceneCanvas profile={scan} mode="scanned" /> : <span className="lab-hint">{busy ? "…" : "The 3D render appears here"}</span>}
           <span className="lab-tag">3D render</span>
         </div>
       </section>
@@ -161,9 +161,9 @@ export default function Lab() {
         <div className="lab-results">
           <section className="card">
             <p className="eyebrow">Identified as</p>
-            <h2 style={{ fontSize: 26 }}>{scan.profile.species.commonName}</h2>
-            <p className="muted" style={{ margin: "2px 0 10px", fontStyle: "italic" }}>{scan.profile.species.scientificName} · {scan.profile.wiki.family}</p>
-            <div className="row small"><span>Confidence</span><span className="bar wide"><i style={{ width: `${scan.profile.species.confidence * 100}%` }} /></span><b>{Math.round(scan.profile.species.confidence * 100)}%</b></div>
+            <h2 style={{ fontSize: 26 }}>{scan.identity.commonName}</h2>
+            <p className="muted" style={{ margin: "2px 0 10px", fontStyle: "italic" }}>{scan.identity.scientificName} · {scan.identity.family}</p>
+            <div className="row small"><span>Confidence</span><span className="bar wide"><i style={{ width: `${scan.identity.confidence * 100}%` }} /></span><b>{Math.round(scan.identity.confidence * 100)}%</b></div>
             <p style={{ marginBottom: 0 }}><b>Health:</b> {scan.observation.health.notes}</p>
           </section>
 
@@ -183,11 +183,13 @@ export default function Lab() {
             {scan.observation.structure.leafClusters.map((c, i) => <Fields key={`c${i}`} obj={c} highlight={lastChanged} prefix={`observation.structure.leafClusters.${i}`} />)}
           </section>
           <section className="card lab-wide">
-            <p className="eyebrow">growth ({scan.growth.habit}, {scan.growth.source})</p>
-            {scan.growth.stages.map((st) => (
+            <p className="eyebrow">species prior ({scan.prior.archetype}, {scan.prior.growthHabit}, {scan.prior.canopyForm}) · sources: {scan.sources.map((s) => s.provider).join(", ")}</p>
+            <p className="small muted" style={{ margin: "4px 0 10px" }}>{scan.prior.juvenileVsMature}</p>
+            <p className="eyebrow">personalised stages</p>
+            {scan.stages.map((st) => (
               <p key={st.stage + st.monthsFromNow} style={{ margin: "6px 0" }}>
-                <b>{st.stage}</b> at +{st.monthsFromNow} mo · {st.heightCm} cm · {st.leafCount} leaves · {st.axes} axes · maturity {st.maturity.toFixed(2)}
-                <br /><span className="small muted">{st.changes.join(" · ") || "today"}</span>
+                <b>{st.stage}</b> at +{st.monthsFromNow} mo · {st.heightCm} cm · {st.leafCount} leaves · {st.axes} axes · leaf maturity {st.leafMaturity.toFixed(2)} · {st.source}
+                <br /><span className="small muted">{st.morphologicalNotes.join(" · ") || "today"}</span>
               </p>
             ))}
           </section>

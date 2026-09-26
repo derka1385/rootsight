@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import type { z } from 'zod';
-import { PlantScan, RefineResult, WhatIfResponse, type GrowthConditions, type ImageInput } from '@rootsight/shared/schema';
+import { PlantProfile, RefineResult, WhatIfResponse, type GrowthConditions, type ImageInput } from '@rootsight/shared/schema';
 
 // No Vite proxy on native, so the API needs an absolute URL. EXPO_PUBLIC_API_URL wins; in dev we fall back
 // to the machine running Metro (same host the phone already reaches), port 8787.
@@ -23,10 +23,10 @@ async function post<S extends z.ZodType>(path: string, body: unknown, schema: S)
   return schema.parse(json);
 }
 
-export const analyze = (photo: ImageInput) => post('analyze', photo, PlantScan);
+export const analyze = (photo: ImageInput) => post('analyze', photo, PlantProfile);
 
-export const refine = (photo: ImageInput, renderScreenshot: ImageInput, scan: PlantScan) =>
+export const refine = (photo: ImageInput, renderScreenshot: ImageInput, scan: PlantProfile) =>
   post('refine', { photo, renderScreenshot, scan }, RefineResult);
 
-export const whatIf = (scan: PlantScan, conditions: GrowthConditions, question: string) =>
+export const whatIf = (scan: PlantProfile, conditions: GrowthConditions, question: string) =>
   post('whatif', { scan, conditions, question }, WhatIfResponse);

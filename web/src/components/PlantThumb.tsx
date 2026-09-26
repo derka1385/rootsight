@@ -1,10 +1,10 @@
-import type { PlantScan } from "@rootsight/shared/schema";
+import type { PlantProfile } from "@rootsight/shared/schema";
 
 /**
  * Lightweight illustrated thumbnail (SVG, no WebGL): a terracotta pot and the plant's silhouette in
  * its own colours. One 3D canvas per card would be too heavy for a list on a phone.
  */
-export default function PlantThumb({ scan, className }: { scan: PlantScan; className?: string }) {
+export default function PlantThumb({ scan, className }: { scan: PlantProfile; className?: string }) {
   const o = scan.observation;
   const leaf = { color: o.colors.leaf }, stemColor = o.colors.stem;
   const kind = o.archetype === "cactus" ? "cactus" : ["aroid", "grass", "succulent", "cane"].includes(o.archetype) ? "rosette" : "branching";

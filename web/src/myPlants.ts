@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SavedPlant, type PlantScan } from "@rootsight/shared/schema";
+import { SavedPlant, type PlantProfile } from "@rootsight/shared/schema";
 
 export type { SavedPlant };
 
@@ -30,17 +30,17 @@ export function useMyPlants() {
   return {
     plants,
     // Date.now id, not crypto.randomUUID: that one is missing over plain http (iPhone on LAN).
-    add: (scan: PlantScan, photoThumb?: string) => {
+    add: (profile: PlantProfile, photoThumb?: string) => {
       const id = Date.now().toString(36);
-      setPlants((ps) => [...ps, { id, scan, photoThumb, lastWateredAt: Date.now() }]);
+      setPlants((ps) => [...ps, { id, profile, photoThumb, lastWateredAt: Date.now() }]);
       return id;
     },
-    /** Refine/what-if results replace the stored scan so the garden keeps the best reconstruction. */
-    update: (id: string, scan: PlantScan) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, scan } : p))),
+    /** Refine/what-if results replace the stored profile so the garden keeps the best reconstruction. */
+    update: (id: string, profile: PlantProfile) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, profile } : p))),
     water: (id: string) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, lastWateredAt: Date.now() } : p))),
     remove: (id: string) => setPlants((ps) => ps.filter((p) => p.id !== id)),
   };
 }
 
 export const daysUntilWater = (p: SavedPlant) =>
-  Math.ceil(p.scan.profile.care.waterIntervalDays - (Date.now() - p.lastWateredAt) / 86_400_000);
+  Math.ceil(p.profile.care.waterIntervalDays - (Date.now() - p.lastWateredAt) / 86_400_000);

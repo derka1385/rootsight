@@ -10,10 +10,11 @@ import type { Visual } from "./visual";
 import type { PlantRenderPlan } from "./renderPlan";
 import Aroid from "./Aroid";
 import Cane from "./Cane";
+import Tree from "./Tree";
 
 /**
  * One renderer per visual architecture, chosen by what the photo shows (observation.archetype):
- * aroid -> Aroid, cane -> Cane, cactus -> Cactus, everything leafy and branching/rosetted/trailing
+ * aroid -> Aroid, cane -> Cane, tree -> Tree, cactus -> Cactus, everything leafy and branching/rosetted/trailing
  * -> Foliage (herb, shrub, succulent rosette, vine, grass, tree via architecture.ts).
  */
 export default function Plant({ plan }: { plan: PlantRenderPlan }) {
@@ -23,6 +24,7 @@ export default function Plant({ plan }: { plan: PlantRenderPlan }) {
   return <group rotation={[Math.sin(direction) * lean, 0, -Math.cos(direction) * lean]}>
     {plan.monstera ? <Aroid spec={plan} />
       : plan.archetype === "cane" ? <Cane plan={plan} />
+      : plan.archetype === "tree" ? <Tree plan={plan} />
       : plan.archetype === "cactus" ? <Cactus profile={profile} state={state} v={v} />
       : <Foliage profile={profile} state={state} v={v} />}
   </group>;

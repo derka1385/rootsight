@@ -16,7 +16,8 @@
     "dev:phone": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web -- --host\"",
     "build": "npm run build -w web",
     "typecheck": "tsc -p . && npm run typecheck -w mobile",
-    "dev:mobile": "concurrently -k -n server,mobile -c blue,magenta \"npm run dev -w server\" \"npm run start -w mobile\""
+    "dev:mobile": "concurrently -k -n server,mobile -c blue,magenta \"npm run dev -w server\" \"npm run start -w mobile\"",
+    "test": "node --import tsx --test 'shared/*.test.ts' 'server/src/**/*.test.ts' 'web/src/three/*.test.ts'"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

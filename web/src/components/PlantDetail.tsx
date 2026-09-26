@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
-import type { GrowthConditions, PlantScan } from "@rootsight/shared/schema";
-import { growthAt, monthsToHeight } from "@rootsight/shared/simulation";
+import type { GrowthConditions, PlantProfile } from "@rootsight/shared/schema";
+import { monthsToHeight, simulate } from "@rootsight/shared/simulation";
 import { daysUntilWater, type SavedPlant } from "../myPlants";
 import { monthsSince, STAGE_LABEL } from "../growth";
 import SceneCanvas from "./SceneCanvas";
 import { BackIcon, CloudIcon, DropIcon, LeafIcon, PlusIcon, SoilIcon, SparkIcon, SunIcon, ThermoIcon } from "./icons";
 
 type Props = {
-  scan: PlantScan;
+  profile: PlantProfile;
   photoUrl: string | null;
   saved: SavedPlant | null;
   busy: string | null;
@@ -30,25 +30,24 @@ const LIGHTS = Object.keys(LIGHT) as (keyof typeof LIGHT)[];
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 export default function PlantDetail(p: Props) {
-  const { scan, saved, conditions } = p;
-  const { profile, observation: o, growth } = scan;
+  const { profile, saved, conditions } = p;
+  const { observation: o, stages, identity, wiki, care, prior } = profile;
   const [mode, setMode] = useState<Mode>("scanned");
   const [roots, setRoots] = useState(false);
   // A saved plant has been growing since it was scanned: Future starts from "now".
   const since = saved ? monthsSince(saved) : 0;
-  const horizon = Math.max(12, Math.ceil(Math.max(...growth.stages.map((s) => s.monthsFromNow)) * 1.15));
+  const horizon = Math.max(12, Math.min(120, Math.ceil(Math.max(...stages.map((s) => s.monthsFromNow)) * 1.15)));
   const [months, setMonths] = useState(Math.round(since));
   const [question, setQuestion] = useState("What if I water every 2 weeks?");
-  const state = useMemo(() => growthAt(scan, months, conditions), [scan, months, conditions]);
+  const state = useMemo(() => simulate(profile, months, conditions.waterIntervalDays, conditions), [profile, months, conditions]);
   const [target, setTarget] = useState(Math.ceil((o.frame.plantHeightCm * 1.5) / 10) * 10);
-  const toTarget = monthsToHeight(scan, target, conditions);
-  const { species, wiki, care } = profile;
+  const toTarget = monthsToHeight(profile, target, conditions.waterIntervalDays, conditions);
   const set = (patch: Partial<GrowthConditions>) => p.onConditions({ ...conditions, ...patch });
 
   return (
     <div className="detail">
       <div className="stage3d">
-        <SceneCanvas scan={scan} mode={mode} months={months} conditions={conditions} roots={mode === "future" && roots} padBottom={0.2} />
+        <SceneCanvas profile={profile} mode={mode} months={months} conditions={conditions} roots={mode === "future" && roots} padBottom={0.2} />
         <div className="top-bar">
           <button className="icon-btn" onClick={p.onBack} aria-label="Back"><BackIcon /></button>
           {saved ? (
@@ -71,8 +70,8 @@ export default function PlantDetail(p: Props) {
       <div className="sheet">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <h1 className="title" style={{ fontSize: 26 }}>{species.commonName}</h1>
-            <p className="muted" style={{ margin: "2px 0 0", fontStyle: "italic" }}>{species.scientificName}</p>
+            <h1 className="title" style={{ fontSize: 26 }}>{identity.commonName}</h1>
+            <p className="muted" style={{ margin: "2px 0 0", fontStyle: "italic" }}>{identity.scientificName}</p>
           </div>
           <span className="chip leaf"><LeafIcon /> {STAGE_LABEL[mode === "scanned" ? o.stage : state.stage]}</span>
         </div>
@@ -93,7 +92,7 @@ export default function PlantDetail(p: Props) {
                 in a {o.pot.shape} {o.pot.material} pot {Math.round(o.pot.rimDiameterCm)} cm across.
               </p>
               <div className="confidence">
-                <span className="small muted">Species {pct(species.confidence)}</span>
+                <span className="small muted">Species {pct(identity.confidence)}</span>
                 <span className="small muted">Layout {pct(o.confidence.structure)}</span>
                 <span className="small muted">Size {pct(o.confidence.size)}</span>
               </div>
@@ -107,17 +106,24 @@ export default function PlantDetail(p: Props) {
               <div className="metric"><b>{Math.round(state.heightCm)}</b><span>cm tall</span></div>
               <div className="metric"><b>{state.leafCount}</b><span>leaves</span></div>
               <div className="metric"><b>{Math.round(state.canopyWidthCm)}</b><span>cm wide</span></div>
-              <div className="metric"><b style={{ color: state.vigor < 0.5 ? "var(--clay)" : "var(--growth)" }}>{pct(state.vigor)}</b><span>vigor</span></div>
+              <div className="metric"><b style={{ color: state.vitality < 0.5 ? "var(--clay)" : "var(--growth)" }}>{pct(state.vitality)}</b><span>vitality</span></div>
             </div>
             <div className="card" style={{ marginTop: 12 }}>
               <div className="slider">
                 <div className="row"><label htmlFor="month">Time</label><output htmlFor="month">{months === 0 ? "Today" : `+${months} month${months > 1 ? "s" : ""}`}</output></div>
                 <input id="month" type="range" min={0} max={horizon} value={months} onChange={(e) => setMonths(+e.target.value)} />
                 <div className="stage-ticks" aria-hidden="true">
-                  {growth.stages.map((s) => (
+                  {stages.map((s) => (
                     <button key={s.stage + s.monthsFromNow} style={{ left: `${Math.min(100, (s.monthsFromNow / horizon) * 100)}%` }} onClick={() => setMonths(Math.round(s.monthsFromNow))} tabIndex={-1}>{STAGE_LABEL[s.stage]}</button>
                   ))}
                 </div>
+              </div>
+              <div className="chips" style={{ marginTop: 12 }}>
+                <span className="chip">Leaf maturity {pct(state.leafMaturity)}</span>
+                {state.fenestration > 0.05 && <span className="chip">Splits {pct(state.fenestration)}</span>}
+                <span className="chip">{Math.round(state.axes)} {prior.stem.structure === "crown" ? "crown" : "stem"}{Math.round(state.axes) > 1 ? "s" : ""}</span>
+                <span className="chip">Stem {Math.round(state.stemThicknessMm)} mm</span>
+                {state.branchingDensity > 0.05 && <span className="chip">Branching {pct(state.branchingDensity)}</span>}
               </div>
               {state.changes.length > 0 && <ul className="facts" style={{ marginTop: 14 }}>{state.changes.map((c) => <li key={c}>{c}</li>)}</ul>}
             </div>
@@ -156,6 +162,15 @@ export default function PlantDetail(p: Props) {
         {p.busy && <p className="small muted" role="status">{p.busy}</p>}
         {p.error && <p className="error" role="alert">{p.error}</p>}
 
+        <h2 className="section-title">How it grows</h2>
+        <div className="card stack">
+          <p style={{ margin: 0 }}>{prior.juvenileVsMature}</p>
+          {prior.notes.length > 0 && <ul className="facts">{prior.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+          <p className="small muted" style={{ margin: 0 }}>
+            Sources: {profile.sources.map((src, i) => <span key={src.title + i}>{i > 0 && " · "}{src.url ? <a href={src.url} target="_blank" rel="noreferrer">{src.title}</a> : src.title}</span>)}
+          </p>
+        </div>
+
         <h2 className="section-title">Care</h2>
         <div className="care">
           <div className="card"><DropIcon /><b>Every {care.waterIntervalDays} days</b><span className="small muted">Water</span></div>
@@ -172,7 +187,7 @@ export default function PlantDetail(p: Props) {
         <div className="card stack">
           <p style={{ margin: 0 }}>{wiki.summary}</p>
           <div className="chips">
-            <span className="chip">{wiki.family}</span>
+            <span className="chip">{identity.family}</span>
             <span className="chip">From {wiki.nativeRegion}</span>
             <span className="chip leaf">{wiki.difficulty[0].toUpperCase() + wiki.difficulty.slice(1)} to grow</span>
             {wiki.toxicToPets && <span className="chip clay">Toxic to pets</span>}

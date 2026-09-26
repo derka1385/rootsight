@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import type { ImageInput, PlantScan } from "@rootsight/shared/schema";
+import type { ImageInput, PlantProfile } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
 import PlantThumb from "./PlantThumb";
 import { CameraIcon, ImageIcon, ScanIcon } from "./icons";
@@ -15,7 +15,7 @@ async function toJpeg(file: File, maxSide = 1568): Promise<ImageInput> {
   return { imageBase64: canvas.toDataURL("image/jpeg", 0.85).split(",")[1], mediaType: "image/jpeg" };
 }
 
-type Props = { busy: string | null; error: string; onPhoto: (img: ImageInput) => void; onSample: (s: PlantScan) => void };
+type Props = { busy: string | null; error: string; onPhoto: (img: ImageInput) => void; onSample: (s: PlantProfile) => void };
 
 export default function Scan({ busy, error, onPhoto, onSample }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
@@ -70,9 +70,9 @@ export default function Scan({ busy, error, onPhoto, onSample }: Props) {
       <h2 className="section-title">No plant nearby? Try one</h2>
       <div className="samples">
         {Object.values(fixtures).map((s) => (
-          <button key={s.profile.species.scientificName} className="sample" onClick={() => onSample(s)}>
+          <button key={s.identity.scientificName} className="sample" onClick={() => onSample(s)}>
             <div className="thumb"><PlantThumb scan={s} /></div>
-            <strong style={{ fontSize: 14 }}>{s.profile.species.commonName}</strong>
+            <strong style={{ fontSize: 14 }}>{s.identity.commonName}</strong>
           </button>
         ))}
       </div>

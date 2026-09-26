@@ -15,7 +15,7 @@ export default function PlantScreen() {
     setStatus('Calling ' + API_URL + ' ...');
     try {
       const scan = await analyze({ imageBase64: 'mock', mediaType: 'image/jpeg' });
-      setStatus(`OK: ${scan.profile.species.commonName}`);
+      setStatus(`OK: ${scan.identity.commonName}`);
     } catch (e) {
       setStatus(`Error: ${(e as Error).message}`);
     }

@@ -1,4 +1,4 @@
-import type { PlantScan } from "@rootsight/shared/schema";
+import type { PlantProfile } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
 import { daysUntilWater, type SavedPlant, type useMyPlants } from "../myPlants";
 import { stageOf, stateToday } from "../growth";
@@ -10,7 +10,7 @@ type Props = {
   reminders: boolean;
   myPlants: ReturnType<typeof useMyPlants>;
   onOpenSaved: (p: SavedPlant) => void;
-  onOpenSample: (s: PlantScan) => void;
+  onOpenSample: (s: PlantProfile) => void;
   onScan: () => void;
 };
 
@@ -24,7 +24,7 @@ const waterLabel = (days: number) => (days <= 0 ? "Water today" : days === 1 ? "
 export default function Home({ name, reminders, myPlants, onOpenSaved, onOpenSample, onScan }: Props) {
   const plants = myPlants.plants;
   const thirsty = plants.filter((p) => daysUntilWater(p) <= 0);
-  const species = new Set(plants.map((p) => p.scan.profile.species.scientificName)).size;
+  const species = new Set(plants.map((p) => p.profile.identity.scientificName)).size;
   const date = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   return (
@@ -46,7 +46,7 @@ export default function Home({ name, reminders, myPlants, onOpenSaved, onOpenSam
       {reminders && thirsty.length > 0 && (
         <div className="alert" role="status">
           <DropIcon />
-          <p>{thirsty.length === 1 ? `${thirsty[0].scan.profile.species.commonName} is thirsty today` : `${thirsty.length} plants are thirsty today`}</p>
+          <p>{thirsty.length === 1 ? `${thirsty[0].profile.identity.commonName} is thirsty today` : `${thirsty.length} plants are thirsty today`}</p>
           <button className="btn water small" onClick={() => thirsty.forEach((p) => myPlants.water(p.id))}>Watered</button>
         </div>
       )}
@@ -70,9 +70,9 @@ export default function Home({ name, reminders, myPlants, onOpenSaved, onOpenSam
             const days = daysUntilWater(p);
             return (
               <button key={p.id} className="plant-card" onClick={() => onOpenSaved(p)}>
-                <div className="thumb"><PlantThumb scan={p.scan} /></div>
+                <div className="thumb"><PlantThumb scan={p.profile} /></div>
                 <div className="stack" style={{ gap: 6 }}>
-                  <h3>{p.scan.profile.species.commonName}</h3>
+                  <h3>{p.profile.identity.commonName}</h3>
                   <div className="row" style={{ justifyContent: "space-between" }}>
                     <span className="chip leaf" style={{ padding: "3px 9px", fontSize: 12 }}><LeafIcon /> {stage.label}</span>
                     <span className="small muted">{Math.round(state.heightCm)} cm</span>
@@ -89,10 +89,10 @@ export default function Home({ name, reminders, myPlants, onOpenSaved, onOpenSam
       <h2 className="section-title">Explore</h2>
       <div className="samples">
         {Object.values(fixtures).map((s) => (
-          <button key={s.profile.species.scientificName} className="sample" onClick={() => onOpenSample(s)}>
+          <button key={s.identity.scientificName} className="sample" onClick={() => onOpenSample(s)}>
             <div className="thumb"><PlantThumb scan={s} /></div>
-            <strong style={{ fontSize: 14 }}>{s.profile.species.commonName}</strong>
-            <span className="small muted">{s.profile.wiki.difficulty} to grow</span>
+            <strong style={{ fontSize: 14 }}>{s.identity.commonName}</strong>
+            <span className="small muted">{s.wiki.difficulty} to grow</span>
           </button>
         ))}
       </div>
