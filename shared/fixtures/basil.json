@@ -1,78 +1,148 @@
 {
-  "species": {
-    "commonName": "Sweet basil",
-    "scientificName": "Ocimum basilicum",
-    "confidence": 0.91
-  },
-  "wiki": {
-    "family": "Lamiaceae",
-    "nativeRegion": "Tropical Asia and Africa",
-    "summary": "Sweet basil is a fast-growing culinary herb from the mint family, prized for its fragrant leaves. It loves sun and warmth and is usually grown as an annual.",
-    "difficulty": "easy",
-    "toxicToPets": false
-  },
-  "morphology": {
-    "growthForm": "upright-branching",
-    "currentHeightCm": 18,
-    "matureHeightCm": 50,
-    "stemColor": "#6b8e3a",
-    "branchingAngleDeg": 35,
-    "branchingDepth": 3,
-    "leaf": {
-      "shape": "ovate",
-      "color": "#3d7a34",
-      "lengthCm": 7,
-      "countNow": 48
-    }
-  },
-  "growth": {
-    "rateCmPerMonth": 8,
-    "monthsToMaturity": 4
-  },
-  "roots": {
-    "type": "fibrous",
-    "maxDepthCm": 25,
-    "maxSpreadCm": 30
-  },
-  "care": {
-    "waterIntervalDays": 2,
-    "light": "full-sun",
-    "humidity": "medium",
-    "tempMinC": 15,
-    "tempMaxC": 32,
-    "soil": "Rich, well-draining potting mix"
-  },
-  "facts": [
-    "Pinching off flower buds keeps the leaves sweet.",
-    "It belongs to the mint family.",
-    "Basil hates the cold: below 10 \u00b0C its leaves turn black."
-  ],
-  "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light.",
-  "visual": {
-    "silhouette": {
-      "widthToHeight": 1.05,
-      "leanDeg": 3,
-      "leanDirection": "none",
-      "symmetry": 0.8,
-      "legginess": 0.15
+  "profile": {
+    "species": {
+      "commonName": "Sweet basil",
+      "scientificName": "Ocimum basilicum",
+      "confidence": 0.91
     },
-    "stems": {
-      "countFromSoil": 4,
-      "thicknessMm": 3.5,
-      "internodeCm": 2.2
+    "wiki": {
+      "family": "Lamiaceae",
+      "nativeRegion": "Tropical Asia and Africa",
+      "summary": "Sweet basil is a fast-growing culinary herb from the mint family, prized for its fragrant leaves. It loves sun and warmth and is usually grown as an annual.",
+      "difficulty": "easy",
+      "toxicToPets": false
+    },
+    "morphology": {
+      "growthForm": "upright-branching",
+      "currentHeightCm": 18,
+      "matureHeightCm": 50,
+      "stemColor": "#6b8e3a",
+      "branchingAngleDeg": 35,
+      "branchingDepth": 3,
+      "leaf": {
+        "shape": "ovate",
+        "color": "#3d7a34",
+        "lengthCm": 7,
+        "countNow": 48
+      }
+    },
+    "growth": {
+      "rateCmPerMonth": 8,
+      "monthsToMaturity": 4
+    },
+    "roots": {
+      "type": "fibrous",
+      "maxDepthCm": 25,
+      "maxSpreadCm": 30
+    },
+    "care": {
+      "waterIntervalDays": 2,
+      "light": "full-sun",
+      "humidity": "medium",
+      "tempMinC": 15,
+      "tempMaxC": 32,
+      "soil": "Rich, well-draining potting mix"
+    },
+    "facts": [
+      "Pinching off flower buds keeps the leaves sweet.",
+      "It belongs to the mint family.",
+      "Basil hates the cold: below 10 \u00b0C its leaves turn black."
+    ],
+    "healthNotes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light."
+  },
+  "observation": {
+    "archetype": "herb",
+    "frame": {
+      "plantHeightCm": 25,
+      "canopyWidthCm": 26,
+      "leanDeg": 0,
+      "leanDirection": "center",
+      "symmetry": 0.8
+    },
+    "pot": {
+      "visible": true,
+      "shape": "nursery",
+      "material": "plastic",
+      "color": "#ac4d2e",
+      "rimDiameterCm": 14,
+      "heightCm": 12
+    },
+    "structure": {
+      "axes": [
+        {
+          "kind": "stem",
+          "heightCm": 22,
+          "thicknessMm": 4,
+          "leanDeg": 5,
+          "direction": "left"
+        },
+        {
+          "kind": "stem",
+          "heightCm": 24,
+          "thicknessMm": 4,
+          "leanDeg": 3,
+          "direction": "right"
+        },
+        {
+          "kind": "stem",
+          "heightCm": 20,
+          "thicknessMm": 3,
+          "leanDeg": 8,
+          "direction": "toward"
+        },
+        {
+          "kind": "stem",
+          "heightCm": 21,
+          "thicknessMm": 3,
+          "leanDeg": 6,
+          "direction": "away"
+        },
+        {
+          "kind": "stem",
+          "heightCm": 18,
+          "thicknessMm": 3,
+          "leanDeg": 10,
+          "direction": "left"
+        },
+        {
+          "kind": "stem",
+          "heightCm": 19,
+          "thicknessMm": 3,
+          "leanDeg": 9,
+          "direction": "right"
+        }
+      ],
+      "leafClusters": [
+        {
+          "height": 0.7,
+          "direction": "center",
+          "share": 1
+        }
+      ],
+      "branching": 0.35
     },
     "leaves": {
+      "count": 54,
+      "density": 0.85,
+      "lengthCmMin": 3,
+      "lengthCmMax": 8,
+      "widthToLength": 0.62,
+      "shape": "ovate",
       "arrangement": "opposite",
-      "widthToLength": 0.75,
+      "orientation": "spreading",
       "tip": "acute",
-      "edge": "wavy",
+      "edge": "serrated",
       "fenestration": 0,
-      "variegation": "none",
-      "variegationColor": "#e8ecd8",
-      "gloss": 0.34,
-      "colorUnder": "#6e9b5e",
-      "droop": 0.12,
-      "sizeVariation": 0.3
+      "gloss": 0.55,
+      "variegation": "none"
+    },
+    "colors": {
+      "leaf": "#3d7a34",
+      "leafYoung": "#7cb342",
+      "underside": "#6e9b5e",
+      "stem": "#6b8e3a",
+      "variegation": "#e8ecd8",
+      "soil": "#3d2c20"
     },
     "succulent": {
       "bodyForm": "none",
@@ -81,16 +151,70 @@
       "spineColor": "#e8c65a",
       "offsets": 0
     },
-    "condition": {
+    "health": {
+      "vigor": 0.8,
+      "wilt": 0,
       "yellowing": 0,
       "brownTips": 0,
-      "pests": false
+      "pests": false,
+      "notes": "Leaves are vibrant. Some lower stems look leggy, so it could use more light."
     },
-    "pot": {
-      "material": "terracotta",
-      "color": "#a8654a",
-      "diameterCm": 14,
-      "fillRatio": 0.8
+    "maturity": 0.6,
+    "stage": "YOUNG",
+    "confidence": {
+      "structure": 0.6,
+      "size": 0.7
     }
+  },
+  "growth": {
+    "habit": "bushy",
+    "source": "mock",
+    "stages": [
+      {
+        "stage": "YOUNG",
+        "monthsFromNow": 0,
+        "heightCm": 25,
+        "canopyWidthCm": 26,
+        "leafCount": 54,
+        "leafLengthCm": 8,
+        "maturity": 0.6,
+        "axes": 6,
+        "fenestration": 0,
+        "changes": [],
+        "confidence": 0.8
+      },
+      {
+        "stage": "MATURE",
+        "monthsFromNow": 2,
+        "heightCm": 40,
+        "canopyWidthCm": 38,
+        "leafCount": 110,
+        "leafLengthCm": 9,
+        "maturity": 0.85,
+        "axes": 8,
+        "fenestration": 0,
+        "changes": [
+          "Side shoots from every leaf node if pinched",
+          "Canopy fills out into a dome"
+        ],
+        "confidence": 0.6
+      },
+      {
+        "stage": "LARGE_MATURE",
+        "monthsFromNow": 4,
+        "heightCm": 55,
+        "canopyWidthCm": 45,
+        "leafCount": 140,
+        "leafLengthCm": 7,
+        "maturity": 1,
+        "axes": 10,
+        "fenestration": 0,
+        "changes": [
+          "Flower spikes at the stem tips",
+          "Smaller, tougher leaves; woody base"
+        ],
+        "confidence": 0.5
+      }
+    ]
   }
 }

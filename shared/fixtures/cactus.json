@@ -1,78 +1,113 @@
 {
-  "species": {
-    "commonName": "Golden barrel cactus",
-    "scientificName": "Echinocactus grusonii",
-    "confidence": 0.88
-  },
-  "wiki": {
-    "family": "Cactaceae",
-    "nativeRegion": "Central Mexico",
-    "summary": "The golden barrel cactus is a slow-growing globe covered in golden spines. Nearly extinct in the wild, it is one of the most widely cultivated cacti in the world.",
-    "difficulty": "easy",
-    "toxicToPets": false
-  },
-  "morphology": {
-    "growthForm": "succulent",
-    "currentHeightCm": 12,
-    "matureHeightCm": 60,
-    "stemColor": "#5a8f4e",
-    "branchingAngleDeg": 0,
-    "branchingDepth": 1,
-    "leaf": {
-      "shape": "needle",
-      "color": "#e8c65a",
-      "lengthCm": 3,
-      "countNow": 0
-    }
-  },
-  "growth": {
-    "rateCmPerMonth": 0.3,
-    "monthsToMaturity": 180
-  },
-  "roots": {
-    "type": "fibrous",
-    "maxDepthCm": 15,
-    "maxSpreadCm": 40
-  },
-  "care": {
-    "waterIntervalDays": 21,
-    "light": "full-sun",
-    "humidity": "low",
-    "tempMinC": 5,
-    "tempMaxC": 40,
-    "soil": "Gritty cactus mix with plenty of sand"
-  },
-  "facts": [
-    "Its golden spines are modified leaves.",
-    "It can take decades to reach full size.",
-    "It is endangered in the wild but common in cultivation."
-  ],
-  "healthNotes": "Firm and evenly colored. No signs of rot or sunburn.",
-  "visual": {
-    "silhouette": {
-      "widthToHeight": 1.3,
-      "leanDeg": 0,
-      "leanDirection": "none",
-      "symmetry": 0.95,
-      "legginess": 0
+  "profile": {
+    "species": {
+      "commonName": "Golden barrel cactus",
+      "scientificName": "Echinocactus grusonii",
+      "confidence": 0.88
     },
-    "stems": {
-      "countFromSoil": 1,
-      "thicknessMm": 150,
-      "internodeCm": 1
+    "wiki": {
+      "family": "Cactaceae",
+      "nativeRegion": "Central Mexico",
+      "summary": "The golden barrel cactus is a slow-growing globe covered in golden spines. Nearly extinct in the wild, it is one of the most widely cultivated cacti in the world.",
+      "difficulty": "easy",
+      "toxicToPets": false
+    },
+    "morphology": {
+      "growthForm": "succulent",
+      "currentHeightCm": 12,
+      "matureHeightCm": 60,
+      "stemColor": "#5a8f4e",
+      "branchingAngleDeg": 0,
+      "branchingDepth": 1,
+      "leaf": {
+        "shape": "needle",
+        "color": "#e8c65a",
+        "lengthCm": 3,
+        "countNow": 0
+      }
+    },
+    "growth": {
+      "rateCmPerMonth": 0.3,
+      "monthsToMaturity": 180
+    },
+    "roots": {
+      "type": "fibrous",
+      "maxDepthCm": 15,
+      "maxSpreadCm": 40
+    },
+    "care": {
+      "waterIntervalDays": 21,
+      "light": "full-sun",
+      "humidity": "low",
+      "tempMinC": 5,
+      "tempMaxC": 40,
+      "soil": "Gritty cactus mix with plenty of sand"
+    },
+    "facts": [
+      "Its golden spines are modified leaves.",
+      "It can take decades to reach full size.",
+      "It is endangered in the wild but common in cultivation."
+    ],
+    "healthNotes": "Firm and evenly colored. No signs of rot or sunburn."
+  },
+  "observation": {
+    "archetype": "cactus",
+    "frame": {
+      "plantHeightCm": 12,
+      "canopyWidthCm": 13.200000000000001,
+      "leanDeg": 0,
+      "leanDirection": "center",
+      "symmetry": 0.95
+    },
+    "pot": {
+      "visible": true,
+      "shape": "tapered",
+      "material": "terracotta",
+      "color": "#c0673f",
+      "rimDiameterCm": 18,
+      "heightCm": 15.299999999999999
+    },
+    "structure": {
+      "axes": [
+        {
+          "kind": "crown",
+          "heightCm": 12,
+          "thicknessMm": 132,
+          "leanDeg": 0,
+          "direction": "center"
+        }
+      ],
+      "leafClusters": [
+        {
+          "height": 0.5,
+          "direction": "center",
+          "share": 1
+        }
+      ],
+      "branching": 0
     },
     "leaves": {
-      "arrangement": "basal",
-      "widthToLength": 0.05,
+      "count": 0,
+      "density": 0,
+      "lengthCmMin": 1.8,
+      "lengthCmMax": 3,
+      "widthToLength": 0.07,
+      "shape": "needle",
+      "arrangement": "rosette",
+      "orientation": "upright",
       "tip": "acute",
       "edge": "smooth",
       "fenestration": 0,
-      "variegation": "none",
-      "variegationColor": "#e8ecd8",
       "gloss": 0.3,
-      "colorUnder": "#5a8f4e",
-      "droop": 0,
-      "sizeVariation": 0
+      "variegation": "none"
+    },
+    "colors": {
+      "leaf": "#e8c65a",
+      "leafYoung": "#e8c65a",
+      "underside": "#e8c65a",
+      "stem": "#5a8f4e",
+      "variegation": "#e8ecd8",
+      "soil": "#8a7a62"
     },
     "succulent": {
       "bodyForm": "globe",
@@ -81,16 +116,70 @@
       "spineColor": "#e8c65a",
       "offsets": 0
     },
-    "condition": {
+    "health": {
+      "vigor": 0.8,
+      "wilt": 0,
       "yellowing": 0,
       "brownTips": 0,
-      "pests": false
+      "pests": false,
+      "notes": "Firm and evenly colored. No signs of rot or sunburn."
     },
-    "pot": {
-      "material": "terracotta",
-      "color": "#c0673f",
-      "diameterCm": 18,
-      "fillRatio": 0.85
+    "maturity": 0.3,
+    "stage": "JUVENILE",
+    "confidence": {
+      "structure": 0.8,
+      "size": 0.6
     }
+  },
+  "growth": {
+    "habit": "columnar",
+    "stages": [
+      {
+        "stage": "JUVENILE",
+        "monthsFromNow": 0,
+        "heightCm": 12,
+        "canopyWidthCm": 13.200000000000001,
+        "leafCount": 0,
+        "leafLengthCm": 0,
+        "maturity": 0.3,
+        "axes": 1,
+        "fenestration": 0,
+        "changes": [],
+        "confidence": 0.8
+      },
+      {
+        "stage": "YOUNG",
+        "monthsFromNow": 36,
+        "heightCm": 21.6,
+        "canopyWidthCm": 24,
+        "leafCount": 0,
+        "leafLengthCm": 0,
+        "maturity": 0.55,
+        "axes": 1,
+        "fenestration": 0,
+        "changes": [
+          "Wider, flatter-topped globe",
+          "Woolly crown and more ribs"
+        ],
+        "confidence": 0.6
+      },
+      {
+        "stage": "MATURE",
+        "monthsFromNow": 120,
+        "heightCm": 60,
+        "canopyWidthCm": 66.0,
+        "leafCount": 0,
+        "leafLengthCm": 0,
+        "maturity": 0.9,
+        "axes": 2,
+        "fenestration": 0,
+        "changes": [
+          "Yellow flowers ring the woolly crown",
+          "Pups may appear at the base"
+        ],
+        "confidence": 0.4
+      }
+    ],
+    "source": "mock"
   }
 }

@@ -1,53 +1,91 @@
-import type { PlantProfile, PlantState } from "./schema";
+import type { GrowthConditions, GrowthStage, GrowthStagePlan, PlantScan, PlantState } from "./schema";
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const smooth = (t: number) => t * t * (3 - 2 * t);
+const LIGHT = { low: 0, medium: 1, "bright-indirect": 2, "full-sun": 3 } as const;
 
-// Shared by simulate() and weeksToHeight() so the two always agree.
-function growthModel(profile: PlantProfile, waterIntervalDays: number) {
+/** Where the plant is on its growth path, `months` from the scan, under `conditions`. */
+export type GrowthState = PlantState & {
+  /** Continuous leaf count (the renderer lets new leaves emerge gradually). */
+  leaves: number;
+  canopyWidthCm: number;
+  leafLengthCm: number;
+  maturity: number;
+  fenestration: number;
+  axes: number;
+  stage: GrowthStage;
+  /** 0 dying .. 1 thriving: watering, light and pot room combined. */
+  vigor: number;
+  /** Months of healthy growth actually achieved (slower than calendar months under stress). */
+  effectiveMonths: number;
+  /** Structural changes of the stage being approached. */
+  changes: string[];
+};
+
+export const defaultConditions = (scan: PlantScan): GrowthConditions => ({
+  waterIntervalDays: scan.profile.care.waterIntervalDays,
+  light: scan.profile.care.light,
+  potDiameterCm: scan.observation.pot.rimDiameterCm,
+});
+
+/** How well the conditions suit the plant: hydration (0..1) and a growth pace multiplier. */
+export function vigorOf(scan: PlantScan, c: GrowthConditions, canopyWidthCm: number) {
   // Under-watering: every extra "ideal interval" between waterings costs 50% hydration.
-  // TODO(3d-owner): tune; over-watering (root rot) is not modelled yet.
-  const stress = Math.max(0, waterIntervalDays / profile.care.waterIntervalDays - 1);
+  const stress = Math.max(0, c.waterIntervalDays / scan.profile.care.waterIntervalDays - 1);
   const hydration = clamp01(1 - 0.5 * stress);
+  // Over-watering (much more often than ideal) slows growth too: roots rot.
+  const soggy = clamp01((scan.profile.care.waterIntervalDays / c.waterIntervalDays - 2) / 3);
+  const lightGap = LIGHT[c.light] - LIGHT[scan.profile.care.light];
+  const light = lightGap < 0 ? 1 + lightGap * 0.3 : 1 - Math.max(0, lightGap - 1) * 0.25;
+  // A canopy far wider than its pot is root-bound: growth stalls until it is repotted.
+  const room = clamp01(1.4 - canopyWidthCm / (c.potDiameterCm * 4));
+  const pace = Math.max(0.05, (0.3 + 0.7 * hydration) * (1 - 0.6 * soggy) * light * (0.35 + 0.65 * room));
+  const vigor = clamp01(scan.observation.health.vigor * 0.4 + pace * 0.6);
+  return { hydration, pace, vigor };
+}
 
-  // Logistic growth from h0 toward K, ~mature at monthsToMaturity.
-  // TODO(3d-owner): tune the rate constant; maybe blend in growth.rateCmPerMonth.
-  const h0 = profile.morphology.currentHeightCm;
-  const K = Math.max(profile.morphology.matureHeightCm, h0);
+function lerpStage(a: GrowthStagePlan, b: GrowthStagePlan, t: number) {
+  const k = smooth(clamp01(t)), mix = (x: number, y: number) => x + (y - x) * k;
   return {
-    hydration,
-    h0,
-    K,
-    r: 4 / profile.growth.monthsToMaturity,
-    A: (K - h0) / h0,
-    g: 0.3 + 0.7 * hydration, // a thirsty plant grows slower
+    heightCm: mix(a.heightCm, b.heightCm), canopyWidthCm: mix(a.canopyWidthCm, b.canopyWidthCm),
+    leaves: mix(a.leafCount, b.leafCount), leafLengthCm: mix(a.leafLengthCm, b.leafLengthCm),
+    maturity: mix(a.maturity, b.maturity), fenestration: mix(a.fenestration, b.fenestration), axes: mix(a.axes, b.axes),
+    stage: k < 0.5 ? a.stage : b.stage, changes: b.changes,
   };
 }
 
-/** Pure and deterministic: same inputs, same PlantState. */
-export function simulate(profile: PlantProfile, month: number, waterIntervalDays: number): PlantState {
-  const { hydration, h0, K, r, A, g } = growthModel(profile, waterIntervalDays);
-  const heightCm = h0 + (K / (1 + A * Math.exp(-r * month)) - h0) * g;
-  // TODO(3d-owner): tune the wilt threshold (starts below 70% hydration).
-  const wilt = clamp01((0.7 - hydration) / 0.7);
-
-  const size = heightCm / K;
+/** Pure and deterministic: same scan, months and conditions give the same state. Month 0 = the photo. */
+export function growthAt(scan: PlantScan, months: number, conditions = defaultConditions(scan)): GrowthState {
+  const stages = [...scan.growth.stages].sort((a, b) => a.monthsFromNow - b.monthsFromNow);
+  const obs = scan.observation;
+  // Stage 0 IS the photographed plant: never let the plan contradict what was observed.
+  stages[0] = { ...stages[0], monthsFromNow: 0, heightCm: obs.frame.plantHeightCm, canopyWidthCm: obs.frame.canopyWidthCm, leafCount: obs.leaves.count, maturity: obs.maturity };
+  const { hydration, pace, vigor } = vigorOf(scan, conditions, obs.frame.canopyWidthCm);
+  const effectiveMonths = Math.max(0, months) * pace;
+  let i = 0;
+  while (i < stages.length - 2 && effectiveMonths > stages[i + 1].monthsFromNow) i++;
+  const a = stages[i], b = stages[Math.min(i + 1, stages.length - 1)];
+  const span = Math.max(1e-6, b.monthsFromNow - a.monthsFromNow);
+  const s = a === b ? lerpStage(a, a, 0) : lerpStage(a, b, (effectiveMonths - a.monthsFromNow) / span);
+  // Drought: shrinking turgor first (wilt), then fewer, smaller leaves.
+  const wilt = clamp01(Math.max(obs.health.wilt, (0.7 - hydration) / 0.7));
+  const size = clamp01(s.heightCm / Math.max(scan.profile.morphology.matureHeightCm, s.heightCm));
+  const potDepthCm = obs.pot.heightCm * (conditions.potDiameterCm / obs.pot.rimDiameterCm);
   return {
-    heightCm,
-    // TODO(3d-owner): leaves per growthForm (a cactus shouldn't sprout 40 leaves).
-    leafCount: Math.round(profile.morphology.leaf.countNow * (heightCm / h0)),
-    rootDepthCm: profile.roots.maxDepthCm * size,
-    rootSpreadCm: profile.roots.maxSpreadCm * size,
-    hydration,
-    wilt,
+    heightCm: s.heightCm * (1 - 0.15 * wilt),
+    canopyWidthCm: s.canopyWidthCm,
+    leaves: s.leaves * (1 - 0.25 * wilt * clamp01(months / 3)),
+    leafCount: Math.round(s.leaves * (1 - 0.25 * wilt * clamp01(months / 3))),
+    leafLengthCm: s.leafLengthCm, maturity: s.maturity, fenestration: s.fenestration, axes: s.axes, stage: s.stage,
+    rootDepthCm: Math.min(potDepthCm * 0.95, scan.profile.roots.maxDepthCm * Math.max(0.25, size)),
+    rootSpreadCm: Math.min(conditions.potDiameterCm * 0.9, scan.profile.roots.maxSpreadCm * Math.max(0.25, size)),
+    hydration, wilt, vigor, effectiveMonths, changes: months > 0 ? s.changes : [],
   };
 }
 
-/** Weeks until the plant reaches targetCm (inverse of simulate), or null if it never will with this watering. */
-export function weeksToHeight(profile: PlantProfile, targetCm: number, waterIntervalDays: number): number | null {
-  const { h0, K, r, A, g } = growthModel(profile, waterIntervalDays);
-  if (targetCm <= h0) return 0;
-  const logisticHeight = h0 + (targetCm - h0) / g;
-  if (logisticHeight >= K) return null;
-  const months = -Math.log((K / logisticHeight - 1) / A) / r;
-  return Math.ceil((months * 52) / 12);
+/** Months until the plant reaches targetCm under these conditions, or null if it never will. */
+export function monthsToHeight(scan: PlantScan, targetCm: number, conditions = defaultConditions(scan)): number | null {
+  if (targetCm <= scan.observation.frame.plantHeightCm) return 0;
+  for (let m = 0.25; m <= 240; m += 0.25) if (growthAt(scan, m, conditions).heightCm >= targetCm) return m;
+  return null;
 }
