@@ -127,7 +127,8 @@ export function renderPlanOf(scan: PlantScan, mode: RenderMode, months = 0, cond
     if (i < count0) {
       // Photographed leaves span the observed size range; the oldest are smaller and more juvenile.
       const age = count0 > 1 ? (count0 - 1 - i) / (count0 - 1) : 0;
-      hit = { form: clamp01(formToday - age * 0.3), lengthM: lenMax - (lenMax - lenMin) * age };
+      // Most photographed leaves are near the largest size; only the few oldest shrink toward the minimum.
+      hit = { form: clamp01(formToday - age * 0.3), lengthM: lenMax - (lenMax - lenMin) * age ** 2.5 };
     } else {
       // A future leaf takes the form and size of the stage in which the plant produces it.
       let lo = 0, hi = 240;
