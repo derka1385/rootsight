@@ -1,5 +1,5 @@
-import type { PlantProfile, PlantState } from "@rootsight/shared/schema";
-import { simulate } from "@rootsight/shared/simulation";
+import type { GrowthStage } from "@rootsight/shared/schema";
+import { defaultConditions, growthAt, type GrowthState } from "@rootsight/shared/simulation";
 import type { SavedPlant } from "./myPlants";
 
 const MONTH_MS = 30.44 * 86_400_000;
@@ -10,20 +10,15 @@ export function addedAt(p: SavedPlant): number {
   return Number.isFinite(t) && t > 1_500_000_000_000 && t <= Date.now() ? t : p.lastWateredAt;
 }
 
-/** Simulated state today, counting the months it has spent in the collection. */
-export function stateToday(p: SavedPlant): PlantState {
-  return simulate(p.profile, (Date.now() - addedAt(p)) / MONTH_MS, p.profile.care.waterIntervalDays);
-}
+/** Months since the scan: a saved plant keeps growing along its plan while it sits in the garden. */
+export const monthsSince = (p: SavedPlant) => (Date.now() - addedAt(p)) / MONTH_MS;
 
-const STAGES = [
-  [0.12, "Sprout"],
-  [0.4, "Young"],
-  [0.8, "Growing"],
-  [Infinity, "Mature"],
-] as const;
+/** Where a saved plant is today on its growth path. */
+export const stateToday = (p: SavedPlant): GrowthState => growthAt(p.scan, monthsSince(p), defaultConditions(p.scan));
 
-/** Development stage from height relative to the species' mature height. */
-export function stageOf(profile: PlantProfile, state: PlantState) {
-  const pct = Math.min(1, state.heightCm / Math.max(profile.morphology.matureHeightCm, 1));
-  return { pct, label: STAGES.find(([limit]) => pct < limit)![1] };
-}
+export const STAGE_LABEL: Record<GrowthStage, string> = {
+  SEEDLING: "Seedling", JUVENILE: "Juvenile", YOUNG: "Young", MATURE: "Mature", LARGE_MATURE: "Large mature",
+};
+
+/** Development stage label and progress (0..1 maturity) for the UI. */
+export const stageOf = (state: GrowthState) => ({ pct: state.maturity, label: STAGE_LABEL[state.stage] });

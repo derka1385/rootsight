@@ -1,13 +1,13 @@
-import type { PlantProfile } from "@rootsight/shared/schema";
-import { archetypeOf } from "../three/Plant";
+import type { PlantScan } from "@rootsight/shared/schema";
 
 /**
  * Lightweight illustrated thumbnail (SVG, no WebGL): a terracotta pot and the plant's silhouette in
  * its own colours. One 3D canvas per card would be too heavy for a list on a phone.
  */
-export default function PlantThumb({ profile, className }: { profile: PlantProfile; className?: string }) {
-  const { leaf, stemColor } = profile.morphology;
-  const kind = archetypeOf(profile);
+export default function PlantThumb({ scan, className }: { scan: PlantScan; className?: string }) {
+  const o = scan.observation;
+  const leaf = { color: o.colors.leaf }, stemColor = o.colors.stem;
+  const kind = o.archetype === "cactus" ? "cactus" : ["aroid", "grass", "succulent", "cane"].includes(o.archetype) ? "rosette" : "branching";
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <ellipse cx="50" cy="93" rx="24" ry="3.5" fill="rgba(60,40,20,.15)" />

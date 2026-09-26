@@ -253,3 +253,16 @@ input[type="range"]::-webkit-slider-thumb { background: #fff; box-shadow: 0 0.5p
 .tabbar .scan-tab span.bubble { width: auto; height: auto; margin: 0; border-radius: 0; background: none; color: inherit; box-shadow: none; }
 .tabbar .scan-tab[aria-current] span.bubble { background: none; }
 @media (prefers-color-scheme: dark) { .tabbar { border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.6); } }
+
+/* Plant detail: Scanned / Future switch over the 3D stage, and the scanned photo for comparison. */
+.mode-switch { position: absolute; left: 50%; bottom: 34px; translate: -50% 0; z-index: 2; display: flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow); }
+.mode-switch button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 999px; white-space: nowrap; }
+.mode-switch button[aria-selected="true"] { background: var(--primary); color: var(--primary-foreground); }
+.photo-inset { position: absolute; left: 14px; bottom: 84px; z-index: 2; margin: 0; width: 74px; border-radius: 12px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); border: 2px solid var(--surface); }
+.photo-inset img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.photo-inset figcaption { font-size: 10px; font-weight: 600; text-align: center; padding: 2px 0 3px; color: var(--ink-2); }
+.confidence { display: flex; gap: 12px; flex-wrap: wrap; }
+.stage-ticks { position: relative; height: 22px; margin: 2px 8px 0; }
+.stage-ticks button { position: absolute; translate: -50% 0; border: 0; background: none; padding: 0; font: inherit; font-size: 11px; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+.stage-ticks button:first-child { translate: 0 0; }
+.stage-ticks button:last-child { translate: -100% 0; }

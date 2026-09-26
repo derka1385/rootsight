@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState, type DragEvent } from "react";
-import type { ImageInput, PlantProfile } from "@rootsight/shared/schema";
-import { simulate } from "@rootsight/shared/simulation";
+import { useEffect, useState, type DragEvent } from "react";
+import type { ImageInput, PlantScan } from "@rootsight/shared/schema";
 import * as api from "../api";
 import SceneCanvas from "../components/SceneCanvas";
 
@@ -10,7 +9,7 @@ import SceneCanvas from "../components/SceneCanvas";
  */
 
 type Health = { mock: boolean; hasKey: boolean; model: string };
-type Pass = { n: number; ms: number; changed: string[] };
+type Pass = { n: number; ms: number; changed: string[]; corrections: string[] };
 
 async function toJpeg(file: File, maxSide = 1568): Promise<ImageInput> {
   const bmp = await createImageBitmap(file);
@@ -59,7 +58,7 @@ function Fields({ obj, highlight, prefix }: { obj: Record<string, unknown>; high
 export default function Lab() {
   const [health, setHealth] = useState<Health | null>(null);
   const [photo, setPhoto] = useState<ImageInput | null>(null);
-  const [profile, setProfile] = useState<PlantProfile | null>(null);
+  const [scan, setScan] = useState<PlantScan | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [elapsed, setElapsed] = useState(0);
@@ -77,7 +76,6 @@ export default function Lab() {
     return () => clearInterval(id);
   }, [busy]);
 
-  const state = useMemo(() => profile && simulate(profile, 0, profile.care.waterIntervalDays), [profile]);
   const lastChanged = new Set(passes.at(-1)?.changed ?? []);
 
   async function run(label: string, task: () => Promise<void>) {
@@ -96,11 +94,11 @@ export default function Lab() {
     if (!file) return;
     const img = await toJpeg(file);
     setPhoto(img);
-    setProfile(null);
+    setScan(null);
     setPasses([]);
     run("Claude is identifying the plant", async () => {
       const t0 = performance.now();
-      setProfile(await api.analyze(img));
+      setScan(await api.analyze(img));
       setAnalyzeMs(performance.now() - t0);
     });
   }
@@ -108,9 +106,9 @@ export default function Lab() {
   const refine = () =>
     run("Claude is comparing the render with the photo", async () => {
       const t0 = performance.now();
-      const next = await api.refine(photo!, screenshot(), profile!);
-      setPasses((ps) => [...ps, { n: ps.length + 1, ms: performance.now() - t0, changed: changed(profile, next).filter((p) => p !== "facts") }]);
-      setProfile(next);
+      const { scan: next, corrections } = await api.refine(photo!, screenshot(), scan!);
+      setPasses((ps) => [...ps, { n: ps.length + 1, ms: performance.now() - t0, changed: changed(scan!.observation, next.observation).map((p) => `observation.${p}`), corrections }]);
+      setScan(next);
     });
 
   const onDrop = (e: DragEvent) => {
@@ -119,7 +117,6 @@ export default function Lab() {
     pick(e.dataTransfer.files[0]);
   };
 
-  const visual = profile?.visual;
 
   return (
     <div className="lab">
@@ -146,46 +143,54 @@ export default function Lab() {
           <span className="lab-tag">Photo</span>
         </label>
         <div className="lab-render">
-          {profile && state ? <SceneCanvas profile={profile} state={state} /> : <span className="lab-hint">{busy ? "…" : "The 3D render appears here"}</span>}
+          {scan ? <SceneCanvas scan={scan} mode="scanned" /> : <span className="lab-hint">{busy ? "…" : "The 3D render appears here"}</span>}
           <span className="lab-tag">3D render</span>
         </div>
       </section>
 
       <div className="lab-actions">
         {busy && <span className="lab-busy" role="status"><i className="spinner" /> {busy}… {elapsed.toFixed(1)} s</span>}
-        {!busy && profile && <span className="muted small">Analyzed in {(analyzeMs / 1000).toFixed(1)} s{passes.length ? ` · ${passes.length} refine pass${passes.length > 1 ? "es" : ""}` : ""}</span>}
+        {!busy && scan && <span className="muted small">Analyzed in {(analyzeMs / 1000).toFixed(1)} s{passes.length ? ` · ${passes.length} refine pass${passes.length > 1 ? "es" : ""}` : ""}</span>}
         <span style={{ flex: 1 }} />
-        {profile && photo && <button className="btn" disabled={!!busy} onClick={refine}>Refine: compare render with photo</button>}
+        {scan && photo && <button className="btn" disabled={!!busy} onClick={refine}>Refine: compare render with photo</button>}
         {photo && <label className="btn ghost">New photo<input type="file" accept="image/*" hidden disabled={!!busy} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} /></label>}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
 
-      {profile && (
+      {scan && (
         <div className="lab-results">
           <section className="card">
             <p className="eyebrow">Identified as</p>
-            <h2 style={{ fontSize: 26 }}>{profile.species.commonName}</h2>
-            <p className="muted" style={{ margin: "2px 0 10px", fontStyle: "italic" }}>{profile.species.scientificName} · {profile.wiki.family}</p>
-            <div className="row small"><span>Confidence</span><span className="bar wide"><i style={{ width: `${profile.species.confidence * 100}%` }} /></span><b>{Math.round(profile.species.confidence * 100)}%</b></div>
-            <p style={{ marginBottom: 0 }}><b>Health:</b> {profile.healthNotes}</p>
+            <h2 style={{ fontSize: 26 }}>{scan.profile.species.commonName}</h2>
+            <p className="muted" style={{ margin: "2px 0 10px", fontStyle: "italic" }}>{scan.profile.species.scientificName} · {scan.profile.wiki.family}</p>
+            <div className="row small"><span>Confidence</span><span className="bar wide"><i style={{ width: `${scan.profile.species.confidence * 100}%` }} /></span><b>{Math.round(scan.profile.species.confidence * 100)}%</b></div>
+            <p style={{ marginBottom: 0 }}><b>Health:</b> {scan.observation.health.notes}</p>
           </section>
 
           <section className="card">
-            <p className="eyebrow">Morphology</p>
-            <Fields obj={{ growthForm: profile.morphology.growthForm, heightNow: profile.morphology.currentHeightCm, mature: profile.morphology.matureHeightCm, stemColor: profile.morphology.stemColor, branchingAngle: profile.morphology.branchingAngleDeg, branchingDepth: profile.morphology.branchingDepth }} highlight={lastChanged} prefix="morphology" />
-            <Fields obj={profile.morphology.leaf} highlight={lastChanged} prefix="morphology.leaf" />
+            <p className="eyebrow">observation</p>
+            <Fields obj={{ archetype: scan.observation.archetype, stage: scan.observation.stage, maturity: scan.observation.maturity, ...scan.observation.frame }} highlight={lastChanged} prefix="observation.frame" />
           </section>
-
-          {visual ? (
-            (Object.keys(visual) as (keyof typeof visual)[]).map((group) => (
-              <section key={group} className="card">
-                <p className="eyebrow">visual.{group}</p>
-                <Fields obj={visual[group] as Record<string, unknown>} highlight={lastChanged} prefix={`visual.${group}`} />
-              </section>
-            ))
-          ) : (
-            <section className="card"><p className="eyebrow">visual</p><p className="muted">No visual block in this profile (the server is on an older version?).</p></section>
-          )}
+          {(["pot", "leaves", "colors", "health", "confidence"] as const).map((group) => (
+            <section key={group} className="card">
+              <p className="eyebrow">observation.{group}</p>
+              <Fields obj={scan.observation[group] as Record<string, unknown>} highlight={lastChanged} prefix={`observation.${group}`} />
+            </section>
+          ))}
+          <section className="card">
+            <p className="eyebrow">observation.structure</p>
+            {scan.observation.structure.axes.map((a, i) => <Fields key={i} obj={a} highlight={lastChanged} prefix={`observation.structure.axes.${i}`} />)}
+            {scan.observation.structure.leafClusters.map((c, i) => <Fields key={`c${i}`} obj={c} highlight={lastChanged} prefix={`observation.structure.leafClusters.${i}`} />)}
+          </section>
+          <section className="card lab-wide">
+            <p className="eyebrow">growth ({scan.growth.habit}, {scan.growth.source})</p>
+            {scan.growth.stages.map((st) => (
+              <p key={st.stage + st.monthsFromNow} style={{ margin: "6px 0" }}>
+                <b>{st.stage}</b> at +{st.monthsFromNow} mo · {st.heightCm} cm · {st.leafCount} leaves · {st.axes} axes · maturity {st.maturity.toFixed(2)}
+                <br /><span className="small muted">{st.changes.join(" · ") || "today"}</span>
+              </p>
+            ))}
+          </section>
 
           {passes.length > 0 && (
             <section className="card lab-wide">
@@ -193,6 +198,7 @@ export default function Lab() {
               {passes.map((p) => (
                 <p key={p.n} style={{ margin: "6px 0" }}>
                   <b>Pass {p.n}</b> · {(p.ms / 1000).toFixed(1)} s · {p.changed.length} field{p.changed.length === 1 ? "" : "s"} changed
+                  <br /><span className="small muted">{p.corrections.join(" · ")}</span>
                   <br /><span className="small muted">{p.changed.join(", ") || "nothing: the render already matches"}</span>
                 </p>
               ))}
@@ -201,7 +207,7 @@ export default function Lab() {
 
           <details className="card lab-wide">
             <summary>Raw JSON returned by the API</summary>
-            <pre>{JSON.stringify(profile, null, 2)}</pre>
+            <pre>{JSON.stringify(scan, null, 2)}</pre>
           </details>
         </div>
       )}

@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { PlantProfile, WhatIfResponse, type ImageInput } from "@rootsight/shared/schema";
+import { PlantScan, RefineResult, WhatIfResponse, type GrowthConditions, type ImageInput } from "@rootsight/shared/schema";
 
 async function post<S extends z.ZodType>(path: string, body: unknown, schema: S): Promise<z.infer<S>> {
   const res = await fetch(`/api/${path}`, {
@@ -12,10 +12,13 @@ async function post<S extends z.ZodType>(path: string, body: unknown, schema: S)
   return schema.parse(json);
 }
 
-export const analyze = (photo: ImageInput) => post("analyze", photo, PlantProfile);
+/** Photo -> species card + reconstruction of this plant today + its growth path. */
+export const analyze = (photo: ImageInput) => post("analyze", photo, PlantScan);
 
-export const refine = (photo: ImageInput, renderScreenshot: ImageInput, profile: PlantProfile) =>
-  post("refine", { photo, renderScreenshot, profile }, PlantProfile);
+/** Photo + our render -> a scan whose observation (today's plant) is closer to the photo. */
+export const refine = (photo: ImageInput, renderScreenshot: ImageInput, scan: PlantScan) =>
+  post("refine", { photo, renderScreenshot, scan }, RefineResult);
 
-export const whatIf = (profile: PlantProfile, question: string) =>
-  post("whatif", { profile, question }, WhatIfResponse);
+/** A scenario re-plans the future (conditions, growth path), never today's plant. */
+export const whatIf = (scan: PlantScan, conditions: GrowthConditions, question: string) =>
+  post("whatif", { scan, conditions, question }, WhatIfResponse);

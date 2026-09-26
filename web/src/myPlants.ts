@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
-import { PlantProfile } from "@rootsight/shared/schema";
+import { SavedPlant, type PlantScan } from "@rootsight/shared/schema";
 
-export type SavedPlant = { id: string; profile: PlantProfile; lastWateredAt: number };
+export type { SavedPlant };
 
-const KEY = "rootsight.myPlants";
+const KEY = "rootsight.garden.v2"; // v2: scans (species + observation + growth), not bare profiles
 
 function load(): SavedPlant[] {
   try {
-    const saved: SavedPlant[] = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    const saved: unknown[] = JSON.parse(localStorage.getItem(KEY) ?? "[]");
     // Drop entries saved before a schema change instead of crashing.
-    return saved.filter((p) => PlantProfile.safeParse(p.profile).success);
+    return saved.flatMap((p) => {
+      const parsed = SavedPlant.safeParse(p);
+      return parsed.success ? [parsed.data] : [];
+    });
   } catch {
     return [];
   }
@@ -27,15 +30,17 @@ export function useMyPlants() {
   return {
     plants,
     // Date.now id, not crypto.randomUUID: that one is missing over plain http (iPhone on LAN).
-    add: (profile: PlantProfile) => {
+    add: (scan: PlantScan, photoThumb?: string) => {
       const id = Date.now().toString(36);
-      setPlants((ps) => [...ps, { id, profile, lastWateredAt: Date.now() }]);
+      setPlants((ps) => [...ps, { id, scan, photoThumb, lastWateredAt: Date.now() }]);
       return id;
     },
+    /** Refine/what-if results replace the stored scan so the garden keeps the best reconstruction. */
+    update: (id: string, scan: PlantScan) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, scan } : p))),
     water: (id: string) => setPlants((ps) => ps.map((p) => (p.id === id ? { ...p, lastWateredAt: Date.now() } : p))),
     remove: (id: string) => setPlants((ps) => ps.filter((p) => p.id !== id)),
   };
 }
 
 export const daysUntilWater = (p: SavedPlant) =>
-  Math.ceil(p.profile.care.waterIntervalDays - (Date.now() - p.lastWateredAt) / 86_400_000);
+  Math.ceil(p.scan.profile.care.waterIntervalDays - (Date.now() - p.lastWateredAt) / 86_400_000);
