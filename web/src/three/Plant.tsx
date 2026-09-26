@@ -8,6 +8,8 @@ import { leafBlade } from "./leafBlade";
 import { leafSurface } from "./leafSurface";
 import { architectureOf, plantLayout } from "./architecture";
 import { visualOf, type Visual } from "./visual";
+import type { PlantRenderSpec } from "./renderSpec";
+import Aroid from "./Aroid";
 
 /** Keep the existing thumbnail API while the renderer uses the richer architecture internally. */
 export function archetypeOf(p: PlantProfile): "rosette" | "branching" | "cactus" {
@@ -30,13 +32,12 @@ function Instances({ geometry, material, matrices, capacity }: { geometry: Buffe
   return <instancedMesh ref={ref} args={[geometry, material, capacity]} castShadow receiveShadow dispose={null} />;
 }
 
-export default function Plant({ state, profile }: { state: PlantState; profile: PlantProfile }) {
-  const v = useMemo(() => visualOf(profile), [profile]);
-  const kind = architectureOf(profile, v);
-  const lean = v.silhouette.leanDeg * Math.PI / 180;
+export default function Plant({ state, profile, spec }: { state: PlantState; profile: PlantProfile; spec: PlantRenderSpec }) {
+  const v = spec.visual;
+  const lean = v.silhouette.leanDeg * Math.PI / 180 * (spec.monstera ? 0.4 : 1);
   const direction = v.silhouette.leanDirectionDeg * Math.PI / 180;
   return <group rotation={[Math.sin(direction) * lean, 0, -Math.cos(direction) * lean]}>
-    {kind === "cactus" ? <Cactus profile={profile} state={state} v={v} /> : <Foliage profile={profile} state={state} v={v} />}
+    {spec.monstera ? <Aroid spec={spec} /> : spec.archetype === "cactus" ? <Cactus profile={profile} state={state} v={v} /> : <Foliage profile={profile} state={state} v={v} />}
   </group>;
 }
 
