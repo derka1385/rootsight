@@ -4,8 +4,7 @@ import type { Material } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "./visual";
 import { seededRandom, SEGMENT } from "./procedural";
-import { leafBlade } from "./leafBlade";
-import { leafSurface } from "./leafSurface";
+import { leafAlbedo, leafGeometry, leafMaterial, leafNormal, venation, type LeafShape } from "./leafSystem";
 import { architectureOf, plantLayout } from "./architecture";
 import { visualOf, type Visual } from "./visual";
 import type { PlantRenderSpec } from "./renderSpec";
@@ -41,10 +40,31 @@ export default function Plant({ state, profile, spec }: { state: PlantState; pro
   </group>;
 }
 
+/** Blade shape for the generic foliage archetypes, from the photo's visual block; age 0 = newest. */
+function bladeShape(v: Visual, age: number): LeafShape {
+  const l = v.leaves;
+  return {
+    widthToLength: l.widthToLength, widest: l.base === "heart" ? 0.3 : 0.42, baseWidth: l.base === "heart" ? 0.55 : l.base === "rounded" ? 0.3 : 0.03,
+    lobe: l.base === "heart" ? 0.07 : 0, acumen: l.tip === "pointed" ? 0.45 : 0, asymmetry: ((age * 7) % 5 - 2) * 0.03,
+    arch: 0.1 + l.droop * 0.2 + age * 0.03, cup: l.curl * 1.1, fold: 0.12, undulation: 0.004, twist: l.twist * 0.3,
+    serration: l.edge === "serrated" ? 1 : l.edge === "lobed" ? 2 : 0, seed: `${v.seed}:blade:${age}`,
+  };
+}
+
 function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantState; v: Visual }) {
   const resources = useMemo(() => {
-    const blades = [0, 1, 2, 3].map(i => leafBlade(v.leaves, 0.25 + i * 0.25));
-    const materials = [0, 1, 2, 3].map(i => leafSurface(profile, v, i));
+    const ven = venation(v.seed, v.leaves.widthToLength < 0.3 ? 12 : 7);
+    const normal = leafNormal(ven);
+    // Many small leaves: a coarse grid (~200 triangles) keeps a bushy plant in the tens of thousands.
+    const blades = [0, 1, 2, 3].map(i => leafGeometry(bladeShape(v, i), 26, 2));
+    const materials = [0, 1, 2, 3].map(i => {
+      // New growth is a little lighter; older leaves carry the photographed condition.
+      const color = `#${new Color(profile.morphology.leaf.color).offsetHSL(0, -0.03, (3 - i) * 0.025).lerp(new Color("#b7a044"), v.condition.yellowing * i * 0.2).getHexString()}`;
+      const map = leafAlbedo({ seed: v.seed + i, formMaturity: 1, fenestration: v.leaves.fenestration, color, venation: ven, brownTips: v.condition.brownTips * i / 3, variegation: { kind: v.leaves.variegation, amount: v.leaves.variegationAmount, color: v.leaves.variegationColor } });
+      const { material, depth } = leafMaterial(map, normal, { gloss: v.leaves.gloss, underside: v.leaves.undersideColor });
+      depth.dispose();
+      return material;
+    });
     const stem = new MeshStandardMaterial({ color: profile.morphology.stemColor, roughness: 0.8 });
     stem.onBeforeCompile = shader => {
       shader.uniforms.tipColor = { value: new Color(v.stems.tipColor) };
@@ -57,7 +77,7 @@ function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantSta
   }, [profile, v]);
   useEffect(() => () => {
     resources.blades.forEach(g => g.dispose());
-    resources.materials.forEach(m => { m.map?.dispose(); m.dispose(); });
+    resources.materials.forEach(m => { m.map?.dispose(); m.normalMap?.dispose(); m.dispose(); });
     resources.stem.dispose();
   }, [resources]);
   useLayoutEffect(() => {

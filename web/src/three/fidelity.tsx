@@ -39,7 +39,7 @@ function Lab() {
       <button onClick={() => { const a = document.createElement("a"); a.download = "rootsight-render.png"; a.href = document.querySelector("canvas")!.toDataURL("image/png"); a.click(); }}>Save render</button><p role="alert">{error}</p></header>}
     <div style={{ display: "flex", flexWrap: "wrap" }}>
       <div id="render" style={{ width: capture ? "100vw" : 390, height: capture ? "100vh" : 600 }}>
-        <SceneCanvas state={state} profile={profile} cutaway={params.has("cutaway")}><Probe /></SceneCanvas>
+        <SceneCanvas state={state} profile={profile} cutaway={params.has("cutaway")} sourceImage={photo || undefined}><Probe /></SceneCanvas>
       </div>
       {photo && <img alt="Local reference plant" src={photo} style={{ width: 390, height: 600, objectFit: "contain" }} />}
     </div>

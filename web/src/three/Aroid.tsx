@@ -176,11 +176,12 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
   const firstLeaf = Math.max(0, Math.floor(c - spec.maxLeaves - 1));
   const topNode = Math.max(1, Math.floor((Math.ceil(c + 0.6) - 1) / crowns));
   const highestNode = new Array<number>(crowns).fill(0);
-  // Leaves seen in the photo are fully open today; the next one is already a rolled spike.
+  // Leaves seen in the photo are fully open today; later ones emerge as a rolled spike and unfurl.
   for (let i = firstLeaf; i < Math.ceil(c + 0.6); i++) {
-    const age = c + 0.6 - i;
+    const age = c - i + (i < today.leafCount ? 0.6 : 0);
     const shed = clamp01(c - spec.maxLeaves - i);
-    if (shed >= 1 || age <= 0) continue;
+    if (shed >= 1 || age <= 1e-3) continue;
+    const emerge = smoothstep(0, 0.25, age); // a new leaf grows from nothing, never pops in
     const r = seededRandom(`${spec.seed}:leaf:${i}`);
     const rr = [r(), r(), r(), r(), r(), r()];
     const k = i % crowns, j = Math.floor(i / crowns);
@@ -197,7 +198,7 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     const out = new Vector3(Math.sin(az), 0, Math.cos(az));
 
     // Petiole: rises from the node, then arches out; older leaves reach lower and further.
-    const pl = length * (0.85 + 0.3 * rr[2]) * (0.2 + 0.8 * smoothstep(0, 0.8, age)) * fit;
+    const pl = length * (0.85 + 0.3 * rr[2]) * (0.2 + 0.8 * smoothstep(0, 0.8, age)) * emerge * fit;
     let el = 0.3 + 0.95 * youth + (rr[3] - 0.5) * 0.25 - wilt * 0.8 - droop * 0.3 - shed * 0.5;
     el = Math.max(-0.45, el + (1.45 - el) * (1 - unfurl));
     const chord = out.clone().multiplyScalar(Math.cos(el)).addScaledVector(UP, Math.sin(el));
@@ -224,7 +225,7 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     const normal = dir.clone().cross(side);
     const basis = new Matrix4().makeBasis(side, normal, dir);
     const roll = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), (rr[5] - 0.5) * 0.9);
-    const size = length * (0.28 + 0.72 * expand) * (1 - 0.5 * smoothstep(0.7, 1, shed));
+    const size = length * (0.28 + 0.72 * expand) * emerge * (1 - 0.5 * smoothstep(0.7, 1, shed));
     const matrix = new Matrix4().compose(p3, new Quaternion().setFromRotationMatrix(basis).multiply(roll), new Vector3(size, size, size));
     const halfWidth = spec.leaf.widthToLength * 0.5;
     const curl = (1 - unfurl) * 2.9 / halfWidth - wilt * 1.7 - shed * 0.9;

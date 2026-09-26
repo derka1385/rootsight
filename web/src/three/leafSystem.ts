@@ -32,20 +32,29 @@ export type LeafShape = {
   /** Wavy margin amplitude. */
   undulation: number;
   twist: number;
+  /** Toothed margin: 0 smooth, 1 serrated; 2 = deep rounded lobes. */
+  serration?: number;
   seed: string;
 };
 
-const ROWS = 40, HALF = 11; // 41 x 23 vertices, ~1.8k triangles per blade
+// Hero blades (Monstera): 49 x 23 vertices, ~2.1k triangles. Small leaves pass a coarser grid.
 
 /** Half-width of the blade at t, as a fraction of the widest half-width. */
 export function widthProfile(t: number, s: LeafShape): number {
-  if (t <= s.widest) return s.baseWidth + (1 - s.baseWidth) * Math.sin((Math.PI / 2) * (t / s.widest)) ** 0.85;
-  const u = (t - s.widest) / (1 - s.widest);
-  // Convex shoulders, then an acuminate drip tip that narrows faster than an ellipse.
-  return Math.cos((Math.PI / 2) * u) ** (0.9 + s.acumen * 0.5) * (1 - s.acumen * 0.35 * smoothstep(0.55, 1, u));
+  let w: number;
+  if (t <= s.widest) w = s.baseWidth + (1 - s.baseWidth) * Math.sin((Math.PI / 2) * (t / s.widest)) ** 0.85;
+  else {
+    const u = (t - s.widest) / (1 - s.widest);
+    // Convex shoulders, then an acuminate drip tip that narrows faster than an ellipse.
+    w = Math.cos((Math.PI / 2) * u) ** (0.9 + s.acumen * 0.5) * (1 - s.acumen * 0.35 * smoothstep(0.55, 1, u));
+  }
+  const teeth = s.serration ?? 0;
+  if (teeth >= 2) w *= 0.72 + 0.28 * Math.abs(Math.cos(t * Math.PI * 2.5));
+  else if (teeth > 0) w *= 1 - teeth * 0.07 * (0.5 + 0.5 * Math.cos(t * Math.PI * 26));
+  return w;
 }
 
-export function leafGeometry(shape: LeafShape): BufferGeometry {
+export function leafGeometry(shape: LeafShape, ROWS = 48, HALF = 11): BufferGeometry {
   const rand = seededRandom(shape.seed + ":blade");
   const phase = rand() * 6.28, freq = 5 + rand() * 4;
   const half = shape.widthToLength / 2;
