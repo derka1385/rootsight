@@ -30,7 +30,9 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
     const measuring = performance.now() < measureUntil.current;
     if (measuring && subject?.current) {
       subject.current.updateWorldMatrix(true, true);
-      const box = new Box3().setFromObject(subject.current);
+      // Visible meshes only: hidden helpers (an unused moss pole) must not pull the framing.
+      const box = new Box3();
+      subject.current.traverseVisible(object => { if (object instanceof Mesh) box.union(new Box3().setFromObject(object)); });
       if (!box.isEmpty()) {
         box.getCenter(center.current);
         const inverse = camera.quaternion.clone().invert();

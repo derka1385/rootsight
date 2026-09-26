@@ -121,3 +121,20 @@ export const woodTexture = () =>
       g.stroke();
     }
   }, 2);
+
+/** Coir/moss pole: warm brown with short tangled fibres. */
+export const coirTexture = () =>
+  make("coir", 256, 512, (g, w, h) => {
+    g.fillStyle = "#6a5037";
+    g.fillRect(0, 0, w, h);
+    const r = rng(17);
+    g.lineCap = "round";
+    for (let i = 0; i < 2600; i++) {
+      const x = r() * w, y = r() * h, a = r() * Math.PI * 2, l = 3 + r() * 14;
+      g.strokeStyle = r() > 0.55 ? "#8d6c49" : r() > 0.5 ? "#3f2d1d" : "#a88660";
+      g.globalAlpha = 0.35 + r() * 0.5;
+      g.lineWidth = 0.6 + r() * 1.2;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+    }
+    g.globalAlpha = 1;
+  });

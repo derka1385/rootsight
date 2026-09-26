@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Color, CubicBezierCurve3, CylinderGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from "three";
+import { Color, CubicBezierCurve3, CylinderGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
+import { coirTexture } from "./textures";
 import type { PlantRenderSpec } from "./renderSpec";
 import { segmentMatrix } from "./architecture";
 import { clamp01, seededRandom, smoothstep } from "./procedural";
@@ -19,6 +20,7 @@ const LEVELS = [0.05, 0.3, 0.5, 0.7, 0.9];
 const CAPACITY = 24, PETIOLE_SEGS = 10;
 const SEG = new CylinderGeometry(1, 1, 1, 10, 1, true).translate(0, 0.5, 0);
 const UP = new Vector3(0, 1, 0);
+const POLE = new CylinderGeometry(1, 1.05, 1, 20, 1).translate(0, 0.5, 0);
 
 type Shown = { count: number; wilt: number; height: number };
 
@@ -41,7 +43,8 @@ export default function Aroid({ spec }: { spec: PlantRenderSpec }) {
     const normal = leafNormal(ven);
     const blades = LEVELS.map((level, i) => {
       const map = leafAlbedo({
-        seed: spec.seed, formMaturity: level, fenestration: spec.visual.leaves.fenestration, color: spec.leaf.color, venation: ven, brownTips: spec.leaf.brownTips,
+        // The photo's fenestration says how mature today's leaves are; the species can always split.
+        seed: spec.seed, formMaturity: level, fenestration: Math.max(0.8, spec.visual.leaves.fenestration), color: spec.leaf.color, venation: ven, brownTips: spec.leaf.brownTips,
         variegation: { kind: spec.leaf.variegation, amount: spec.leaf.variegationAmount, color: spec.leaf.variegationColor },
       });
       const geometry = leafGeometry(shapeFor(level, spec, i));
@@ -51,19 +54,21 @@ export default function Aroid({ spec }: { spec: PlantRenderSpec }) {
     const petiole = new MeshStandardMaterial({ color: new Color(spec.leaf.color).lerp(new Color("#9dbb5a"), 0.35), roughness: 0.42 });
     const stem = new MeshStandardMaterial({ color: new Color(spec.stem.color).lerp(new Color("#5b5a3a"), 0.35), roughness: 0.7 });
     const aerial = new MeshStandardMaterial({ color: "#6e5139", roughness: 0.85 });
-    return { normal, blades, petiole, stem, aerial };
+    const pole = new MeshStandardMaterial({ map: coirTexture(), bumpMap: coirTexture(), bumpScale: 2, roughness: 1 });
+    return { normal, blades, petiole, stem, aerial, pole };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant]);
   useEffect(() => () => {
     res.normal.dispose();
     res.blades.forEach(b => { b.geometry.dispose(); b.map.dispose(); b.material.dispose(); b.depth.dispose(); });
-    [res.petiole, res.stem, res.aerial].forEach(m => m.dispose());
+    [res.petiole, res.stem, res.aerial, res.pole].forEach(m => m.dispose());
   }, [res]);
 
   const leafMeshes = useRef<(InstancedMesh | null)[]>([]);
   const petioleMesh = useRef<InstancedMesh>(null);
   const stemMesh = useRef<InstancedMesh>(null);
   const aerialMesh = useRef<InstancedMesh>(null);
+  const poleMesh = useRef<Mesh>(null);
   const shown = useRef<Shown | null>(null);
   const target: Shown = { count: spec.leafCount, wilt: spec.wilt, height: spec.heightM };
 
@@ -81,6 +86,11 @@ export default function Aroid({ spec }: { spec: PlantRenderSpec }) {
       roll.needsUpdate = true;
       mesh.computeBoundingBox(); mesh.computeBoundingSphere();
     });
+    const pole = poleMesh.current;
+    if (pole) {
+      pole.visible = !!layout.pole;
+      if (layout.pole) { pole.position.copy(layout.pole.position).setY(-0.05); pole.scale.set(layout.pole.radius, layout.pole.height + 0.05, layout.pole.radius); }
+    }
     for (const [ref, list] of [[petioleMesh, layout.petioles], [stemMesh, layout.stem], [aerialMesh, layout.aerial]] as const) {
       const mesh = ref.current;
       if (!mesh) continue;
@@ -125,6 +135,7 @@ export default function Aroid({ spec }: { spec: PlantRenderSpec }) {
     <instancedMesh ref={petioleMesh} args={[SEG, res.petiole, CAPACITY * PETIOLE_SEGS]} castShadow receiveShadow frustumCulled={false} dispose={null} />
     <instancedMesh ref={stemMesh} args={[SEG, res.stem, 4 * 40]} castShadow receiveShadow frustumCulled={false} dispose={null} />
     <instancedMesh ref={aerialMesh} args={[SEG, res.aerial, 8 * 12]} castShadow frustumCulled={false} dispose={null} />
+    <mesh ref={poleMesh} geometry={POLE} material={res.pole} visible={false} scale={0.001} castShadow receiveShadow />
   </group>;
 }
 
@@ -156,8 +167,10 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     const a = k * 2.39996 + r() * 0.6, d = crowns > 1 ? potR * (0.2 + 0.25 * r()) : 0;
     return { base: new Vector3(Math.sin(a) * d, -0.005, Math.cos(a) * d), phase: CAMERA_AZ + 2 + k * 1.3 + r() * 0.6, lean: new Vector3(Math.sin(a + 0.4), 0, Math.cos(a + 0.4)).multiplyScalar(0.12 + 0.18 * r()) };
   });
-  // Stem axis of one crown at a node height: leans a little and curves as it lengthens.
-  const stemPoint = (k: number, h: number) => crownBase[k].base.clone().addScaledVector(UP, h).addScaledVector(crownBase[k].lean, h + h * h * 2);
+  // A tall plant climbs a moss pole, so its stem stays upright; a small one leans and curves freely.
+  const poleHeight = climb > 0.12 ? climb + internode * 3 : 0;
+  const leanScale = 1 / (1 + climb * 12);
+  const stemPoint = (k: number, h: number) => crownBase[k].base.clone().addScaledVector(UP, h).addScaledVector(crownBase[k].lean, (h * 0.6 + h * h * 1.2) * leanScale);
   const stemR = spec.stem.thicknessM / 2 * (0.9 + 1.2 * spec.maturity);
 
   const firstLeaf = Math.max(0, Math.floor(c - spec.maxLeaves - 1));
@@ -171,10 +184,9 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     const r = seededRandom(`${spec.seed}:leaf:${i}`);
     const rr = [r(), r(), r(), r(), r(), r()];
     const k = i % crowns, j = Math.floor(i / crowns);
-    // Each leaf keeps the form it was born with: older leaves are more juvenile.
-    const form = clamp01(today.formMaturity + (i - (today.leafCount - 1)) * 0.07);
-    const future = Math.max(0, i - today.leafCount + 1);
-    const length = today.leafLengthM * (0.4 + 0.6 * form) / (0.4 + 0.6 * today.formMaturity) * Math.min(2, 1 + 0.05 * future) * (1 + (rr[0] - 0.5) * spec.leaf.sizeVariation * 0.6);
+    // Each leaf keeps the form and size it was born with: older leaves are more juvenile.
+    const born = spec.leafAt(i), form = born.form;
+    const length = born.lengthM * (1 + (rr[0] - 0.5) * spec.leaf.sizeVariation * 0.6);
     const expand = smoothstep(0, 1.1, age), unfurl = smoothstep(0.2, 1.25, age);
     const youth = 1 - clamp01((age - 1) / Math.max(3, spec.maxLeaves * 0.7));
 
@@ -246,5 +258,8 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
       for (let s = 0; s < 10; s++) aerial.push(segmentMatrix(pts[s], pts[s].clone().lerp(pts[s + 1], 1.05), stemR * 0.32 * (1 - 0.3 * s / 10)));
     }
   });
-  return { leaves, petioles, stem, aerial, top };
+  const behind = new Vector3(-Math.sin(CAMERA_AZ), 0, -Math.cos(CAMERA_AZ));
+  const poleR = 0.018 + 0.012 * spec.maturity;
+  const pole = poleHeight ? { position: crownBase[0].base.clone().addScaledVector(behind, poleR + stemR * 1.2), height: poleHeight, radius: poleR } : null;
+  return { leaves, petioles, stem, aerial, pole, top };
 }

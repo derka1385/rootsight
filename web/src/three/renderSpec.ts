@@ -20,10 +20,12 @@ export type PlantRenderSpec = {
   reference: GrowthReferenceStage;
   /** Leaf-form maturity of the newest leaf, anchored on the fenestration seen in the photo. */
   formMaturity: number;
-  /** Continuous leaf count (never rounded, so new leaves can emerge gradually). */
+  /** Continuous count of leaves produced so far (never rounded, so new leaves emerge gradually). */
   leafCount: number;
   /** Most leaves the plant keeps before the oldest are shed. */
   maxLeaves: number;
+  /** Form maturity and blade length a leaf had when it was produced; fixed for its whole life. */
+  leafAt: (index: number) => { form: number; lengthM: number };
   /** Blade length (m) of a leaf with the newest leaf's form maturity. */
   leafLengthM: number;
   /** What the photo showed today: growth is always expressed relative to these. */
@@ -127,15 +129,34 @@ export function renderSpecOf(p: RenderProfile, state: PlantState, options: Rende
   const observedForm = monstera ? Math.max(ref0.maturity * (1 - ref0.confidence), smoothstep(0, 0.85, v.leaves.fenestration)) : ref0.maturity;
   const progress = clamp01((state.heightCm - m.currentHeightCm) / Math.max(1, K - m.currentHeightCm));
   const formMaturity = clamp01(observedForm + (1 - observedForm) * progress);
-  const count0 = Math.max(1, m.leaf.countNow);
-  const leafCount = count0 * Math.max(0.35, ref.leafCountEstimate / Math.max(1, ref0.leafCountEstimate));
-  const leafLengthM = m.leaf.lengthCm / 100 * (ref.averageLeafLength / Math.max(0.05, ref0.averageLeafLength)) ** 0.8;
+  const count0 = Math.max(1, m.leaf.countNow), length0 = m.leaf.lengthCm / 100;
+  const leafLengthM = length0 * (ref.averageLeafLength / Math.max(0.05, ref0.averageLeafLength)) ** 0.9;
+  // The reference counts leaves a plant keeps; it produces more and sheds the oldest.
+  const estimate = (x: number) => growthReference(table, x).leafCountEstimate, e0 = Math.max(1, estimate(maturity0));
+  const PRODUCED_PER_KEPT = 1.6;
+  const leafCount = monstera ? count0 + Math.max(0, estimate(maturity) - e0) * PRODUCED_PER_KEPT : count0 * Math.max(0.35, estimate(maturity) / e0);
+  const kept = estimate(maturity) * count0 / e0;
+  const leafAt = (i: number) => {
+    if (i < count0) {
+      // Leaves in the photo: heteroblastic, the oldest are smaller and more juvenile.
+      const form = clamp01(observedForm - (count0 - 1 - i) * 0.07);
+      return { form, lengthM: length0 * (0.4 + 0.6 * form) / (0.4 + 0.6 * observedForm) };
+    }
+    // Future leaves: find the maturity at which the plant produces leaf i, and take its form then.
+    const want = e0 + (i + 1 - count0) / PRODUCED_PER_KEPT;
+    let lo = maturity0, hi = 1;
+    for (let k = 0; k < 20; k++) { const mid = (lo + hi) / 2; if (estimate(mid) < want) lo = mid; else hi = mid; }
+    const r = growthReference(table, hi);
+    return {
+      form: clamp01(observedForm + Math.max(0, r.maturity - ref0.maturity)),
+      lengthM: length0 * Math.max(1, (r.averageLeafLength / Math.max(0.05, ref0.averageLeafLength)) ** 0.9),
+    };
+  };
   const pot = potDimensions(p);
   return {
     seed: v.seed, archetype, monstera,
     heightM: state.heightCm / 100, maturity, stage: ref.stage, reference: ref, formMaturity,
-    leafCount: monstera ? Math.min(18, leafCount) : leafCount,
-    maxLeaves: monstera ? Math.max(count0, Math.round(ref.leafCountEstimate * count0 / Math.max(1, ref0.leafCountEstimate)) + 2) : 999,
+    leafCount, maxLeaves: monstera ? Math.max(count0, kept) : Infinity, leafAt,
     leafLengthM,
     today: { leafCount: count0, leafLengthM: m.leaf.lengthCm / 100, formMaturity: observedForm, heightM: m.currentHeightCm / 100 },
     canopyWidthM: state.heightCm / 100 * v.silhouette.widthToHeight * (ref.canopyWidth / Math.max(0.2, ref0.canopyWidth)),
