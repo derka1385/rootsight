@@ -138,9 +138,10 @@ export function renderSpecOf(p: RenderProfile, state: PlantState, options: Rende
   const kept = estimate(maturity) * count0 / e0;
   const leafAt = (i: number) => {
     if (i < count0) {
-      // Leaves in the photo: heteroblastic, the oldest are smaller and more juvenile.
-      const form = clamp01(observedForm - (count0 - 1 - i) * 0.07);
-      return { form, lengthM: length0 * (0.4 + 0.6 * form) / (0.4 + 0.6 * observedForm) };
+      // Leaves in the photo: all near the observed size and form, the oldest a little smaller and
+      // more juvenile (the photo already tells us how varied they are).
+      const age = count0 > 1 ? (count0 - 1 - i) / (count0 - 1) : 0;
+      return { form: clamp01(observedForm - age * 0.3), lengthM: length0 * (1 - age * 0.25) };
     }
     // Future leaves: find the maturity at which the plant produces leaf i, and take its form then.
     const want = e0 + (i + 1 - count0) / PRODUCED_PER_KEPT;

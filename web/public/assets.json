@@ -1,1 +1,6 @@
-{ "surfaces": {}, "environment": null }
+{
+  "surfaces": {
+    "soil": { "albedo": "materials/soil/diff.jpg", "normal": "materials/soil/nor_gl.jpg", "roughness": "materials/soil/rough.jpg", "repeat": 3 }
+  },
+  "environment": "environment/studio.hdr"
+}

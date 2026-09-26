@@ -44,9 +44,10 @@ export default function Pot({ radius, depth, appearance, cutaway = true }: { rad
         roughness: surface?.roughness ? 1 : appearance.material === "ceramic" ? 0.24 : appearance.material === "plastic" ? 0.48 : 0.92,
       }),
       clayInside: new MeshStandardMaterial({ color: appearance.color, roughness: 0.95, side: DoubleSide }),
-      soil: new MeshStandardMaterial({ color: "#ffffff", map: soil, normalMap: soilMaps?.normal ?? null, roughness: 1, side: DoubleSide }),
+      // Scanned ground textures are dry field soil: darken them to damp potting mix.
+      soil: new MeshStandardMaterial({ color: soilMaps?.albedo ? "#6e5747" : "#ffffff", map: soil, normalMap: soilMaps?.normal ?? null, roughness: 1, side: DoubleSide }),
       // Cross-section: lifted so the roots in front of it read clearly.
-      section: new MeshStandardMaterial({ color: "#ffffff", map: soil, emissive: "#ffffff", emissiveMap: soil, emissiveIntensity: 0.55, roughness: 1, side: DoubleSide }),
+      section: new MeshStandardMaterial({ color: soilMaps?.albedo ? "#6e5747" : "#ffffff", map: soil, emissive: soilMaps?.albedo ? "#6e5747" : "#ffffff", emissiveMap: soil, emissiveIntensity: 0.55, roughness: 1, side: DoubleSide }),
     };
     return { wall, rim, fill, top, cut: { face, soilR, D }, mats };
   }, [radius, depth, appearance.color, appearance.material, cutaway, surface, soilMaps]);

@@ -28,3 +28,7 @@ their splits and holes match its maturity and venation (`web/src/three/leafSyste
 
 Only use textures you have the rights to (your own photos/scans or CC0 sources such as
 ambientCG or Poly Haven), and keep each map at 1024 px or less for phones.
+
+## Included
+
+- `soil/` — "Brown Mud" by Poly Haven (CC0), https://polyhaven.com/a/brown_mud, 1k, darkened in the material to read as damp potting mix.

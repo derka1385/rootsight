@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CanvasTexture, Color, NeutralToneMapping, SRGBColorSpace } from "three";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CanvasTexture, Color, NeutralToneMapping, SRGBColorSpace, type Material, type Mesh, type Object3D } from "three";
 import type { Group } from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ContactShadows, Environment, Lightformer, OrbitControls, SoftShadows } from "@react-three/drei";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "../three/visual";
@@ -71,10 +75,10 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       {/* Penumbra that widens with distance: the single biggest "not a video game" win. */}
       <SoftShadows size={22} samples={12} focus={0.7} />
       <primitive attach="background" object={background} />
-      <hemisphereLight args={["#fffaf0", "#b9a88c", 0.9]} />
+      <hemisphereLight args={["#fffaf0", "#b9a88c", hdri ? 0.35 : 0.9]} />
       <directionalLight
         position={[-2.2 * reach, 3.6 * reach, 2.4 * reach]}
-        intensity={light * 0.75}
+        intensity={light * (hdri ? 0.6 : 0.75)}
         color="#fff1dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -89,13 +93,14 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       />
       {/* Cool rim from behind: backlit blades glow through the translucency term. */}
       <directionalLight position={[1.8, 2.2, -2.6]} intensity={0.9} color="#e3eeff" />
-      {/* Soft studio reflections built in-scene (no HDR download): a window, a bounce card, a skylight. */}
-      <Environment resolution={128} files={hdri ?? undefined}>
+      {/* A real photo-studio HDRI (CC0) lights and reflects when present; otherwise in-scene softboxes. */}
+      {hdri ? <Suspense fallback={null}><Environment files={hdri} environmentIntensity={0.75} /></Suspense> : <Environment resolution={128}>
         <Lightformer form="rect" intensity={3} color="#fff3e2" position={[-3, 2.5, 2.5]} scale={[2.5, 3.5, 1]} target={[0, 0.3, 0]} />
         <Lightformer form="rect" intensity={1.2} color="#f2efe8" position={[3, 1.5, 1]} scale={[3, 2, 1]} target={[0, 0.3, 0]} />
         <Lightformer form="rect" intensity={0.9} color="#dbe7ff" position={[1, 2, -3]} scale={[4, 2, 1]} target={[0, 0.3, 0]} />
         <Lightformer form="circle" intensity={0.8} color="#ffffff" position={[0, 5, 0]} scale={4} />
-      </Environment>
+      </Environment>}
+      <AmbientOcclusion radius={Math.max(0.03, spec.heightM * 0.15)} />
 
       <OrbitControls makeDefault target={[0, 0.3, 0]} minPolarAngle={0.2} maxPolarAngle={Math.PI / 2 - 0.05} enablePan={false} />
       <CameraFit subject={subject} revision={profile} state={state} bottom={-table} width={Math.max(potR * 2.2, plantWidth)} />
@@ -150,4 +155,40 @@ function usePhotoLeafColor(sourceImage: string | undefined, fallback: string): s
   }, [sourceImage]);
   if (!sourceImage || sampled?.src !== sourceImage || !sampled.color) return fallback;
   return `#${new Color(fallback).lerp(new Color(sampled.color), 0.6).getHexString()}`;
+}
+
+/**
+ * Ground-truth-style ambient occlusion (three's GTAOPass): leaves darken where they crowd, the
+ * crown and the soil darken under the canopy, the pot sits in its own contact shadow. This is most
+ * of the difference between "rendered" and "photographed".
+ */
+function AmbientOcclusion({ radius }: { radius: number }) {
+  const gl = useThree(s => s.gl), scene = useThree(s => s.scene), camera = useThree(s => s.camera), size = useThree(s => s.size);
+  const { composer, ao } = useMemo(() => {
+    const composer = new EffectComposer(gl);
+    composer.addPass(new RenderPass(scene, camera));
+    const ao = new GTAOPass(scene, camera, 512, 512);
+    ao.blendIntensity = 1;
+    // Shadow-catcher floors are transparent: in the AO depth/normal pre-pass they would read as solid
+    // ground and punch pale halos under low leaves, so hide them there like GTAOPass hides lines.
+    // ponytail: patches a private GTAOPass hook; if three renames it, AO simply includes the floor again.
+    const pass = ao as unknown as { _overrideVisibility: () => void; _visibilityCache: Object3D[] };
+    const hideLines = pass._overrideVisibility.bind(ao);
+    pass._overrideVisibility = () => {
+      hideLines();
+      scene.traverse(o => {
+        const material = (o as Mesh).material as Material | undefined;
+        if ((o as Mesh).isMesh && o.visible && material && !Array.isArray(material) && material.transparent) { o.visible = false; pass._visibilityCache.push(o); }
+      });
+    };
+    composer.addPass(ao);
+    composer.addPass(new OutputPass());
+    return { composer, ao };
+  }, [gl, scene, camera]);
+  useEffect(() => () => composer.dispose(), [composer]);
+  useEffect(() => { composer.setPixelRatio(gl.getPixelRatio()); composer.setSize(size.width, size.height); }, [composer, gl, size]);
+  useEffect(() => { ao.updateGtaoMaterial({ radius, distanceExponent: 1.4, thickness: radius * 2, scale: 1.1, samples: 16 }); ao.updatePdMaterial({ radius: 6 }); }, [ao, radius]);
+  // Priority 1 takes over rendering from R3F; frameloop="demand" still only renders when invalidated.
+  useFrame(() => composer.render(), 1);
+  return null;
 }

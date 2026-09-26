@@ -28,9 +28,10 @@ function shapeFor(level: number, spec: PlantRenderSpec, i: number): LeafShape {
   const r = seededRandom(`${spec.seed}:shape:${i}`);
   return {
     // Juvenile leaves are narrower hearts; adult blades are broad with deep basal lobes.
-    widthToLength: spec.leaf.widthToLength * (0.9 + 0.1 * level),
-    widest: 0.32 + 0.06 * r(), baseWidth: 0.5 + 0.2 * level, lobe: 0.04 + 0.1 * level, acumen: 0.55 - 0.25 * level,
-    asymmetry: (r() - 0.5) * 0.18, arch: 0.1 + 0.12 * level + r() * 0.05, cup: 0.35 + 0.35 * level, fold: 0.22 - 0.14 * level,
+    // Broadly ovate-cordate: nearly as wide as long, widest just below the middle, deep basal lobes.
+    widthToLength: Math.max(0.82, spec.leaf.widthToLength) * (0.95 + 0.1 * level),
+    widest: 0.4 + 0.05 * r(), baseWidth: 0.72 + 0.1 * level, lobe: 0.1 + 0.08 * level, acumen: 0.35 - 0.15 * level,
+    asymmetry: (r() - 0.5) * 0.18, arch: 0.12 + 0.1 * level + r() * 0.05, cup: 0.3 + 0.3 * level, fold: 0.18 - 0.1 * level,
     undulation: 0.006 + 0.01 * level, twist: (r() - 0.5) * 0.12, seed: `${spec.seed}:${i}`,
   };
 }
@@ -143,26 +144,32 @@ type LeafPose = { matrix: Matrix4; roll: number; color: Color; level: number };
 
 /** Pure: same spec and shown values, same plant. No Math.random, no rounded counts. */
 export function aroidLayout(spec: PlantRenderSpec, shown: Shown) {
-  // Match the simulated height: a small plant shortens its petioles, a tall one climbs on its stem.
+  // Match the photo's silhouette: the simulated height (a small plant shortens its petioles, a tall
+  // one climbs on its stem) and the canopy width / height ratio (petioles splay or gather).
   // Fitted on the turgid plant, so wilting droops the leaves instead of growing the stem.
   const turgid = { ...shown, wilt: 0 };
-  const first = layoutPass(spec, turgid, 1, 0);
-  const fit = Math.min(1.3, Math.max(0.55, shown.height / Math.max(0.02, first.top)));
-  const second = layoutPass(spec, turgid, fit, 0);
-  return layoutPass(spec, shown, fit, Math.max(0, shown.height - second.top));
+  const targetHalfWidth = shown.height * spec.visual.silhouette.widthToHeight / 2;
+  let splay = 1;
+  for (let pass = 0; pass < 3; pass++) {
+    const probe = layoutPass(spec, turgid, 0, splay);
+    splay = Math.min(2.5, Math.max(0.35, splay * targetHalfWidth / Math.max(0.02, probe.halfWidth)));
+  }
+  const fitted = layoutPass(spec, turgid, 0, splay);
+  return layoutPass(spec, shown, Math.max(0, shown.height - fitted.top), splay);
 }
 
 /** The default camera looks from this azimuth; the oldest leaf is turned away from it. */
 const CAMERA_AZ = Math.atan2(1.6, 2.4);
 
-function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: number) {
+function layoutPass(spec: PlantRenderSpec, shown: Shown, climb: number, splay = 1) {
   const { today } = spec, c = Math.max(0.001, shown.count), wilt = shown.wilt;
   const crowns = Math.max(1, Math.min(4, spec.stem.count));
   const potR = spec.pot.radius || 0.1;
-  const internode = Math.max(0.006, spec.visual.stems.internodeCm / 100 * 0.3) * Math.sqrt(fit);
+  const internode = Math.max(0.006, spec.visual.stems.internodeCm / 100 * 0.3);
   const droop = spec.leaf.droop;
   const leaves: LeafPose[] = [], petioles: Matrix4[] = [], stem: Matrix4[] = [], aerial: Matrix4[] = [];
-  let top = 0;
+  let top = 0, halfWidth = 0;
+  const floor = -(spec.pot.depth || 0.1);
 
   const crownBase = Array.from({ length: crowns }, (_, k) => {
     const r = seededRandom(`${spec.seed}:crown:${k}`);
@@ -199,11 +206,18 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     const az = crownBase[k].phase + j * 2.51 + (rr[1] - 0.5) * 0.7;
     const out = new Vector3(Math.sin(az), 0, Math.cos(az));
 
-    // Petiole: rises from the node, then arches out; older leaves reach lower and further.
-    const pl = length * (0.85 + 0.3 * rr[2]) * (0.2 + 0.8 * smoothstep(0, 0.8, age)) * emerge * fit;
-    let el = 0.3 + 0.95 * youth + (rr[3] - 0.5) * 0.25 - wilt * 0.8 - droop * 0.3 - shed * 0.5;
+    // Petioles in a pot are steep (a vase of stalks); the oldest lean out the most.
+    const upright = 0.8 + 0.55 * youth + (rr[3] - 0.5) * 0.3 - droop * 0.3;
+    // Blades are tiered from the pot rim to the crown top, newest highest: each petiole is as long
+    // as it must be to hold its blade at its tier (within what a real petiole can do).
+    const tier = shown.height * (0.24 + 0.58 * youth ** 0.8 + (rr[2] - 0.5) * 0.12);
+    const reach = (tier - node.y) / Math.max(0.35, Math.sin(upright));
+    const pl = Math.min(length * 1.9, Math.max(length * 0.5, reach)) * (0.2 + 0.8 * smoothstep(0, 0.8, age)) * emerge;
+    let el = upright - wilt * 1.1 - shed * 0.5;
     el = Math.max(-0.45, el + (1.45 - el) * (1 - unfurl));
-    const chord = out.clone().multiplyScalar(Math.cos(el)).addScaledVector(UP, Math.sin(el));
+    // A drooping petiole can hang over the rim but never through the table.
+    el = Math.max(el, Math.asin(Math.max(-1, Math.min(1, (floor + 0.02 - node.y) / Math.max(0.01, pl * 0.95)))));
+    const chord = out.clone().multiplyScalar(Math.cos(el) * splay).addScaledVector(UP, Math.sin(el)).normalize();
     const p3 = node.clone().addScaledVector(chord, pl * 0.95);
     const curve = new CubicBezierCurve3(
       node,
@@ -220,17 +234,21 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     }
 
     // Blade: faces up and out, the newest held more upright; wilt and shedding let it hang.
-    let pitch = -0.3 + 0.8 * youth ** 1.5 + (rr[4] - 0.5) * 0.5 - wilt * 1.05 - shed * 0.6 - droop * 0.4;
+    // Adult blades hang off the petiole tip tilted outward (their faces turn to the room), the
+    // newest are held higher.
+    let pitch = -0.6 + 1.2 * youth ** 1.2 + (rr[4] - 0.5) * 0.45 - wilt * 0.8 - shed * 0.6 - droop * 0.4;
     pitch += (1.5 - pitch) * (1 - unfurl);
+    const size = length * (0.28 + 0.72 * expand) * emerge * (1 - 0.5 * smoothstep(0.7, 1, shed));
+    // A hanging blade comes to rest on the table instead of sinking into it.
+    pitch = Math.max(pitch, Math.asin(Math.max(-1, Math.min(1, (floor + 0.01 - p3.y) / Math.max(0.01, size * 0.95)))));
     const dir = out.clone().multiplyScalar(Math.cos(pitch)).addScaledVector(UP, Math.sin(pitch));
     const side = new Vector3(Math.cos(az), 0, -Math.sin(az));
     const normal = dir.clone().cross(side);
     const basis = new Matrix4().makeBasis(side, normal, dir);
     const roll = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), (rr[5] - 0.5) * 0.9);
-    const size = length * (0.28 + 0.72 * expand) * emerge * (1 - 0.5 * smoothstep(0.7, 1, shed));
     const matrix = new Matrix4().compose(p3, new Quaternion().setFromRotationMatrix(basis).multiply(roll), new Vector3(size, size, size));
-    const halfWidth = spec.leaf.widthToLength * 0.5;
-    const curl = (1 - unfurl) * 2.9 / halfWidth - wilt * 1.7 - shed * 0.9;
+    const bladeHalf = spec.leaf.widthToLength * 0.5;
+    const curl = (1 - unfurl) * 2.9 / bladeHalf - wilt * 1.7 - shed * 0.9;
 
     // New leaves are a lighter lime; the oldest yellows as it is shed; drought dulls everything.
     const color = new Color(1, 1, 1);
@@ -243,6 +261,8 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
     LEVELS.forEach((l, b) => { if (Math.abs(l - form) < Math.abs(LEVELS[level] - form)) level = b; });
     leaves.push({ matrix, roll: curl, color, level });
     top = Math.max(top, p3.y + size * Math.max(0.15, Math.sin(pitch)) * 0.8);
+    const tip = p3.clone().addScaledVector(dir, size * 0.85);
+    halfWidth = Math.max(halfWidth, Math.hypot(tip.x, tip.z), Math.hypot(p3.x, p3.z) + size * spec.leaf.widthToLength * 0.4);
   }
 
   // Stems: from the soil up to the newest node, thickening with age.
@@ -264,5 +284,5 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, fit: number, climb: num
   const behind = new Vector3(-Math.sin(CAMERA_AZ), 0, -Math.cos(CAMERA_AZ));
   const poleR = 0.018 + 0.012 * spec.maturity;
   const pole = poleHeight ? { position: crownBase[0].base.clone().addScaledVector(behind, poleR + stemR * 1.2), height: poleHeight, radius: poleR } : null;
-  return { leaves, petioles, stem, aerial, pole, top };
+  return { leaves, petioles, stem, aerial, pole, top, halfWidth };
 }

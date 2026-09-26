@@ -45,8 +45,8 @@ export function widthProfile(t: number, s: LeafShape): number {
   if (t <= s.widest) w = s.baseWidth + (1 - s.baseWidth) * Math.sin((Math.PI / 2) * (t / s.widest)) ** 0.85;
   else {
     const u = (t - s.widest) / (1 - s.widest);
-    // Convex shoulders, then an acuminate drip tip that narrows faster than an ellipse.
-    w = Math.cos((Math.PI / 2) * u) ** (0.9 + s.acumen * 0.5) * (1 - s.acumen * 0.35 * smoothstep(0.55, 1, u));
+    // Rounded, nearly elliptical upper half, pinched into a short drip tip at the very end.
+    w = Math.max(0, 1 - u ** 2) ** 0.62 * (1 - s.acumen * 0.6 * smoothstep(0.55, 1, u));
   }
   const teeth = s.serration ?? 0;
   if (teeth >= 2) w *= 0.72 + 0.28 * Math.abs(Math.cos(t * Math.PI * 2.5));
@@ -66,8 +66,9 @@ export function leafGeometry(shape: LeafShape, ROWS = 48, HALF = 11): BufferGeom
       const s = c / HALF, side = Math.sign(s) || 1;
       const w = widthProfile(t, shape) * half * (1 + shape.asymmetry * side);
       const x = s * w;
-      // Basal lobes swing back past the attachment; the sinus stays on the midrib.
-      const z = t - shape.lobe * Math.abs(s) ** 1.6 * (1 - t) ** 3;
+      // Basal lobes: the base row dips behind the attachment in two rounded lobes (deepest about
+      // halfway out) and rises again to meet the margin; the sinus stays on the midrib.
+      const z = t - shape.lobe * Math.sin(Math.PI * Math.abs(s) ** 1.2) * (1 - t) ** 3;
       const a = Math.abs(x) / half;
       const y = shape.fold * Math.abs(x) - shape.cup * x * x - shape.arch * t * t
         + 0.05 * shape.lobe * Math.max(0, -z) / Math.max(0.01, shape.lobe)
@@ -148,10 +149,12 @@ export function leafAlbedo(opts: { seed: string; formMaturity: number; fenestrat
   const along = ctx.createLinearGradient(0, S, 0, 0);
   along.addColorStop(0, "rgba(190,210,120,0.10)"); along.addColorStop(0.35, "rgba(0,0,0,0)"); along.addColorStop(1, "rgba(0,20,0,0.08)");
   ctx.fillStyle = along; ctx.fillRect(0, 0, S, S);
-  // Soft mottling so large blades never read as a flat fill.
-  for (let i = 0; i < 180; i++) {
-    ctx.fillStyle = rand() > 0.5 ? "rgba(150,190,110,0.045)" : "rgba(0,25,5,0.05)";
-    ctx.beginPath(); ctx.arc(rand() * S, rand() * S, 4 + rand() * 26, 0, 6.29); ctx.fill();
+  // Soft, large-scale tonal drift so big blades never read as a flat fill (no visible spots).
+  for (let i = 0; i < 26; i++) {
+    const x = rand() * S, y = rand() * S, r = 40 + rand() * 120;
+    const blob = ctx.createRadialGradient(x, y, 0, x, y, r);
+    blob.addColorStop(0, rand() > 0.5 ? "rgba(120,170,90,0.07)" : "rgba(0,20,5,0.08)"); blob.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = blob; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
   if (opts.variegation && opts.variegation.kind !== "none" && opts.variegation.amount > 0) {
     ctx.fillStyle = opts.variegation.color;
@@ -163,16 +166,16 @@ export function leafAlbedo(opts: { seed: string; formMaturity: number; fenestrat
   }
   // Veins: pale yellow-green, midrib widest and tapering to the tip.
   ctx.lineCap = "round";
-  const vein = base.clone().lerp(new Color("#d8e6a0"), 0.45);
+  const vein = base.clone().lerp(new Color("#d8e6a0"), 0.32);
   ctx.strokeStyle = css(vein);
   for (let i = 0; i < 24; i++) {
     const t0 = i / 24, t1 = (i + 1) / 24;
-    ctx.lineWidth = 7 * (1 - t0) + 1.2;
+    ctx.lineWidth = 5 * (1 - t0) + 1;
     ctx.beginPath(); ctx.moveTo(...P(0, t0)); ctx.lineTo(...P(0, t1)); ctx.stroke();
   }
-  ctx.globalAlpha = 0.55;
+  ctx.globalAlpha = 0.28;
   for (const side of [-1, 1]) for (const v of ven.veins) {
-    ctx.lineWidth = 2.2 * (1 - v.t0 * 0.5);
+    ctx.lineWidth = 1.6 * (1 - v.t0 * 0.5);
     ctx.beginPath();
     for (let a = 0; a <= 1.001; a += 0.05) { const [s, t] = veinPoint(v.t0, v.rise, a); ctx.lineTo(...P(side * s, t)); }
     ctx.stroke();
@@ -244,7 +247,7 @@ export function leafNormal(ven: Venation): Texture {
     for (const v of ven.veins) d = Math.min(d, Math.abs(t - (v.t0 + v.rise * a ** 1.3)));
     const lateral = Math.exp(-((d / 0.012) ** 2)) * (1 - 0.5 * a);
     const midrib = Math.exp(-((a / 0.035) ** 2));
-    height[y * N + x] = 0.55 * midrib - 0.6 * lateral + 0.25 * Math.min(1, d / 0.05);
+    height[y * N + x] = 0.5 * midrib - 0.28 * lateral + 0.18 * Math.min(1, d / 0.06);
   }
   const data = new Uint8ClampedArray(N * N * 4);
   const h = (x: number, y: number) => height[Math.min(N - 1, Math.max(0, y)) * N + Math.min(N - 1, Math.max(0, x))];
@@ -281,13 +284,12 @@ function patchRoll(shader: WebGLProgramParametersWithUniforms, normals: boolean)
 export function leafMaterial(map: Texture, normalMap: Texture, opts: { gloss: number; underside: string }) {
   const material = new MeshPhysicalMaterial({
     map, normalMap, alphaTest: 0.5, side: DoubleSide,
-    roughness: 0.62 - opts.gloss * 0.3, metalness: 0,
-    // A waxy cuticle: glossy aroids get a sharp secondary highlight on top of the diffuse leaf.
-    clearcoat: opts.gloss * 0.35, clearcoatRoughness: 0.42,
-    sheen: 0.25, sheenRoughness: 0.6, sheenColor: new Color("#cfe8b0"),
-    envMapIntensity: 0.9,
+    roughness: 0.62 - opts.gloss * 0.2, metalness: 0,
+    // A waxy cuticle: glossy leaves mirror the softboxes in a sharp coat over a dark diffuse blade.
+    clearcoat: 0.15 + opts.gloss * 0.3, clearcoatRoughness: 0.18 - opts.gloss * 0.08,
+    specularIntensity: 0.35, envMapIntensity: 0.55,
   });
-  material.normalScale.set(0.9, 0.9);
+  material.normalScale.set(0.7, 0.7);
   const underside = new Color(opts.underside);
   material.onBeforeCompile = shader => {
     patchRoll(shader, true);
