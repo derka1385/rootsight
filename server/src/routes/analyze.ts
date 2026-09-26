@@ -1,17 +1,17 @@
 import type { Request, Response } from "express";
 import { setTimeout as sleep } from "node:timers/promises";
-import { AnalyzeRequest, PlantProfileOut } from "@rootsight/shared/schema";
+import { AnalyzeRequest, PlantScan } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
 import { askJson, imageBlock, useMock } from "../claude";
 import { ANALYZE_PROMPT } from "../prompts";
 
-// POST /api/analyze {imageBase64, mediaType} -> PlantProfile
+// POST /api/analyze {imageBase64, mediaType} -> PlantScan {profile, observation, growth}
 export async function analyze(req: Request, res: Response) {
   const photo = AnalyzeRequest.parse(req.body);
   if (useMock()) {
     await sleep(600);
     return res.json(fixtures.monstera);
   }
-  // Opus 5.5 at medium effort: this profile drives the 3D render.
-  res.json(await askJson(PlantProfileOut, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this plant." }], "medium"));
+  // Medium effort: one call identifies the species, reconstructs today's plant and plans its growth.
+  res.json(await askJson(PlantScan, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Scan this plant." }], "medium"));
 }
