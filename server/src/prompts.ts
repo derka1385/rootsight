@@ -1,7 +1,7 @@
 const UNITS = `Units: heights and lengths in cm, temperatures in °C, colors as #rrggbb hex.
 The output drives a 3D reconstruction, so numbers must be physically plausible and consistent with each other.`;
 
-// Three separate jobs, kept apart in the answer: the species card, THIS plant today, its future.
+// What the photo shows about THIS plant; the renderer rebuilds today's plant from it.
 const OBSERVE = `observation = THIS plant as photographed, not a typical one. The "Scanned plant" 3D view is rebuilt from it.
 - Use the pot rim as the size reference when visible (houseplant pots are usually 10-30 cm across);
   keep plantHeightCm, canopyWidthCm, leaf lengths and pot size consistent with each other.
@@ -16,47 +16,50 @@ const OBSERVE = `observation = THIS plant as photographed, not a typical one. Th
 - confidence: be honest; lower it when the photo is partial, blurry or has no scale reference.
 - succulent.bodyForm "none" for non-succulents (then ribCount 0, spineDensity 0, offsets 0).`;
 
-const GROW = `growth = the likely path of THIS plant from today, grounded in the species' real growth habit indoors.
-- stages[0] is today: monthsFromNow 0 and numbers equal to the observation.
-- Then 2-4 later stages in order with realistic timing for indoor growth, each with the height, canopy
-  width, leaf count, newest-leaf length, maturity, axis count and fenestration it would have, plus the
-  visible structural changes that get it there (new canes, splits appearing, side shoots, a woody base,
-  shedding of lower leaves...). Growth changes structure, not just size.
-- source "claude".`;
-
-export const ANALYZE_PROMPT = `You are a botanist and a 3D reconstruction assistant. From one photo, return a PlantScan:
-profile = the SPECIES card:
-- species.confidence: your honest 0-1 certainty in the identification.
-- wiki: family, native region, 2-3 sentence encyclopedia summary, care difficulty, toxicity to cats/dogs.
-- morphology: typical species morphology (currentHeightCm = this plant's height, matureHeightCm = a typical mature indoor specimen).
-- roots: typical root system (not visible; infer). care: practical indoor care.
-- facts: 3 to 5 short, surprising facts (max ~15 words each). healthNotes: species-level care advice.
+export const IDENTIFY_PROMPT = `You are a botanist and a 3D reconstruction assistant. From one photo, return a PlantIdentification:
+- identity: the species (binomial scientificName), family, your honest 0-1 confidence, and common aliases.
+- wiki: native region, a 2-3 sentence encyclopedia summary, care difficulty, toxicity to cats/dogs.
+- care: practical indoor care; waterIntervalDays is the ideal interval between waterings.
+- facts: 3 to 5 short, surprising facts (max ~15 words each).
 ${OBSERVE}
-${GROW}
+${UNITS}`;
+
+// Species knowledge comes from references, not from memory alone: Claude only structures what they say.
+export const NORMALIZE_PROMPT = `You turn botanical reference material about one species into structured morphology for a 3D renderer.
+You get reference text (e.g. Wikipedia's description) and reference photos of the species.
+Return the species prior and its life stages for a plant grown INDOORS in a pot:
+- prior: architecture (archetype, habit, branching, leaf arrangement/shape/size ranges for juvenile and mature
+  leaves, stem structure and mature thickness, petiole, canopy form and width/height, roots, mature indoor
+  height, months from a young plant to mature form, mature fenestration, how juveniles differ, and a few
+  rendering-relevant notes).
+- stages: 4-5 stages from SEEDLING to LARGE_MATURE with relativeAge and relativeHeight as fractions of
+  maturity (monotonic), canopy width/height, the leaf count range kept, leaf maturity, fenestration, axis
+  count (stems/canes/crowns/offsets) and branching density, and 1-3 visible morphological changes each.
+Prefer what the references state; where they are silent use typical horticultural knowledge, and keep
+numbers plausible rather than falsely precise.
 ${UNITS}`;
 
 export const REFINE_PROMPT = `You are checking a 3D reconstruction of a plant against the real photo.
-Image 1 is the real photo. Image 2 is our render of it. You also get the PlantScan behind the render.
-Correct the OBSERVATION (and, if the size or stage was wrong, the growth stages) so the next render matches
-the photo better. Work in this order, it is the order people notice:
+Image 1 is the real photo. Image 2 is our render of it. You also get the PlantProfile behind the render.
+Return a RefinePatch: ONLY the observation fields that are visibly off, with corrected values, plus one
+short correction note per fix. Omit everything that is already right. Work in the order people notice:
 1. Silhouette: plant height vs canopy width, lean, symmetry, where the foliage mass sits (leafClusters).
-2. Architecture: number and height of stems/canes/crowns (axes), branching, archetype if clearly wrong.
-3. Leaves: count, density, size range, orientation/droop, shape, fenestration, gloss.
-4. Pot: shape, size relative to the plant, material, colour.
-5. Colours: leaf, young leaf, underside, stem, soil; health cues.
-Change only what is visibly off and keep every other value identical so the plant doesn't jump between
-renders. Keep growth.stages[0] equal to the corrected observation. List each fix in corrections.
+2. Architecture: number and height of stems/canes/crowns (structure.axes), branching density.
+3. Leaves: count, density/fullness, size range, orientation/droop, fenestration, gloss.
+4. Maturity and stage if the render looks younger or older than the photo.
+5. Pot shape/size/colour and colour direction of leaves and stems.
+Keep changes proportionate: nudge toward the photo, do not rewrite the plant.
 ${UNITS}`;
 
 export const WHATIF_PROMPT = `You simulate "what if" scenarios for one specific houseplant.
-You get its PlantScan (species card, today's observation, growth path), the current growing conditions and a
-question (water less, more light, repotting, moving it, fertilizing...).
+You get its PlantProfile (species, today's observation, personalised growth stages), the current growing
+conditions and a question (water less or more, more or less light, repotting, fertilising, humidity...).
+Our simulator moves the plant along its growth stages at a pace set by these conditions:
+waterIntervalDays (hydration: longer than ideal wilts and slows; much shorter rots roots), light (vs the
+species' preference), potDiameterCm (a root-bound canopy stalls; repotting frees it) and pace (other care as a
+growth-rate multiplier, 1 = typical, e.g. 1.2 with regular feeding, 0.7 in cold drafts).
 Return:
-- conditions: the conditions implied by the question (unchanged fields stay as given; repotting sets a
-  larger potDiameterCm).
-- growth: the re-planned future from today's stage under those conditions: stages[0] stays today; later
-  stages change timing, size, leaf count, maturity and structural changes (e.g. etiolated leggy growth in
-  low light, smaller yellowing leaves when under-watered, a growth spurt after repotting).
-- vigor: expected 0-1 vigor under the scenario.
-- explanation: 2-3 friendly sentences on what would happen to THIS plant and why.
+- conditions: the conditions implied by the question (unchanged fields stay as given).
+- explanation: 2-3 friendly sentences on what would happen to THIS plant and why, in terms of its growth
+  (leaf size and maturity, new leaves, droop, colour, stems).
 ${UNITS}`;
