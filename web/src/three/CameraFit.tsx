@@ -12,7 +12,8 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
   const aspect = useThree(s => s.size.width / Math.max(1, s.size.height));
   const controls = useThree(s => s.controls) as unknown as Controls | null;
   const goal = useRef({ y: 0.3, dist: 2.9, moving: false });
-  const measure = useRef(true);
+  // Re-measure for a moment after each change: the plant glides to its new shape over ~1 s.
+  const measureUntil = useRef(0);
   const center = useRef(new Vector3());
   const initial = useRef(true);
   const direction = useRef(new Vector3());
@@ -21,12 +22,13 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
     const span = height + bottom;
     const dist = Math.max(span, width / Math.max(0.2, aspect)) * 1.35 / (2 * Math.tan(20 * Math.PI / 180));
     goal.current = { y: (height - bottom) / 2, dist: Math.max(0.15, dist), moving: true };
-    measure.current = true;
+    measureUntil.current = performance.now() + 1200;
     invalidate();
   }, [height, state.wilt, bottom, width, aspect, invalidate, revision]);
   useFrame((_, delta) => {
     if (!controls || !goal.current.moving) return;
-    if (measure.current && subject?.current) {
+    const measuring = performance.now() < measureUntil.current;
+    if (measuring && subject?.current) {
       subject.current.updateWorldMatrix(true, true);
       const box = new Box3().setFromObject(subject.current);
       if (!box.isEmpty()) {
@@ -53,7 +55,6 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
         goal.current.dist = Math.max(0.15, distance * 1.02);
         goal.current.y = center.current.y;
       }
-      measure.current = false;
     }
     const target = controls.target, goalNow = goal.current;
     const factor = initial.current ? 1 : 1 - Math.exp(-10 * Math.min(delta, 0.1));
@@ -66,7 +67,7 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
     camera.position.copy(target).add(direction.current);
     controls.update();
     initial.current = false;
-    goalNow.moving = Math.abs(goalNow.y - target.y) + Math.abs(goalNow.dist - direction.current.length()) > 0.0005;
+    goalNow.moving = measuring || Math.abs(goalNow.y - target.y) + Math.abs(goalNow.dist - direction.current.length()) > 0.0005;
     if (goalNow.moving) invalidate();
   });
   return null;
