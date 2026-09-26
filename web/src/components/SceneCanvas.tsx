@@ -52,7 +52,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
   const trailing = spec.archetype === "vine";
   const plantWidth = spec.heightM * visual.silhouette.widthToHeight;
   const light = WINDOW[profile.care.light];
-  const rootScale: [number, number, number] = [Math.min(1, potR * 1.5 / Math.max(0.01, state.rootSpreadCm / 100)), Math.min(1, potD * 0.9 / Math.max(0.01, state.rootDepthCm / 100)), Math.min(1, potR * 1.5 / Math.max(0.01, state.rootSpreadCm / 100))];
+  const rootBounds = useMemo(() => ({ radius: potR * 0.86, depth: potD * 0.95 }), [potR, potD]);
   const table = trailing ? -Math.max(potD, spec.heightM * 1.2) : -potD;
   const reach = Math.max(1, spec.heightM + potD);
 
@@ -112,7 +112,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       <group ref={subject}>
         {visual.pot.material !== "none" && <Pot radius={potR} depth={potD} appearance={visual.pot} cutaway={cutaway} />}
         <Plant state={state} profile={profile} spec={spec} />
-        {cutaway && visual.pot.material !== "none" && <group scale={rootScale}><Roots state={state} profile={profile} /></group>}
+        {cutaway && visual.pot.material !== "none" && <Roots state={state} profile={profile} bounds={rootBounds} />}
       </group>
     </Canvas>
   );
