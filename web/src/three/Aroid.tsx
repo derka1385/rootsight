@@ -144,10 +144,12 @@ type LeafPose = { matrix: Matrix4; roll: number; color: Color; level: number };
 /** Pure: same spec and shown values, same plant. No Math.random, no rounded counts. */
 export function aroidLayout(spec: PlantRenderSpec, shown: Shown) {
   // Match the simulated height: a small plant shortens its petioles, a tall one climbs on its stem.
-  const first = layoutPass(spec, shown, 1, 0);
+  // Fitted on the turgid plant, so wilting droops the leaves instead of growing the stem.
+  const turgid = { ...shown, wilt: 0 };
+  const first = layoutPass(spec, turgid, 1, 0);
   const fit = Math.min(1.3, Math.max(0.55, shown.height / Math.max(0.02, first.top)));
-  const second = layoutPass(spec, shown, fit, 0);
-  return second.top >= shown.height ? second : layoutPass(spec, shown, fit, shown.height - second.top);
+  const second = layoutPass(spec, turgid, fit, 0);
+  return layoutPass(spec, shown, fit, Math.max(0, shown.height - second.top));
 }
 
 /** The default camera looks from this azimuth; the oldest leaf is turned away from it. */
