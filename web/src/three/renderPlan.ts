@@ -1,174 +1,161 @@
-import type { PlantState } from "@rootsight/shared/schema";
-import { architectureOf, type Archetype } from "./architecture";
+import { Vector3 } from "three";
+import type { GrowthConditions, GrowthStage, PlantObservation, PlantScan } from "@rootsight/shared/schema";
+import { defaultConditions, growthAt, type GrowthState } from "@rootsight/shared/simulation";
 import { clamp01, smoothstep } from "./procedural";
-import { potDimensions, visualOf, type RenderProfile, type Visual } from "./visual";
+import { visualOf, type RenderProfile, type Visual } from "./visual";
 
-/**
- * Everything the renderer needs, resolved once from (profile, simulated state, optional photo).
- * Components read this instead of re-deriving numbers from the raw profile, so the photo, the
- * growth model and the species reference all meet in one place.
+/*
+ * C. The render plan: everything the 3D renderers need, resolved from a scan.
+ *
+ *  Scanned mode  = the observation, rendered as literally as possible (counts, sizes, pot, colours,
+ *                  where the stems and leaf masses are). Species priors only fill what the photo
+ *                  cannot show (the far side, hidden stems, leaf venation).
+ *  Future mode   = the same plant, advanced along its GrowthPlan by growthAt(): stages add leaves,
+ *                  axes and maturity (new leaf forms), the canopy re-spreads, old leaves are shed.
+ *
+ * Renderers never read the raw scan; they read this plan.
  */
-export type PlantRenderSpec = {
+
+export type RenderMode = "scanned" | "future";
+
+/** The default camera looks from this azimuth (see SceneCanvas); photo directions are relative to it. */
+export const CAMERA_AZ = Math.atan2(1.5, 2.3);
+
+/** A photo direction ("left of the plant as photographed") as a horizontal unit vector in the scene. */
+export function directionVector(d: PlantObservation["frame"]["leanDirection"]): Vector3 {
+  const toward = new Vector3(Math.sin(CAMERA_AZ), 0, Math.cos(CAMERA_AZ));
+  const right = new Vector3(Math.cos(CAMERA_AZ), 0, -Math.sin(CAMERA_AZ));
+  switch (d) {
+    case "left": return right.negate();
+    case "right": return right;
+    case "toward": return toward;
+    case "away": return toward.negate();
+    default: return new Vector3();
+  }
+}
+
+export type PlantRenderPlan = {
+  mode: RenderMode;
   seed: string;
-  archetype: Archetype;
-  /** True for Monstera-like aroids: basal crown, long petioles, maturity-driven fenestration. */
+  archetype: PlantObservation["archetype"];
+  /** Monstera-like aroid renderer (basal crowns, long petioles, maturity-driven fenestration). */
   monstera: boolean;
+  months: number;
+  state: GrowthState;
+  conditions: GrowthConditions;
   heightM: number;
-  /** 0 = just germinated, 1 = species maturity, from simulated height. */
+  canopyWidthM: number;
   maturity: number;
   stage: GrowthStage;
-  reference: GrowthReferenceStage;
-  /** Leaf-form maturity of the newest leaf, anchored on the fenestration seen in the photo. */
-  formMaturity: number;
-  /** Continuous count of leaves produced so far (never rounded, so new leaves emerge gradually). */
+  /** Continuous count of leaves PRODUCED so far (new ones emerge gradually, old ones are shed). */
   leafCount: number;
-  /** Most leaves the plant keeps before the oldest are shed. */
+  /** Leaves the plant keeps before the oldest are shed. */
   maxLeaves: number;
   /** Form maturity and blade length a leaf had when it was produced; fixed for its whole life. */
   leafAt: (index: number) => { form: number; lengthM: number };
-  /** Blade length (m) of a leaf with the newest leaf's form maturity. */
-  leafLengthM: number;
-  /** What the photo showed today: growth is always expressed relative to these. */
-  today: { leafCount: number; leafLengthM: number; formMaturity: number; heightM: number };
-  canopyWidthM: number;
+  /** Today's photographed plant: every future is expressed relative to it. */
+  today: { leafCount: number; leafLengthM: number; leafLengthMinM: number; formMaturity: number; heightM: number };
   wilt: number;
-  leaf: { color: string; undersideColor: string; gloss: number; widthToLength: number; droop: number; sizeVariation: number; yellowing: number; brownTips: number; variegation: Visual["leaves"]["variegation"]; variegationAmount: number; variegationColor: string };
+  leaf: { color: string; youngColor: string; undersideColor: string; gloss: number; widthToLength: number; droop: number; sizeVariation: number; yellowing: number; brownTips: number; variegation: Visual["leaves"]["variegation"]; variegationAmount: number; variegationColor: string; fenestrationPotential: number };
   stem: { color: string; thicknessM: number; count: number };
-  pot: { radius: number; depth: number } & Visual["pot"];
+  /** Stems/canes/crowns as photographed, grown by the stage plan. */
+  axes: { kind: PlantObservation["structure"]["axes"][number]["kind"]; heightM: number; thicknessM: number; leanRad: number; direction: Vector3 }[];
+  /** Where the foliage mass sits: height as a fraction of plant height, a horizontal bias and a share. */
+  clusters: { height: number; direction: Vector3; share: number }[];
+  pot: { radius: number; depth: number; shape: PlantObservation["pot"]["shape"] } & Visual["pot"];
+  /** Legacy adapter for the generic architectures (herb/shrub/vine/grass/tree/succulent/cactus). */
+  profile: RenderProfile;
   visual: Visual;
 };
 
-export type GrowthStage = "SEEDLING" | "JUVENILE" | "YOUNG" | "MATURE" | "LARGE_MATURE";
+const DROOP = { upright: 0.05, spreading: 0.15, arching: 0.35, drooping: 0.7 } as const;
+const FORM = { aroid: "rosette", cane: "tree", herb: "upright-branching", shrub: "upright-branching", succulent: "succulent", cactus: "succulent", vine: "vine", grass: "grass", tree: "tree" } as const;
+const SHAPE = { ovate: "ovate", cordate: "ovate", lanceolate: "lanceolate", strap: "lanceolate", palmate: "palmate", needle: "needle", round: "round", fenestrated: "fenestrated" } as const;
 
 /**
- * How a species looks at one point of its life, relative to its mature size. Internal for now:
- * a later phase can fill these from photos of real specimens at known ages.
+ * The generic architectures still speak the older profile + visual dialect; feed them the
+ * observation (not the species average) so they rebuild the photographed individual.
  */
-export interface GrowthReferenceStage {
-  stage: GrowthStage;
-  /** Fraction of the time to maturity. */
-  relativeAge: number;
-  /** Height / mature height. */
-  relativeHeight: number;
-  /** Canopy width / plant height. */
-  canopyWidth: number;
-  /** Average blade length / mature blade length. */
-  averageLeafLength: number;
-  /** Leaf-form maturity: 0 juvenile entire leaves, 1 fully adult leaves. */
-  maturity: number;
-  leafCountEstimate: number;
-  /** Side shoots per metre of stem (0 for single-crown plants). */
-  branchingDensity: number;
-  morphologyNotes: string;
-  /** How much to trust this row over the photo (0..1). */
-  confidence: number;
-}
-
-const STAGES: GrowthStage[] = ["SEEDLING", "JUVENILE", "YOUNG", "MATURE", "LARGE_MATURE"];
-
-/** Monstera deliciosa grown indoors, from cuttings/seedlings to a large plant on its own stem. */
-const MONSTERA: GrowthReferenceStage[] = [
-  { stage: "SEEDLING", relativeAge: 0.02, relativeHeight: 0.06, canopyWidth: 1.1, averageLeafLength: 0.12, maturity: 0, leafCountEstimate: 2, branchingDensity: 0, morphologyNotes: "Entire heart-shaped leaves on short upright petioles, no splits.", confidence: 0.6 },
-  { stage: "JUVENILE", relativeAge: 0.15, relativeHeight: 0.16, canopyWidth: 1.35, averageLeafLength: 0.3, maturity: 0.18, leafCountEstimate: 5, branchingDensity: 0, morphologyNotes: "Solid leaves; the newest may show a first hole or notch.", confidence: 0.6 },
-  { stage: "YOUNG", relativeAge: 0.4, relativeHeight: 0.3, canopyWidth: 1.4, averageLeafLength: 0.55, maturity: 0.5, leafCountEstimate: 8, branchingDensity: 0, morphologyNotes: "Marginal splits on the newest leaves, older leaves still entire.", confidence: 0.55 },
-  { stage: "MATURE", relativeAge: 0.75, relativeHeight: 0.6, canopyWidth: 1.3, averageLeafLength: 0.85, maturity: 0.82, leafCountEstimate: 11, branchingDensity: 0.4, morphologyNotes: "Deep splits plus rows of holes along the midrib; aerial roots from the stem.", confidence: 0.5 },
-  { stage: "LARGE_MATURE", relativeAge: 1, relativeHeight: 1, canopyWidth: 1.15, averageLeafLength: 1, maturity: 1, leafCountEstimate: 14, branchingDensity: 0.8, morphologyNotes: "Leggy climbing stem, lower leaves shed, huge fenestrated leaves up top.", confidence: 0.45 },
-];
-
-/** Species-agnostic fallback, deliberately low confidence: the photo wins over it. */
-function genericReference(archetype: Archetype): GrowthReferenceStage[] {
-  const leafy = archetype !== "cactus";
-  return STAGES.map((stage, i) => {
-    const t = i / 4;
-    return {
-      stage, relativeAge: [0.02, 0.15, 0.4, 0.75, 1][i], relativeHeight: [0.06, 0.18, 0.35, 0.65, 1][i],
-      canopyWidth: archetype === "grass" ? 0.6 : 0.9, averageLeafLength: 0.3 + 0.7 * t, maturity: t,
-      leafCountEstimate: leafy ? Math.round(4 + t * 40) : 0, branchingDensity: archetype === "branching" || archetype === "tree" ? t * 3 : 0,
-      morphologyNotes: "Generic growth curve.", confidence: 0.25,
-    };
-  });
-}
-
-export function isMonstera(p: RenderProfile, v: Visual): boolean {
-  const kind = architectureOf(p, v);
-  if (kind !== "aroid" && kind !== "branching") return false; // a trailing or tree form keeps its own architecture
-  return /monstera|rhaphidophora|thaumatophyllum/i.test(p.species.scientificName) || p.morphology.leaf.shape === "fenestrated" || (kind === "aroid" && v.leaves.fenestration > 0.2);
-}
-
-export function referenceTable(p: RenderProfile, v = visualOf(p)): GrowthReferenceStage[] {
-  return isMonstera(p, v) ? MONSTERA : genericReference(architectureOf(p, v));
-}
-
-/** Interpolate the reference table at a maturity (relative height); stages blend, never snap. */
-export function growthReference(table: GrowthReferenceStage[], maturity: number): GrowthReferenceStage {
-  const m = clamp01(maturity);
-  let i = 0;
-  while (i < table.length - 2 && m > table[i + 1].relativeHeight) i++;
-  const a = table[i], b = table[i + 1];
-  const t = clamp01((m - a.relativeHeight) / (b.relativeHeight - a.relativeHeight));
-  const lerp = (k: keyof GrowthReferenceStage) => (a[k] as number) + ((b[k] as number) - (a[k] as number)) * t;
+function legacyProfile(scan: PlantScan, heightCm: number, canopyWidthCm: number): RenderProfile {
+  const o = scan.observation, l = o.leaves;
+  const perAxis = Math.max(1, l.count / o.structure.axes.length);
   return {
-    stage: t < 0.5 ? a.stage : b.stage,
-    relativeAge: lerp("relativeAge"), relativeHeight: m, canopyWidth: lerp("canopyWidth"), averageLeafLength: lerp("averageLeafLength"),
-    maturity: lerp("maturity"), leafCountEstimate: lerp("leafCountEstimate"), branchingDensity: lerp("branchingDensity"),
-    morphologyNotes: t < 0.5 ? a.morphologyNotes : b.morphologyNotes, confidence: lerp("confidence"),
+    ...scan.profile,
+    morphology: {
+      ...scan.profile.morphology,
+      growthForm: FORM[o.archetype],
+      currentHeightCm: o.frame.plantHeightCm,
+      stemColor: o.colors.stem,
+      leaf: { shape: SHAPE[l.shape], color: o.colors.leaf, lengthCm: Math.max(0.5, l.lengthCmMax), countNow: o.archetype === "cactus" ? 0 : l.count },
+    },
+    visual: {
+      seed: `${scan.profile.species.scientificName}:${o.leaves.count}:${o.frame.plantHeightCm}`,
+      silhouette: { widthToHeight: canopyWidthCm / heightCm, leanDeg: o.frame.leanDeg, leanDirection: o.frame.leanDirection === "center" ? "none" : o.frame.leanDirection, symmetry: o.frame.symmetry, legginess: clamp01(1 - l.density) * 0.6 },
+      stems: { countFromSoil: o.structure.axes.length, thicknessMm: o.structure.axes[0].thicknessMm, internodeCm: Math.max(0.5, o.frame.plantHeightCm / (perAxis / (l.arrangement === "opposite" ? 2 : 1) + 1)) },
+      leaves: {
+        arrangement: l.arrangement, widthToLength: l.widthToLength, tip: l.tip === "rounded" || l.tip === "notched" ? "rounded" : "pointed",
+        base: l.shape === "cordate" || l.shape === "fenestrated" ? "heart" : l.shape === "round" ? "rounded" : "tapered",
+        edge: l.edge === "wavy" ? "smooth" : l.edge, fenestration: l.fenestration, variegation: l.variegation, variegationColor: o.colors.variegation,
+        gloss: l.gloss, colorUnder: o.colors.underside, droop: DROOP[l.orientation], sizeVariation: l.lengthCmMax > 0 ? clamp01(1 - l.lengthCmMin / l.lengthCmMax) : 0.2,
+      },
+      succulent: o.succulent,
+      condition: { yellowing: o.health.yellowing, brownTips: o.health.brownTips },
+      pot: { material: o.pot.material === "concrete" ? "ceramic" : o.pot.material, color: o.pot.color, diameterCm: o.pot.rimDiameterCm, heightToDiameter: o.pot.heightCm / o.pot.rimDiameterCm },
+    },
   };
 }
 
-export type RenderOptions = { leafColor?: string };
-
-export function renderSpecOf(p: RenderProfile, state: PlantState, options: RenderOptions = {}): PlantRenderSpec {
-  const v = visualOf(p), m = p.morphology;
-  const archetype = architectureOf(p, v);
-  const monstera = isMonstera(p, v);
-  const K = Math.max(m.matureHeightCm, m.currentHeightCm);
-  const maturity = clamp01(state.heightCm / K), maturity0 = clamp01(m.currentHeightCm / K);
-  const table = referenceTable(p, v);
-  const ref = growthReference(table, maturity), ref0 = growthReference(table, maturity0);
-  // The photo is ground truth for today; the reference only says how things change from here.
-  const observedForm = monstera ? Math.max(ref0.maturity * (1 - ref0.confidence), smoothstep(0, 0.85, v.leaves.fenestration)) : ref0.maturity;
-  const progress = clamp01((state.heightCm - m.currentHeightCm) / Math.max(1, K - m.currentHeightCm));
-  const formMaturity = clamp01(observedForm + (1 - observedForm) * progress);
-  const count0 = Math.max(1, m.leaf.countNow), length0 = m.leaf.lengthCm / 100;
-  const leafLengthM = length0 * (ref.averageLeafLength / Math.max(0.05, ref0.averageLeafLength)) ** 0.9;
-  // The reference counts leaves a plant keeps; it produces more and sheds the oldest.
-  const estimate = (x: number) => growthReference(table, x).leafCountEstimate, e0 = Math.max(1, estimate(maturity0));
+export function renderPlanOf(scan: PlantScan, mode: RenderMode, months = 0, conditions = defaultConditions(scan)): PlantRenderPlan {
+  const o = scan.observation;
+  const t = mode === "scanned" ? 0 : months;
+  const state = growthAt(scan, t, conditions);
+  const profile = legacyProfile(scan, state.heightCm, state.canopyWidthCm);
+  const visual = visualOf(profile);
+  const count0 = Math.max(1, o.leaves.count);
+  const monstera = o.archetype === "aroid";
+  // Aroid leaf form: what the photographed leaves show (their splits), then what the stages add.
+  const formOf = (fenestration: number, maturity: number) => Math.max(smoothstep(0, 0.85, fenestration), maturity * 0.6);
+  const formToday = formOf(o.leaves.fenestration, o.maturity * (o.leaves.fenestration > 0.05 ? 1 : 0.4));
+  const lenMax = Math.max(0.005, o.leaves.lengthCmMax / 100), lenMin = Math.min(lenMax, Math.max(0.003, o.leaves.lengthCmMin / 100));
+  // The reference/stages count leaves a plant keeps; it produces more and sheds the oldest.
   const PRODUCED_PER_KEPT = 1.6;
-  const leafCount = monstera ? count0 + Math.max(0, estimate(maturity) - e0) * PRODUCED_PER_KEPT : count0 * Math.max(0.35, estimate(maturity) / e0);
-  const kept = estimate(maturity) * count0 / e0;
+  const produced = (leaves: number) => count0 + Math.max(0, leaves - count0) * PRODUCED_PER_KEPT;
+  const born = new Map<number, { form: number; lengthM: number }>();
   const leafAt = (i: number) => {
+    let hit = born.get(i);
+    if (hit) return hit;
     if (i < count0) {
-      // Leaves in the photo: all near the observed size and form, the oldest a little smaller and
-      // more juvenile (the photo already tells us how varied they are).
+      // Photographed leaves span the observed size range; the oldest are smaller and more juvenile.
       const age = count0 > 1 ? (count0 - 1 - i) / (count0 - 1) : 0;
-      return { form: clamp01(observedForm - age * 0.3), lengthM: length0 * (1 - age * 0.25) };
+      hit = { form: clamp01(formToday - age * 0.3), lengthM: lenMax - (lenMax - lenMin) * age };
+    } else {
+      // A future leaf takes the form and size of the stage in which the plant produces it.
+      let lo = 0, hi = 240;
+      for (let k = 0; k < 18; k++) { const mid = (lo + hi) / 2; if (produced(growthAt(scan, mid, conditions).leaves) < i + 1) lo = mid; else hi = mid; }
+      const s = growthAt(scan, hi, conditions);
+      hit = { form: Math.max(formToday, formOf(s.fenestration, s.maturity)), lengthM: Math.max(lenMax, s.leafLengthCm / 100) };
     }
-    // Future leaves: find the maturity at which the plant produces leaf i, and take its form then.
-    const want = e0 + (i + 1 - count0) / PRODUCED_PER_KEPT;
-    let lo = maturity0, hi = 1;
-    for (let k = 0; k < 20; k++) { const mid = (lo + hi) / 2; if (estimate(mid) < want) lo = mid; else hi = mid; }
-    const r = growthReference(table, hi);
-    return {
-      form: clamp01(observedForm + Math.max(0, r.maturity - ref0.maturity)),
-      lengthM: length0 * Math.max(1, (r.averageLeafLength / Math.max(0.05, ref0.averageLeafLength)) ** 0.9),
-    };
+    born.set(i, hit);
+    return hit;
   };
-  const pot = potDimensions(p);
+  const growth = state.heightCm / o.frame.plantHeightCm;
+  const potScale = conditions.potDiameterCm / o.pot.rimDiameterCm;
   return {
-    seed: v.seed, archetype, monstera,
-    heightM: state.heightCm / 100, maturity, stage: ref.stage, reference: ref, formMaturity,
-    leafCount, maxLeaves: monstera ? Math.max(count0, kept) : Infinity, leafAt,
-    leafLengthM,
-    today: { leafCount: count0, leafLengthM: m.leaf.lengthCm / 100, formMaturity: observedForm, heightM: m.currentHeightCm / 100 },
-    canopyWidthM: state.heightCm / 100 * v.silhouette.widthToHeight * (ref.canopyWidth / Math.max(0.2, ref0.canopyWidth)),
+    mode, seed: visual.seed, archetype: o.archetype, monstera, months: t, state, conditions,
+    heightM: state.heightCm / 100, canopyWidthM: state.canopyWidthCm / 100, maturity: state.maturity, stage: state.stage,
+    leafCount: monstera ? produced(state.leaves) : state.leaves, maxLeaves: monstera ? Math.max(count0, state.leaves) : Infinity, leafAt,
+    today: { leafCount: count0, leafLengthM: lenMax, leafLengthMinM: lenMin, formMaturity: formToday, heightM: o.frame.plantHeightCm / 100 },
     wilt: state.wilt,
     leaf: {
-      color: options.leafColor ?? m.leaf.color, undersideColor: v.leaves.undersideColor, gloss: v.leaves.gloss, widthToLength: v.leaves.widthToLength,
-      droop: v.leaves.droop, sizeVariation: v.leaves.sizeVariation, yellowing: v.condition.yellowing, brownTips: v.condition.brownTips,
-      variegation: v.leaves.variegation, variegationAmount: v.leaves.variegationAmount, variegationColor: v.leaves.variegationColor,
+      color: o.colors.leaf, youngColor: o.colors.leafYoung, undersideColor: o.colors.underside, gloss: o.leaves.gloss, widthToLength: o.leaves.widthToLength,
+      droop: DROOP[o.leaves.orientation], sizeVariation: visual.leaves.sizeVariation, yellowing: o.health.yellowing, brownTips: o.health.brownTips,
+      variegation: visual.leaves.variegation, variegationAmount: visual.leaves.variegationAmount, variegationColor: o.colors.variegation,
+      fenestrationPotential: monstera ? Math.max(0.8, o.leaves.fenestration) : o.leaves.fenestration,
     },
-    stem: { color: m.stemColor, thicknessM: v.stems.thicknessCm / 100, count: v.stems.count },
-    pot: { ...v.pot, ...pot },
-    visual: v,
+    stem: { color: o.colors.stem, thicknessM: o.structure.axes[0].thicknessMm / 1000, count: Math.max(o.structure.axes.length, Math.round(state.axes)) },
+    axes: o.structure.axes.map(a => ({ kind: a.kind, heightM: a.heightCm / 100 * growth, thicknessM: a.thicknessMm / 1000 * Math.sqrt(growth), leanRad: a.leanDeg * Math.PI / 180, direction: directionVector(a.direction) })),
+    clusters: o.structure.leafClusters.map(c => ({ height: c.height, direction: directionVector(c.direction), share: c.share })),
+    pot: { ...visual.pot, shape: o.pot.shape, material: o.pot.visible ? visual.pot.material : "none", radius: conditions.potDiameterCm / 200, depth: o.pot.heightCm / 100 * potScale },
+    profile, visual,
   };
 }

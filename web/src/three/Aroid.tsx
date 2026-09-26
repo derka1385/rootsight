@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Color, CubicBezierCurve3, CylinderGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
 import { coirTexture } from "./textures";
-import type { PlantRenderSpec } from "./renderSpec";
+import { CAMERA_AZ, type PlantRenderPlan as PlantRenderSpec } from "./renderPlan";
 import { segmentMatrix } from "./architecture";
 import { clamp01, seededRandom, smoothstep } from "./procedural";
 import { leafAlbedo, leafGeometry, leafMaterial, leafNormal, venation, type LeafShape } from "./leafSystem";
@@ -38,14 +38,14 @@ function shapeFor(level: number, spec: PlantRenderSpec, i: number): LeafShape {
 
 export default function Aroid({ spec }: { spec: PlantRenderSpec }) {
   const invalidate = useThree(s => s.invalidate);
-  const variant = `${spec.seed}|${spec.leaf.color}|${spec.leaf.gloss}|${spec.visual.leaves.fenestration}|${spec.leaf.widthToLength}|${spec.leaf.variegation}|${spec.leaf.brownTips}`;
+  const variant = `${spec.seed}|${spec.leaf.color}|${spec.leaf.gloss}|${spec.leaf.fenestrationPotential}|${spec.leaf.widthToLength}|${spec.leaf.variegation}|${spec.leaf.brownTips}`;
   const res = useMemo(() => {
     const ven = venation(spec.seed, 7);
     const normal = leafNormal(ven);
     const blades = LEVELS.map((level, i) => {
       const map = leafAlbedo({
         // The photo's fenestration says how mature today's leaves are; the species can always split.
-        seed: spec.seed, formMaturity: level, fenestration: Math.max(0.8, spec.visual.leaves.fenestration), color: spec.leaf.color, venation: ven, brownTips: spec.leaf.brownTips,
+        seed: spec.seed, formMaturity: level, fenestration: spec.leaf.fenestrationPotential, color: spec.leaf.color, venation: ven, brownTips: spec.leaf.brownTips,
         variegation: { kind: spec.leaf.variegation, amount: spec.leaf.variegationAmount, color: spec.leaf.variegationColor },
       });
       const geometry = leafGeometry(shapeFor(level, spec, i));
@@ -158,9 +158,6 @@ export function aroidLayout(spec: PlantRenderSpec, shown: Shown) {
   return layoutPass(spec, shown, Math.max(0, shown.height - fitted.top), splay);
 }
 
-/** The default camera looks from this azimuth; the oldest leaf is turned away from it. */
-const CAMERA_AZ = Math.atan2(1.6, 2.4);
-
 function layoutPass(spec: PlantRenderSpec, shown: Shown, climb: number, splay = 1) {
   const { today } = spec, c = Math.max(0.001, shown.count), wilt = shown.wilt;
   const crowns = Math.max(1, Math.min(4, spec.stem.count));
@@ -182,6 +179,16 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, climb: number, splay = 
   const stemPoint = (k: number, h: number) => crownBase[k].base.clone().addScaledVector(UP, h).addScaledVector(crownBase[k].lean, (h * 0.6 + h * h * 1.2) * leanScale);
   const stemR = spec.stem.thicknessM / 2 * (0.9 + 1.2 * spec.maturity);
 
+  // Photographed foliage masses (e.g. "a dome at 0.7 height, a lobe hanging left"): each leaf is
+  // dealt to a cluster by its share, which biases its height tier and the side it leans to.
+  const clusterOf = (x: number) => {
+    let acc = 0;
+    const total = spec.clusters.reduce((t, cl) => t + cl.share, 0) || 1;
+    for (const cl of spec.clusters) { acc += cl.share / total; if (x <= acc) return cl; }
+    return spec.clusters[spec.clusters.length - 1];
+  };
+  const youngTint = new Color(spec.leaf.youngColor), baseTint = new Color(spec.leaf.color);
+  const tint = new Color(Math.min(1.6, youngTint.r / Math.max(0.02, baseTint.r)), Math.min(1.6, youngTint.g / Math.max(0.02, baseTint.g)), Math.min(1.6, youngTint.b / Math.max(0.02, baseTint.b)));
   const firstLeaf = Math.max(0, Math.floor(c - spec.maxLeaves - 1));
   const topNode = Math.max(1, Math.floor((Math.ceil(c + 0.6) - 1) / crowns));
   const highestNode = new Array<number>(crowns).fill(0);
@@ -203,14 +210,21 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, climb: number, splay = 
     const nodeH = j * internode + climb * (j / topNode) ** 1.2;
     highestNode[k] = Math.max(highestNode[k], nodeH);
     const node = stemPoint(k, nodeH);
-    const az = crownBase[k].phase + j * 2.51 + (rr[1] - 0.5) * 0.7;
+    const cluster = clusterOf(r());
+    let az = crownBase[k].phase + j * 2.51 + (rr[1] - 0.5) * 0.7;
+    if (cluster && cluster.direction.lengthSq() > 0) {
+      // Pull the leaf toward its cluster's side of the plant, as photographed.
+      const target = Math.atan2(cluster.direction.x, cluster.direction.z);
+      az += Math.atan2(Math.sin(target - az), Math.cos(target - az)) * 0.6;
+    }
     const out = new Vector3(Math.sin(az), 0, Math.cos(az));
 
     // Petioles in a pot are steep (a vase of stalks); the oldest lean out the most.
     const upright = 0.8 + 0.55 * youth + (rr[3] - 0.5) * 0.3 - droop * 0.3;
     // Blades are tiered from the pot rim to the crown top, newest highest: each petiole is as long
     // as it must be to hold its blade at its tier (within what a real petiole can do).
-    const tier = shown.height * (0.24 + 0.58 * youth ** 0.8 + (rr[2] - 0.5) * 0.12);
+    const ageTier = 0.24 + 0.58 * youth ** 0.8;
+    const tier = shown.height * ((cluster ? (ageTier + cluster.height) / 2 : ageTier) + (rr[2] - 0.5) * 0.12);
     const reach = (tier - node.y) / Math.max(0.35, Math.sin(upright));
     const pl = Math.min(length * 1.9, Math.max(length * 0.5, reach)) * (0.2 + 0.8 * smoothstep(0, 0.8, age)) * emerge;
     let el = upright - wilt * 1.1 - shed * 0.5;
@@ -252,7 +266,7 @@ function layoutPass(spec: PlantRenderSpec, shown: Shown, climb: number, splay = 
 
     // New leaves are a lighter lime; the oldest yellows as it is shed; drought dulls everything.
     const color = new Color(1, 1, 1);
-    color.lerp(new Color(1.18, 1.22, 0.72), (1 - smoothstep(0.6, 2.2, age)) * 0.7);
+    color.lerp(tint, (1 - smoothstep(0.6, 2.2, age)) * 0.8);
     const oldest = i === firstLeaf ? clamp01(spec.leaf.yellowing * today.leafCount) : 0;
     color.lerp(new Color(1.55, 1.3, 0.35), Math.max(shed, oldest));
     color.lerp(new Color(0.95, 0.9, 0.55), wilt * 0.45);

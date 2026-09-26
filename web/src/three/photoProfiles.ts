@@ -1,31 +1,74 @@
+import { PlantScan } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
-import type { VisualProfile } from "./visual";
 
-/** Hand-estimated observations from the three linked photos in docs/fidelity/diagnosis.md. */
-export const photoProfiles: Record<string, VisualProfile> = {
-  "photo-monstera": {
-    ...fixtures.monstera,
-    morphology: { ...fixtures.monstera.morphology, currentHeightCm: 60, leaf: { ...fixtures.monstera.morphology.leaf, countNow: 16, lengthCm: 32 } },
-    visual: { seed: "kipogeorgiki-01", silhouette: { widthToHeight: 1.05, leanDeg: 5, leanDirectionDeg: 20, symmetry: 0.58 }, stems: { count: 4, thicknessCm: 0.65 }, leaves: { widthToLength: 0.8, sizeVariation: 0.4, fenestration: 0.48, gloss: 0.68, curl: 0.3, droop: 0.08 }, pot: { color: "#a95932", material: "plastic", diameterToHeight: 0.37, heightToDiameter: 0.94 } },
-  },
-  "photo-basil": {
-    ...fixtures.basil,
-    morphology: { ...fixtures.basil.morphology, currentHeightCm: 22, leaf: { ...fixtures.basil.morphology.leaf, countNow: 54, lengthCm: 9, color: "#478325" } },
-    visual: { seed: "carrefour-01", silhouette: { widthToHeight: 1.15, symmetry: 0.8 }, stems: { count: 6, thicknessCm: 0.22, internodeCm: 3 }, leaves: { widthToLength: 0.64, arrangement: "opposite", sizeVariation: 0.3, curl: 0.65, gloss: 0.6, droop: 0.28, edge: "serrated" }, pot: { color: "#ac4d2e", material: "plastic", diameterToHeight: 0.6, heightToDiameter: 0.85 } },
-  },
-  "photo-cactus": {
-    ...fixtures.cactus,
-    morphology: { ...fixtures.cactus.morphology, currentHeightCm: 7, stemColor: "#245939", leaf: { ...fixtures.cactus.morphology.leaf, lengthCm: 1.4 } },
-    visual: { seed: "klorofyllverket-01", silhouette: { widthToHeight: 0.85 }, cactus: { form: "globe", ribs: 13, spineDensity: 0.45, spineColor: "#f0ead3", offsets: 0 }, pot: { color: "#303b54", material: "plastic", diameterToHeight: 1.05, heightToDiameter: 0.85 } },
-  },
-};
+type DeepPartial<T> = T extends (infer U)[] ? U[] : T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;
 
-/** Synthetic architecture/finish checks; these are not claims about any reference photograph. */
-export const architectureProfiles: Record<string, VisualProfile> = {
-  // A rooted Monstera cutting: two small entire leaves; growth should walk it through every stage.
-  "monstera-seedling": { ...fixtures.monstera, morphology: { ...fixtures.monstera.morphology, currentHeightCm: 12, leaf: { ...fixtures.monstera.morphology.leaf, lengthCm: 8, countNow: 2 } }, visual: { seed: "cutting-01", stems: { count: 1, thicknessCm: 0.5 }, leaves: { fenestration: 0, widthToLength: 0.85, gloss: 0.7 }, pot: { material: "ceramic", color: "#e9e4da", diameterToHeight: 0.9, heightToDiameter: 0.9 } } },
-  vine: { ...fixtures.monstera, morphology: { ...fixtures.monstera.morphology, growthForm: "vine", currentHeightCm: 45, leaf: { shape: "ovate", color: "#427236", lengthCm: 10, countNow: 24 } }, visual: { stems: { count: 3, thicknessCm: 0.25 }, leaves: { base: "heart", fenestration: 0, variegation: "marbled", variegationAmount: 0.35 }, pot: { material: "ceramic", color: "#dbd6c9", diameterToHeight: 0.42 } } },
-  grass: { ...fixtures.monstera, morphology: { ...fixtures.monstera.morphology, growthForm: "grass", currentHeightCm: 40, leaf: { shape: "lanceolate", color: "#456749", lengthCm: 42, countNow: 11 } }, visual: { silhouette: { widthToHeight: 0.6 }, stems: { count: 2 }, leaves: { base: "tapered", widthToLength: 0.13, fenestration: 0, curl: 0.3, variegation: "margin", variegationAmount: 0.28, variegationColor: "#cfba65" } } },
-  succulent: { ...fixtures.basil, morphology: { ...fixtures.basil.morphology, growthForm: "succulent", currentHeightCm: 8, leaf: { shape: "round", color: "#789c84", lengthCm: 8, countNow: 26 } }, visual: { silhouette: { widthToHeight: 1.6 }, cactus: { form: "rosette" }, stems: { count: 1 }, leaves: { base: "tapered", tip: "rounded", widthToLength: 0.5, curl: 0.55, gloss: 0.05 }, pot: { diameterToHeight: 1.3, heightToDiameter: 0.5 } } },
-  tree: { ...fixtures.monstera, morphology: { ...fixtures.monstera.morphology, growthForm: "tree", currentHeightCm: 65, stemColor: "#736346", leaf: { shape: "ovate", color: "#355a32", lengthCm: 17, countNow: 16 } }, visual: { stems: { count: 1, thicknessCm: 1.5, internodeCm: 9 }, leaves: { base: "rounded", fenestration: 0, arrangement: "alternate", gloss: 0.65 }, condition: { legginess: 0.5, yellowing: 0.15, brownTips: 0.35 }, pot: { color: "#d4cbb4", material: "ceramic" } } },
+/** A lab scan: a fixture with its observation/growth patched (arrays are replaced, objects merged). */
+function variant(base: PlantScan, patch: DeepPartial<PlantScan>): PlantScan {
+  const merge = (a: unknown, b: unknown): unknown =>
+    b && typeof b === "object" && !Array.isArray(b) && a && typeof a === "object" ? Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].map(k => [k, merge((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])])) : b === undefined ? a : b;
+  return PlantScan.parse(merge(base, patch));
+}
+
+const monstera = fixtures.monstera;
+
+/** Scans for the fidelity lab: photographed references and one per renderer family. */
+export const labScans: Record<string, PlantScan> = {
+  // Hand-estimated from docs/fidelity/diagnosis.md's Kipogeorgiki photo: a dense cluster in an orange nursery pot.
+  "photo-monstera": variant(monstera, {
+    observation: {
+      frame: { plantHeightCm: 60, canopyWidthCm: 63, leanDeg: 5, leanDirection: "right", symmetry: 0.6 },
+      pot: { shape: "nursery", material: "plastic", color: "#c8531f", rimDiameterCm: 22, heightCm: 20 },
+      structure: {
+        axes: [{ kind: "crown", heightCm: 3, thicknessMm: 15, leanDeg: 5, direction: "left" }, { kind: "crown", heightCm: 3, thicknessMm: 14, leanDeg: 8, direction: "right" }, { kind: "crown", heightCm: 2, thicknessMm: 12, leanDeg: 10, direction: "toward" }, { kind: "crown", heightCm: 2, thicknessMm: 12, leanDeg: 6, direction: "away" }],
+        leafClusters: [{ height: 0.8, direction: "center", share: 0.45 }, { height: 0.6, direction: "left", share: 0.3 }, { height: 0.55, direction: "right", share: 0.25 }],
+      },
+      leaves: { count: 16, density: 0.8, lengthCmMin: 20, lengthCmMax: 30, fenestration: 0.3, gloss: 0.8, orientation: "arching" },
+      colors: { leaf: "#2f6b1f", leafYoung: "#6aa33a" },
+    },
+    growth: { stages: [{ ...monstera.growth.stages[0], heightCm: 60, canopyWidthCm: 63, leafCount: 16, axes: 4 }, ...monstera.growth.stages.slice(1).map(s => ({ ...s, axes: s.axes + 3, leafCount: s.leafCount + 8 }))] },
+  }),
+  // A rooted cutting: two entire leaves; the Future view walks it through every stage.
+  "monstera-seedling": variant(monstera, {
+    observation: {
+      frame: { plantHeightCm: 12, canopyWidthCm: 16, leanDeg: 4 },
+      pot: { shape: "cylinder", material: "ceramic", color: "#e9e4da", rimDiameterCm: 11, heightCm: 10 },
+      leaves: { count: 2, lengthCmMin: 6, lengthCmMax: 8, fenestration: 0, shape: "cordate" },
+      maturity: 0.05, stage: "SEEDLING",
+    },
+    growth: {
+      stages: [
+        { stage: "SEEDLING", monthsFromNow: 0, heightCm: 12, canopyWidthCm: 16, leafCount: 2, leafLengthCm: 8, maturity: 0.05, axes: 1, fenestration: 0, changes: [], confidence: 0.8 },
+        { stage: "JUVENILE", monthsFromNow: 6, heightCm: 30, canopyWidthCm: 40, leafCount: 5, leafLengthCm: 16, maturity: 0.2, axes: 1, fenestration: 0.05, changes: ["Bigger heart-shaped leaves", "A first notch on the newest leaf"], confidence: 0.6 },
+        { stage: "YOUNG", monthsFromNow: 14, heightCm: 60, canopyWidthCm: 75, leafCount: 8, leafLengthCm: 30, maturity: 0.45, axes: 1, fenestration: 0.45, changes: ["Holes along the midrib", "First marginal splits"], confidence: 0.5 },
+        { stage: "MATURE", monthsFromNow: 28, heightCm: 120, canopyWidthCm: 110, leafCount: 11, leafLengthCm: 50, maturity: 0.8, axes: 1, fenestration: 0.75, changes: ["Deep splits and a second row of holes", "Aerial roots"], confidence: 0.45 },
+        { stage: "LARGE_MATURE", monthsFromNow: 48, heightCm: 200, canopyWidthCm: 150, leafCount: 14, leafLengthCm: 70, maturity: 1, axes: 2, fenestration: 0.85, changes: ["Climbs a moss pole", "Lower leaves shed"], confidence: 0.35 },
+      ],
+    },
+  }),
+  // Dracaena fragrans "Massangeana"-like: three canes of different heights, arching striped strap leaves.
+  dracaena: variant(monstera, {
+    profile: { species: { commonName: "Corn plant", scientificName: "Dracaena fragrans", confidence: 0.9 }, wiki: { family: "Asparagaceae", nativeRegion: "Tropical Africa" }, morphology: { growthForm: "tree", matureHeightCm: 180, stemColor: "#7a6a4f", leaf: { shape: "lanceolate", color: "#2f5d2a", lengthCm: 45, countNow: 36 } }, roots: { type: "fibrous", maxDepthCm: 30, maxSpreadCm: 30 } },
+    observation: {
+      archetype: "cane",
+      frame: { plantHeightCm: 110, canopyWidthCm: 80, leanDeg: 4, leanDirection: "center", symmetry: 0.6 },
+      pot: { shape: "cylinder", material: "ceramic", color: "#d9d4ca", rimDiameterCm: 24, heightCm: 22 },
+      structure: {
+        axes: [{ kind: "cane", heightCm: 80, thicknessMm: 45, leanDeg: 3, direction: "center" }, { kind: "cane", heightCm: 55, thicknessMm: 40, leanDeg: 10, direction: "left" }, { kind: "cane", heightCm: 30, thicknessMm: 38, leanDeg: 12, direction: "right" }],
+        leafClusters: [{ height: 0.9, direction: "center", share: 0.4 }, { height: 0.65, direction: "left", share: 0.33 }, { height: 0.4, direction: "right", share: 0.27 }],
+        branching: 0,
+      },
+      leaves: { count: 36, density: 0.7, lengthCmMin: 25, lengthCmMax: 45, widthToLength: 0.12, shape: "strap", arrangement: "whorled", orientation: "arching", fenestration: 0, gloss: 0.6, variegation: "streaks" },
+      colors: { leaf: "#2f5d2a", leafYoung: "#5f8f3a", underside: "#4a7040", stem: "#7a6a4f", variegation: "#c9c46a" },
+      maturity: 0.6, stage: "MATURE",
+    },
+    growth: {
+      habit: "upright",
+      stages: [
+        { stage: "MATURE", monthsFromNow: 0, heightCm: 110, canopyWidthCm: 80, leafCount: 36, leafLengthCm: 45, maturity: 0.6, axes: 3, fenestration: 0, changes: [], confidence: 0.8 },
+        { stage: "MATURE", monthsFromNow: 18, heightCm: 140, canopyWidthCm: 95, leafCount: 52, leafLengthCm: 50, maturity: 0.75, axes: 4, fenestration: 0, changes: ["Canes lengthen, lower leaves drop", "A side shoot breaks below the tallest crown"], confidence: 0.55 },
+        { stage: "LARGE_MATURE", monthsFromNow: 40, heightCm: 175, canopyWidthCm: 110, leafCount: 70, leafLengthCm: 55, maturity: 0.95, axes: 6, fenestration: 0, changes: ["Several crowns per cane", "Bare, ringed trunks below"], confidence: 0.4 },
+      ],
+    },
+  }),
 };

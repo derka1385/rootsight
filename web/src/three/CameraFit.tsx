@@ -6,7 +6,7 @@ import type { PlantState } from "@rootsight/shared/schema";
 type Controls = { target: Vector3; update: () => void };
 
 /** Fit the visible plant and container, independent of inferred hidden root dimensions. */
-export default function CameraFit({ state, bottom = 0, width = 0, subject, revision }: { state: PlantState; bottom?: number; width?: number; subject?: RefObject<Group | null>; revision?: unknown }) {
+export default function CameraFit({ state, bottom = 0, width = 0, subject, revision, padBottom = 0 }: { state: PlantState; bottom?: number; width?: number; subject?: RefObject<Group | null>; revision?: unknown; /** Fraction of the view covered by UI at the bottom. */ padBottom?: number }) {
   const camera = useThree(s => s.camera);
   const invalidate = useThree(s => s.invalidate);
   const aspect = useThree(s => s.size.width / Math.max(1, s.size.height));
@@ -55,8 +55,9 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
             }
           }
         });
-        goal.current.dist = Math.max(0.15, distance * 1.06);
-        goal.current.y = center.current.y;
+        // Keep the plant clear of UI laid over the bottom of the view: pull back and aim lower.
+        goal.current.dist = Math.max(0.15, distance * 1.06 * (1 + padBottom * 0.7));
+        goal.current.y = center.current.y - padBottom * goal.current.dist * Math.tan(20 * Math.PI / 180);
       }
     }
     const target = controls.target, goalNow = goal.current;

@@ -12,28 +12,38 @@ const CUT = Math.PI / 2;
  * Terracotta pot with a quarter cut away, so the soil cross-section and the roots show.
  * Soil surface at y = 0 (where the plant starts); pot rim just above it.
  */
-export default function Pot({ radius, depth, appearance, cutaway = true }: { radius: number; depth: number; appearance: Visual["pot"]; cutaway?: boolean }) {
+type Shape = "nursery" | "tapered" | "cylinder" | "bowl";
+/** Base radius (fraction of the rim) and lip thickness per photographed pot shape. */
+const SHAPE: Record<Shape, { base: number; lip: number; belly: number }> = {
+  nursery: { base: 0.78, lip: 0.45, belly: 0.95 },
+  tapered: { base: 0.72, lip: 1, belly: 0.95 },
+  cylinder: { base: 0.97, lip: 0.7, belly: 0.98 },
+  bowl: { base: 0.55, lip: 0.6, belly: 1.02 },
+};
+
+export default function Pot({ radius, depth, appearance, shape = "tapered", cutaway = true }: { radius: number; depth: number; appearance: Visual["pot"]; shape?: Shape; cutaway?: boolean }) {
   const surface = useSurfaceMaps(appearance.material === "none" ? "plastic" : appearance.material);
   const soilMaps = useSurfaceMaps("soil");
   const { wall, rim, fill, top, cut, mats } = useMemo(() => {
-    const R = radius, D = depth, t = R * 0.06;
+    const R = radius, D = depth, k = SHAPE[shape], t = R * (shape === "nursery" ? 0.025 : 0.06);
     const phiStart = cutaway ? CUT_CENTER + CUT / 2 : 0, phiLength = Math.PI * 2 - (cutaway ? CUT : 0);
     // Outer profile from the base up to the lip, then back down the inside.
     const outer = [
-      new Vector2(R * 0.72, -D), new Vector2(R * 0.78, -D * 0.98), new Vector2(R * 0.95, -D * 0.1),
+      new Vector2(R * k.base, -D), new Vector2(R * (k.base + 0.05), -D * 0.98),
+      new Vector2(R * (k.base + (k.belly - k.base) * 0.8), -D * 0.5), new Vector2(R * 0.95, -D * 0.1),
       new Vector2(R * 0.97, D * 0.015),
     ];
-    const inner = [new Vector2(R * 0.97 - t, D * 0.015), new Vector2(R * 0.93 - t, -D * 0.2), new Vector2(R * 0.74 - t, -D * 0.96)];
+    const inner = [new Vector2(R * 0.97 - t, D * 0.015), new Vector2(R * 0.93 - t, -D * 0.2), new Vector2(R * (k.base + 0.02) - t, -D * 0.96)];
     const wall = new LatheGeometry([...outer, ...inner], 64, phiStart, phiLength);
     // Rolled lip: a fat band just above the soil line.
-    const lip = [
-      new Vector2(R * 0.95, -0.08 * D), new Vector2(R * 1.06, -0.05 * D), new Vector2(R * 1.04, D * 0.035),
-      new Vector2(R * 1.01, D * 0.075), new Vector2(R * 0.95 - t * 0.5, D * 0.07), new Vector2(R * 0.95 - t, D * 0.015),
+    const L = k.lip, lip = [
+      new Vector2(R * 0.95, -0.08 * D * L), new Vector2(R * (1 + 0.06 * L), -0.05 * D * L), new Vector2(R * (1 + 0.04 * L), D * 0.035 * L),
+      new Vector2(R * (1 + 0.01 * L), D * 0.075 * L), new Vector2(R * 0.95 - t * 0.5, D * 0.07 * L), new Vector2(R * 0.95 - t, D * 0.015),
     ];
     const rim = new LatheGeometry(lip, 64, phiStart, phiLength);
     // Soil body (same wedge), plus the two flat faces of the cut.
     const soilR = R * 0.93 - t;
-    const fill = new LatheGeometry([new Vector2(0.0001, -D * 0.97), new Vector2(R * 0.73 - t, -D * 0.97), new Vector2(soilR, -0.002)], 48, phiStart, phiLength);
+    const fill = new LatheGeometry([new Vector2(0.0001, -D * 0.97), new Vector2(R * (k.base + 0.01) - t, -D * 0.97), new Vector2(soilR, -0.002)], 48, phiStart, phiLength);
     const top = new LatheGeometry([new Vector2(soilR, 0), new Vector2(0.0001, 0.006)], 48, phiStart, phiLength);
     const face = new PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
     const soil = soilMaps?.albedo ?? soilTexture();
@@ -50,7 +60,7 @@ export default function Pot({ radius, depth, appearance, cutaway = true }: { rad
       section: new MeshStandardMaterial({ color: soilMaps?.albedo ? "#6e5747" : "#ffffff", map: soil, emissive: soilMaps?.albedo ? "#6e5747" : "#ffffff", emissiveMap: soil, emissiveIntensity: 0.55, roughness: 1, side: DoubleSide }),
     };
     return { wall, rim, fill, top, cut: { face, soilR, D }, mats };
-  }, [radius, depth, appearance.color, appearance.material, cutaway, surface, soilMaps]);
+  }, [radius, depth, shape, appearance.color, appearance.material, cutaway, surface, soilMaps]);
   useEffect(() => () => {
     [wall, rim, fill, top, cut.face].forEach((g) => g.dispose());
     Object.values(mats).forEach((m) => m.dispose());

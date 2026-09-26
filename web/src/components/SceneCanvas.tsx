@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CanvasTexture, Color, NeutralToneMapping, SRGBColorSpace, type Material, type Mesh, type Object3D } from "three";
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { CanvasTexture, NeutralToneMapping, SRGBColorSpace, type Material, type Mesh, type Object3D } from "three";
 import type { Group } from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -7,13 +7,12 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ContactShadows, Environment, Lightformer, OrbitControls, SoftShadows } from "@react-three/drei";
-import type { PlantState } from "@rootsight/shared/schema";
-import type { RenderProfile as PlantProfile } from "../three/visual";
+import type { GrowthConditions, PlantScan } from "@rootsight/shared/schema";
 import Plant from "../three/Plant";
 import Roots from "../three/Roots";
 import Pot from "../three/Pot";
 import CameraFit from "../three/CameraFit";
-import { renderSpecOf } from "../three/renderSpec";
+import { renderPlanOf, type RenderMode } from "../three/renderPlan";
 import { useEnvironmentFile } from "../three/assets";
 
 // Window intensity follows care.light; neutral fill preserves sampled foliage colors.
@@ -38,18 +37,23 @@ function backdrop() {
 }
 
 // Scene units: 1 = 1 m. Soil surface at y = 0, plant above, roots and pot below.
-// A studio shot: soft window key, cool rim for leaf translucency, shadow-only floor on a warm backdrop.
-export default function SceneCanvas({ state, profile, cutaway = true, sourceImage, children }: {
-  state: PlantState;
-  profile: PlantProfile;
-  cutaway?: boolean;
-  /** Optional photo (data URL or object URL) of this specimen; tints foliage towards the real plant. */
-  sourceImage?: string;
+// A studio product shot: soft window key, cool rim for leaf translucency, shadow-only floor on a warm
+// backdrop, the pot intact. Roots (a cut-away pot) are an opt-in x-ray, never the hero view.
+export default function SceneCanvas({ scan, mode = "scanned", months = 0, conditions, roots = false, padBottom = 0, children }: {
+  scan: PlantScan;
+  /** "scanned": today's plant rebuilt from the photo. "future": the same plant grown `months` ahead. */
+  mode?: RenderMode;
+  months?: number;
+  conditions?: GrowthConditions;
+  roots?: boolean;
+  /** Fraction of the canvas covered by overlaid UI at the bottom (the framing keeps the pot above it). */
+  padBottom?: number;
   children?: ReactNode;
 }) {
   const subject = useRef<Group>(null);
-  const leafColor = usePhotoLeafColor(sourceImage, profile.morphology.leaf.color);
-  const spec = useMemo(() => renderSpecOf(profile, state, { leafColor }), [profile, state, leafColor]);
+  const spec = useMemo(() => renderPlanOf(scan, mode, months, conditions), [scan, mode, months, conditions]);
+  const { state, profile } = spec;
+  const cutaway = roots;
   const background = useMemo(backdrop, []);
   const hdri = useEnvironmentFile();
   useEffect(() => () => background.dispose(), [background]);
@@ -103,7 +107,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       <AmbientOcclusion radius={Math.max(0.03, spec.heightM * 0.15)} />
 
       <OrbitControls makeDefault target={[0, 0.3, 0]} minPolarAngle={0.2} maxPolarAngle={Math.PI / 2 - 0.05} enablePan={false} />
-      <CameraFit subject={subject} revision={profile} state={state} bottom={-table} width={Math.max(potR * 2.2, plantWidth)} />
+      <CameraFit subject={subject} revision={`${mode}:${roots}`} padBottom={padBottom} state={state} bottom={-table} width={Math.max(potR * 2.2, plantWidth)} />
 
       {/* Shadow-only floor: the backdrop stays seamless, the plant still sits on something. */}
       <mesh rotation-x={-Math.PI / 2} position-y={table - 0.001} receiveShadow>
@@ -117,44 +121,12 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       <ContactShadows key={`${state.heightCm.toFixed(1)}:${state.wilt.toFixed(2)}`} frames={1} position={[0, table + 0.001, 0]} scale={potR * 5} blur={2.2} opacity={0.6} far={potD + 0.4} resolution={256} color="#2e2014" />
 
       <group ref={subject}>
-        {visual.pot.material !== "none" && <Pot radius={potR} depth={potD} appearance={visual.pot} cutaway={cutaway} />}
-        <Plant state={state} profile={profile} spec={spec} />
-        {cutaway && visual.pot.material !== "none" && <Roots state={state} profile={profile} bounds={rootBounds} />}
+        {spec.pot.material !== "none" && <Pot radius={potR} depth={potD} appearance={visual.pot} shape={spec.pot.shape} cutaway={cutaway} />}
+        <Plant plan={spec} />
+        {cutaway && spec.pot.material !== "none" && <Roots state={state} profile={profile} bounds={rootBounds} />}
       </group>
     </Canvas>
   );
-}
-
-/**
- * Photo-conditioned foliage colour: the median of the leafy pixels in the photo, blended with the
- * profile colour (the photo includes shading, the profile colour is Claude's estimate of albedo).
- */
-function usePhotoLeafColor(sourceImage: string | undefined, fallback: string): string {
-  const [sampled, setSampled] = useState<{ src: string; color: string | null }>();
-  useEffect(() => {
-    if (!sourceImage) return;
-    let live = true;
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = c.height = 64;
-      const g = c.getContext("2d", { willReadFrequently: true })!;
-      g.drawImage(img, 0, 0, 64, 64);
-      const px = g.getImageData(0, 0, 64, 64).data, greens: Color[] = [];
-      const hsl = { h: 0, s: 0, l: 0 };
-      for (let i = 0; i < px.length; i += 4) {
-        const color = new Color().setRGB(px[i] / 255, px[i + 1] / 255, px[i + 2] / 255, SRGBColorSpace);
-        color.getHSL(hsl);
-        if (hsl.h > 0.17 && hsl.h < 0.45 && hsl.s > 0.18 && hsl.l > 0.08 && hsl.l < 0.7) greens.push(color);
-      }
-      const median = (k: "r" | "g" | "b") => greens.map(c => c[k]).sort((a, b) => a - b)[greens.length >> 1];
-      if (live) setSampled({ src: sourceImage, color: greens.length > 64 ? `#${new Color(median("r"), median("g"), median("b")).getHexString()}` : null });
-    };
-    img.src = sourceImage;
-    return () => { live = false; };
-  }, [sourceImage]);
-  if (!sourceImage || sampled?.src !== sourceImage || !sampled.color) return fallback;
-  return `#${new Color(fallback).lerp(new Color(sampled.color), 0.6).getHexString()}`;
 }
 
 /**

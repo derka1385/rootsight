@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useFrame, useThree } from "@react-three/fiber";
-import { PlantProfile } from "@rootsight/shared/schema";
+import { PlantScan } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
-import { simulate } from "@rootsight/shared/simulation";
+import { defaultConditions } from "@rootsight/shared/simulation";
 import SceneCanvas from "../components/SceneCanvas";
-import { photoProfiles, architectureProfiles } from "./photoProfiles";
-import type { RenderProfile } from "./visual";
+import { labScans } from "./photoProfiles";
+import type { RenderMode } from "./renderPlan";
 
 function Probe() {
   const gl = useThree(s => s.gl);
@@ -24,22 +24,23 @@ function Probe() {
 
 function Lab() {
   const params = new URLSearchParams(location.search);
-  const catalog: Record<string, RenderProfile> = { ...fixtures, ...photoProfiles, ...architectureProfiles };
-  const [profile, setProfile] = useState<RenderProfile>(catalog[params.get("profile") ?? "monstera"] ?? fixtures.monstera);
+  const catalog: Record<string, PlantScan> = { ...fixtures, ...labScans };
+  const [scan, setScan] = useState<PlantScan>(catalog[params.get("profile") ?? "monstera"] ?? fixtures.monstera);
   const [error, setError] = useState("");
   const [photo, setPhoto] = useState("");
-  const { visual: _visual, ...simulationProfile } = profile;
-  const state = simulate(simulationProfile, Number(params.get("month") ?? 0), Number(params.get("water") ?? profile.care.waterIntervalDays));
+  const months = Number(params.get("month") ?? 0);
+  const mode: RenderMode = params.get("mode") === "future" || months > 0 || params.has("water") ? "future" : "scanned";
+  const conditions = { ...defaultConditions(scan), ...(params.has("water") ? { waterIntervalDays: Number(params.get("water")) } : {}) };
   const capture = params.has("capture");
   return <main style={{ fontFamily: "system-ui", background: "#f4efe7", minHeight: "100vh" }}>
-    {!capture && <header style={{ padding: 16 }}><h1>Photo fidelity lab</h1><p>Choose a profile or load JSON with an optional visual block. Reference photos stay in your browser.</p>
-      <label>Profile <select value={params.get("profile") ?? "monstera"} onChange={e => { location.search = `?profile=${e.target.value}`; }}>{Object.keys(catalog).map(k => <option key={k}>{k}</option>)}</select></label>{" "}
-      <label>JSON <input type="file" accept="application/json" onChange={async e => { try { const value = JSON.parse(await e.target.files![0].text()); const { visual, ...base } = value; setProfile({ ...PlantProfile.parse(base), visual }); setError(""); } catch (err) { setError(String(err)); } }} /></label>{" "}
+    {!capture && <header style={{ padding: 16 }}><h1>Fidelity lab</h1><p>Pick a scan or load a PlantScan JSON. ?month=N shows the Future view, &amp;water=N changes watering, &amp;roots shows the x-ray.</p>
+      <label>Scan <select value={params.get("profile") ?? "monstera"} onChange={e => { location.search = `?profile=${e.target.value}`; }}>{Object.keys(catalog).map(k => <option key={k}>{k}</option>)}</select></label>{" "}
+      <label>JSON <input type="file" accept="application/json" onChange={async e => { try { setScan(PlantScan.parse(JSON.parse(await e.target.files![0].text()))); setError(""); } catch (err) { setError(String(err)); } }} /></label>{" "}
       <label>Reference <input type="file" accept="image/*" onChange={e => { if (photo) URL.revokeObjectURL(photo); if (e.target.files?.[0]) setPhoto(URL.createObjectURL(e.target.files[0])); }} /></label>
       <button onClick={() => { const a = document.createElement("a"); a.download = "rootsight-render.png"; a.href = document.querySelector("canvas")!.toDataURL("image/png"); a.click(); }}>Save render</button><p role="alert">{error}</p></header>}
     <div style={{ display: "flex", flexWrap: "wrap" }}>
       <div id="render" style={{ width: capture ? "100vw" : 390, height: capture ? "100vh" : 600 }}>
-        <SceneCanvas state={state} profile={profile} cutaway={params.has("cutaway")} sourceImage={photo || undefined}><Probe /></SceneCanvas>
+        <SceneCanvas scan={scan} mode={mode} months={months} conditions={conditions} roots={params.has("roots") || params.has("cutaway")}><Probe /></SceneCanvas>
       </div>
       {photo && <img alt="Local reference plant" src={photo} style={{ width: 390, height: 600, objectFit: "contain" }} />}
     </div>

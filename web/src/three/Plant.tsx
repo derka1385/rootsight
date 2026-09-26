@@ -1,42 +1,30 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, ConeGeometry, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
-import type { Material } from "three";
+import { useEffect, useLayoutEffect, useMemo } from "react";
+import { Instances } from "./Instances";
+import { BufferGeometry, Color, ConeGeometry, Float32BufferAttribute, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "./visual";
 import { seededRandom, SEGMENT } from "./procedural";
 import { leafAlbedo, leafGeometry, leafMaterial, leafNormal, venation, type LeafShape } from "./leafSystem";
-import { architectureOf, plantLayout } from "./architecture";
-import { visualOf, type Visual } from "./visual";
-import type { PlantRenderSpec } from "./renderSpec";
+import { plantLayout } from "./architecture";
+import type { Visual } from "./visual";
+import type { PlantRenderPlan } from "./renderPlan";
 import Aroid from "./Aroid";
+import Cane from "./Cane";
 
-/** Keep the existing thumbnail API while the renderer uses the richer architecture internally. */
-export function archetypeOf(p: PlantProfile): "rosette" | "branching" | "cactus" {
-  const kind = architectureOf(p, visualOf(p));
-  return kind === "cactus" ? "cactus" : ["aroid", "grass", "succulent"].includes(kind) ? "rosette" : "branching";
-}
-
-/** All stems share one draw call, all blades at most four, irrespective of visible leaf count. */
-function Instances({ geometry, material, matrices, capacity }: { geometry: BufferGeometry; material: Material; matrices: Matrix4[]; capacity: number }) {
-  const ref = useRef<InstancedMesh>(null);
-  useEffect(() => { const mesh = ref.current; return () => mesh?.dispose(); }, []);
-  useLayoutEffect(() => {
-    const mesh = ref.current!;
-    matrices.forEach((m, i) => mesh.setMatrixAt(i, m));
-    mesh.count = matrices.length;
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere();
-    mesh.computeBoundingBox();
-  }, [matrices]);
-  return <instancedMesh ref={ref} args={[geometry, material, capacity]} castShadow receiveShadow dispose={null} />;
-}
-
-export default function Plant({ state, profile, spec }: { state: PlantState; profile: PlantProfile; spec: PlantRenderSpec }) {
-  const v = spec.visual;
-  const lean = v.silhouette.leanDeg * Math.PI / 180 * (spec.monstera ? 0.4 : 1);
+/**
+ * One renderer per visual architecture, chosen by what the photo shows (observation.archetype):
+ * aroid -> Aroid, cane -> Cane, cactus -> Cactus, everything leafy and branching/rosetted/trailing
+ * -> Foliage (herb, shrub, succulent rosette, vine, grass, tree via architecture.ts).
+ */
+export default function Plant({ plan }: { plan: PlantRenderPlan }) {
+  const v = plan.visual, profile = plan.profile, state = plan.state;
+  const lean = v.silhouette.leanDeg * Math.PI / 180 * (plan.monstera || plan.archetype === "cane" ? 0.4 : 1);
   const direction = v.silhouette.leanDirectionDeg * Math.PI / 180;
   return <group rotation={[Math.sin(direction) * lean, 0, -Math.cos(direction) * lean]}>
-    {spec.monstera ? <Aroid spec={spec} /> : spec.archetype === "cactus" ? <Cactus profile={profile} state={state} v={v} /> : <Foliage profile={profile} state={state} v={v} />}
+    {plan.monstera ? <Aroid spec={plan} />
+      : plan.archetype === "cane" ? <Cane plan={plan} />
+      : plan.archetype === "cactus" ? <Cactus profile={profile} state={state} v={v} />
+      : <Foliage profile={profile} state={state} v={v} />}
   </group>;
 }
 
@@ -174,9 +162,4 @@ function Cactus({ profile, state, v }: { profile: PlantProfile; state: PlantStat
     <Instances geometry={SPINE} material={resources.spine} matrices={layout.spines} capacity={14560} />
     <Instances geometry={AREOLE} material={resources.areole} matrices={layout.areoles} capacity={2912} />
   </group>;
-}
-
-export function baseRadius(profile: PlantProfile, state: PlantState): number {
-  const v = visualOf(profile);
-  return architectureOf(profile, v) === "cactus" ? state.heightCm / 200 * v.silhouette.widthToHeight : 0;
 }
