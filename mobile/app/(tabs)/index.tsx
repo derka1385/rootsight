@@ -14,8 +14,8 @@ export default function PlantScreen() {
   async function ping() {
     setStatus('Calling ' + API_URL + ' ...');
     try {
-      const profile = await analyze({ imageBase64: 'mock', mediaType: 'image/jpeg' });
-      setStatus(`OK: ${profile.species.commonName}`);
+      const scan = await analyze({ imageBase64: 'mock', mediaType: 'image/jpeg' });
+      setStatus(`OK: ${scan.profile.species.commonName}`);
     } catch (e) {
       setStatus(`Error: ${(e as Error).message}`);
     }
