@@ -10,6 +10,7 @@ import Roots from "../three/Roots";
 import Pot from "../three/Pot";
 import CameraFit from "../three/CameraFit";
 import { renderSpecOf } from "../three/renderSpec";
+import { useEnvironmentFile } from "../three/assets";
 
 // Window intensity follows care.light; neutral fill preserves sampled foliage colors.
 const WINDOW = {
@@ -46,6 +47,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
   const leafColor = usePhotoLeafColor(sourceImage, profile.morphology.leaf.color);
   const spec = useMemo(() => renderSpecOf(profile, state, { leafColor }), [profile, state, leafColor]);
   const background = useMemo(backdrop, []);
+  const hdri = useEnvironmentFile();
   useEffect(() => () => background.dispose(), [background]);
   const visual = spec.visual;
   const { radius: potR, depth: potD } = spec.pot;
@@ -88,7 +90,7 @@ export default function SceneCanvas({ state, profile, cutaway = true, sourceImag
       {/* Cool rim from behind: backlit blades glow through the translucency term. */}
       <directionalLight position={[1.8, 2.2, -2.6]} intensity={0.9} color="#e3eeff" />
       {/* Soft studio reflections built in-scene (no HDR download): a window, a bounce card, a skylight. */}
-      <Environment resolution={128}>
+      <Environment resolution={128} files={hdri ?? undefined}>
         <Lightformer form="rect" intensity={3} color="#fff3e2" position={[-3, 2.5, 2.5]} scale={[2.5, 3.5, 1]} target={[0, 0.3, 0]} />
         <Lightformer form="rect" intensity={1.2} color="#f2efe8" position={[3, 1.5, 1]} scale={[3, 2, 1]} target={[0, 0.3, 0]} />
         <Lightformer form="rect" intensity={0.9} color="#dbe7ff" position={[1, 2, -3]} scale={[4, 2, 1]} target={[0, 0.3, 0]} />

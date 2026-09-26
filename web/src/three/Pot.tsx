@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { DoubleSide, LatheGeometry, MeshStandardMaterial, PlaneGeometry, Vector2 } from "three";
 import type { Visual } from "./visual";
 import { soilTexture, terracottaTexture } from "./textures";
+import { useSurfaceMaps } from "./assets";
 
 /** Angle (lathe convention: x = r·sin φ, z = r·cos φ) the cut-away faces: towards the default camera. */
 export const CUT_CENTER = Math.atan2(1.6, 2.4);
@@ -12,6 +13,8 @@ const CUT = Math.PI / 2;
  * Soil surface at y = 0 (where the plant starts); pot rim just above it.
  */
 export default function Pot({ radius, depth, appearance, cutaway = true }: { radius: number; depth: number; appearance: Visual["pot"]; cutaway?: boolean }) {
+  const surface = useSurfaceMaps(appearance.material === "none" ? "plastic" : appearance.material);
+  const soilMaps = useSurfaceMaps("soil");
   const { wall, rim, fill, top, cut, mats } = useMemo(() => {
     const R = radius, D = depth, t = R * 0.06;
     const phiStart = cutaway ? CUT_CENTER + CUT / 2 : 0, phiLength = Math.PI * 2 - (cutaway ? CUT : 0);
@@ -33,16 +36,20 @@ export default function Pot({ radius, depth, appearance, cutaway = true }: { rad
     const fill = new LatheGeometry([new Vector2(0.0001, -D * 0.97), new Vector2(R * 0.73 - t, -D * 0.97), new Vector2(soilR, -0.002)], 48, phiStart, phiLength);
     const top = new LatheGeometry([new Vector2(soilR, 0), new Vector2(0.0001, 0.006)], 48, phiStart, phiLength);
     const face = new PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
-    const soil = soilTexture();
+    const soil = soilMaps?.albedo ?? soilTexture();
     const mats = {
-      clay: new MeshStandardMaterial({ color: appearance.color, map: appearance.material === "terracotta" ? terracottaTexture() : null, roughness: appearance.material === "ceramic" ? 0.24 : appearance.material === "plastic" ? 0.48 : 0.92 }),
+      clay: new MeshStandardMaterial({
+        color: appearance.color, map: surface?.albedo ?? (appearance.material === "terracotta" ? terracottaTexture() : null),
+        normalMap: surface?.normal ?? null, roughnessMap: surface?.roughness ?? null,
+        roughness: surface?.roughness ? 1 : appearance.material === "ceramic" ? 0.24 : appearance.material === "plastic" ? 0.48 : 0.92,
+      }),
       clayInside: new MeshStandardMaterial({ color: appearance.color, roughness: 0.95, side: DoubleSide }),
-      soil: new MeshStandardMaterial({ color: "#ffffff", map: soil, roughness: 1, side: DoubleSide }),
+      soil: new MeshStandardMaterial({ color: "#ffffff", map: soil, normalMap: soilMaps?.normal ?? null, roughness: 1, side: DoubleSide }),
       // Cross-section: lifted so the roots in front of it read clearly.
       section: new MeshStandardMaterial({ color: "#ffffff", map: soil, emissive: "#ffffff", emissiveMap: soil, emissiveIntensity: 0.55, roughness: 1, side: DoubleSide }),
     };
     return { wall, rim, fill, top, cut: { face, soilR, D }, mats };
-  }, [radius, depth, appearance.color, appearance.material, cutaway]);
+  }, [radius, depth, appearance.color, appearance.material, cutaway, surface, soilMaps]);
   useEffect(() => () => {
     [wall, rim, fill, top, cut.face].forEach((g) => g.dispose());
     Object.values(mats).forEach((m) => m.dispose());
