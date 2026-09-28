@@ -96,6 +96,31 @@ A diameter plus a species form ("trumpet") could not describe a long trumpet, an
   - Buds are spindles of the measured length.
 - **Fixture:** `brugmansia` is a live scan of a CC photo ([Brugmansia suaveolens, Yercaud](https://commons.wikimedia.org/wiki/File:Brugmansia_suaveolens-yercaud-salem-India.jpg), CC BY-SA 4.0). It measured 28 cm long, 60 % tube, a 2.5 cm tube, 5 lobes, a 10 cm calyx, hanging at 160°.
 
+## Detailed corollas (Datura 'Double Purple')
+
+A scanned Datura 'Double Purple' came out as a smooth funnel on a pipe, with cone buds and smooth green balls. The outline measurements (length, tube, flare, lobes) were right, but nothing described what makes that flower recognisable. Now:
+
+- **Analysis:** `flowerShape` also reads:
+  - `layers`: nested corollas (hose-in-hose);
+  - `tipTail`: lobe tips drawn into curling tails;
+  - `ribs`: a pleated, striped tube;
+  - `innerColor`: the throat.
+  `blooms.fruitSurface` reads the fruit's skin (spiny for thorn-apples). Claude must fill all of them; they are optional in saved profiles, where plain-trumpet defaults apply.
+- **Corolla** (`corollaModel`):
+  - The tube is plicate: every lobe's midrib runs down it as a ridge, with a fold between ridges that deepens toward the mouth, and fine ribs.
+  - The rim is scalloped, one broad lobe per midrib rising to a small point. Between the points it ruffles and rolls outward.
+  - The front face is the outside. The shader paints a pale base with the flower colour running up in veins, and paler lines between the veins of a ribbed tube. Inside, the throat takes the inner colour and the limb shows the flower colour.
+- **Nested corollas:** each inner corolla is 20 % narrower in the tube (so it never comes through the one around it; `verify.ts` checks every angle), rises 15 % further, opens a little wider, and is turned half a lobe.
+- **Tails:** a tapered strand leaves every lobe point along the lobe and curls outward and back.
+- **Calyx:** a pale, five-angled tube with a rounded base on the stalk and pointed teeth.
+- **Buds:** furled spindles with twisted pleats and a pointed tip, the lower part in the calyx.
+- **Fruits:** capsules set with 72 stout spines when `fruitSurface` is spiny.
+- **Fixture:** `datura` is a live scan of a CC photo ([Datura metel 'Fastuosa' bud and flower](https://commons.wikimedia.org/wiki/File:Datura_metel_%27Fastuosa%27_bud_and_flower.jpg), CC BY-SA 4.0). It read 3 layers, tails 0.85, ribs 0.85, a cream throat and spiny fruit.
+
+| Close-up (lab, lowered camera) | Whole plant |
+| --- | --- |
+| ![datura close-up](datura-close.png) | ![datura](datura-scan.png) |
+
 ## Grown stems (stylized botanical)
 
 - **Curves.** Stems, branches and petioles are cubic Bézier centrelines, not polylines. The same curve places the leaves and branches, so the old straight-line attachments that no longer matched the drawn stem are gone.
@@ -150,5 +175,5 @@ The photos are not in the repo.
 ## Limits
 
 - The occupancy grid is coarse (8×8) and Claude's estimate. Hidden depth and the back of the plant are inferred.
-- Flowers use 11 stylized forms, not per-species petal outlines. Pot shape (for example a bellied jar) is not modelled, only proportions and colour.
+- Flowers use 11 stylized forms plus a measured fused corolla, not per-species petal outlines. Calyx speckles and lobe asymmetry are not modelled. Pot shape (for example a bellied jar) is not modelled, only proportions and colour.
 - Mock mode still returns the same hand-authored monstera for any photo. Only live mode reflects the uploaded plant.

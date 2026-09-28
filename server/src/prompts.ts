@@ -44,7 +44,10 @@ same flowers. Species knowledge is only a prior for hidden parts. Work in this o
    tubeFraction = the part of that length that is one closed fused tube (a long trumpet such as Brugmansia,
    Datura, a lily or a petunia keeps a long tube, a daisy or a rose has none); tubeDiameterCm at its narrowest;
    flare of the mouth; lobes on the rim; calyxLengthCm of the green sheath at its base; axisDeg of the flower
-   axis (0 up, 90 horizontal, 150+ hanging). A trumpet must never be described by its diameter alone.
+   axis (0 up, 90 horizontal, 150+ hanging); layers when corollas are nested (double/triple flowers such as Datura
+   'Double Purple'); tipTail when lobe tips end in slender curling tails; ribs for a pleated, striped tube;
+   innerColor for the inside of the tube (throat). fruitSurface: spiny for thorn-apple capsules, else what you see.
+   A trumpet must never be described by its diameter alone.
 5. SPECIES STRUCTURE (species.flowering): how this species' flowers are built (form, petals per flower,
    petal width/length, inflorescence, typical colours, fruit type), from botanical knowledge, even if the
    plant is not flowering now.

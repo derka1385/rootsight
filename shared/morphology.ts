@@ -39,6 +39,10 @@ export const FlowerShape = z.object({
   lobes: z.number().int().min(0).max(12).describe("Lobes or points on the rim of a fused tube (0 = entire rim), or petal count when petals are separate"),
   calyxLengthCm: z.number().min(0).max(30).describe("Visible green calyx sheath around the flower base (0 if none)"),
   axisDeg: z.number().min(0).max(180).describe("The flower's axis from straight up: 0 facing the sky, 90 horizontal, 150+ hanging down"),
+  layers: z.number().int().min(1).max(3).optional().describe("Corollas nested inside each other: 1 single, 2 double, 3 triple (hose-in-hose, e.g. Datura 'Double Purple')"),
+  tipTail: unit.optional().describe("Lobe tips drawn out into slender curling tails: 0 none, 0.5 short points, 1 long tendrils (Datura, Brugmansia)"),
+  ribs: unit.optional().describe("How strongly the tube is pleated/ribbed lengthwise: 0 smooth, 1 deeply pleated with fine stripes"),
+  innerColor: hex.optional().describe("Inside of the tube (throat), sampled where visible"),
 });
 
 /** Reproductive organs visible on THIS plant. Counts include estimated hidden ones; nothing is invented. */
@@ -55,6 +59,7 @@ export const BloomInventory = z.object({
   placement: z.enum(["above-foliage", "terminal", "among-foliage", "axillary", "basal"]).describe("Where flowers sit relative to the leaves"),
   stalkCm: z.number().min(0).max(120).describe("Length of the flower stalks (peduncles) as seen"),
   flowerShape: FlowerShape.optional(),
+  fruitSurface: z.enum(["smooth", "spiny", "ribbed", "hairy"]).optional().describe("Fruit skin as seen: spiny for thorn-apple capsules (Datura), smooth for berries"),
   landmarks: z.array(BloomObservation).max(24).describe("Up to 24 clearly visible flowers/buds/fruits or clusters, largest first"),
 });
 

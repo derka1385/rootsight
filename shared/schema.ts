@@ -73,7 +73,7 @@ export const VisionPlantProfile = PlantProfile.extend({
   species: PlantProfile.shape.species.extend({ flowering: SpeciesFlowering }),
   visual: PlantVisual,
   // Vision must also measure the flower's own form (required here, optional in saved profiles).
-  individual: IndividualPlantProfile.omit({ seed: true }).required().extend({ blooms: BloomInventory.extend({ flowerShape: FlowerShape }) }),
+  individual: IndividualPlantProfile.omit({ seed: true }).required().extend({ blooms: BloomInventory.extend({ flowerShape: FlowerShape.required(), fruitSurface: BloomInventory.shape.fruitSurface.unwrap() }) }),
 });
 
 /** Output of simulate(): a snapshot of growth/soil/watering state at a point in time. */

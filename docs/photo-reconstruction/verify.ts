@@ -7,7 +7,7 @@ import { simulate } from '../../shared/simulation';
 import { visualOf } from '../../web/src/three/visual';
 import { densityLeafFloor, foliageExtent, occupancyOf, plantLayout } from '../../web/src/three/architecture';
 import { bloomLayout } from '../../web/src/three/bloomLayout';
-import { flowerInstances } from '../../web/src/three/Flowers';
+import { corollaModel, corollaStyle, flowerInstances } from '../../web/src/three/Flowers';
 
 const stateOf = (p: PlantProfile, month = 0) => simulate(p, month, p.care.waterIntervalDays);
 const finite = (v: Vector3) => [v.x, v.y, v.z].every(Number.isFinite);
@@ -43,12 +43,41 @@ assert.equal(bloomLayout(noBlooms, stateOf(noBlooms), visualOf(noBlooms)).organs
   assert(shape.tubeFraction >= 0.4 && shape.lengthCm > b.flowerDiameterCm, 'fixture is a long trumpet');
   const layout = bloomLayout(p, stateOf(p), v), flowers = layout.organs.filter(o => o.kind === 'flower');
   const parts = flowerInstances(layout.organs, v.botanical.flowering, { flower: b.flowerColor, center: b.centerColor, bud: b.budColor, fruit: b.fruitColor }, v.seed, 0, shape);
-  assert.equal(parts.corollas.length, b.flowers, 'every trumpet is one continuous corolla');
+  assert.equal(parts.corollas.length, 1, 'a single brugmansia corolla');
+  assert.equal(parts.corollas[0].length, b.flowers, 'every trumpet is one continuous corolla');
   assert.equal(parts.petals.length, 0, 'no loose petal fan for a fused corolla');
   for (const o of flowers) {
     assert(Math.abs(o.length - shape.lengthCm / 100) < shape.lengthCm / 100 * 0.12, `${o.id} keeps the measured length`);
     assert(Math.abs(o.base.distanceTo(o.position) - o.length / 2) < 1e-9, `${o.id} stalk joins the base of the tube`);
     assert(o.facing.y < -0.8, `${o.id} hangs as measured (axis ${shape.axisDeg} deg)`);
+  }
+}
+
+// 1c. Datura 'Double Purple' (live scan): nested corollas, curling lobe tails, furled buds, spiny capsules.
+{
+  const base = fixtures.datura, b0 = base.individual!.blooms!, shape = b0.flowerShape!;
+  assert(shape.layers === 3 && shape.tipTail! > 0.5 && shape.ribs! > 0.5 && b0.fruitSurface === 'spiny', 'the scan reads the triple, tailed, pleated corolla and spiny fruit');
+  const withFruit = (fruitSurface: 'spiny' | 'smooth') => PlantProfile.parse({ ...base, individual: { ...base.individual, blooms: { ...b0, fruits: 3, fruitSurface } } });
+  const p = withFruit('spiny'), v = visualOf(p), b = p.individual!.blooms!;
+  const layout = bloomLayout(p, stateOf(p), v);
+  const colors = { flower: b.flowerColor, center: b.centerColor, bud: b.budColor, fruit: b.fruitColor };
+  const parts = flowerInstances(layout.organs, v.botanical.flowering, colors, v.seed, 0, shape, b.fruitSurface);
+  assert.equal(parts.corollas.length, 3, 'one corolla per nested layer');
+  assert(parts.corollas.every(layer => layer.length === b.flowers), 'every flower has every layer');
+  assert.equal(parts.tails.length, b.flowers * 3 * shape.lobes, 'a tail on every lobe of every layer');
+  assert.equal(parts.furled.length, b.buds, 'buds of a fused flower are furled spindles');
+  assert.equal(parts.buds.length, 0);
+  assert.equal(parts.fruits.length, 3);
+  assert(parts.spines.length >= 3 * 40, 'spiny capsules carry spines');
+  const smooth = withFruit('smooth');
+  assert.equal(flowerInstances(bloomLayout(smooth, stateOf(smooth), visualOf(smooth)).organs, v.botanical.flowering, colors, v.seed, 0, shape, 'smooth').spines.length, 0, 'smooth fruit, no spines');
+  // A nested corolla stays inside the tube around it (turned half a lobe, its ridges face the outer folds).
+  const style = corollaStyle(shape, v.botanical.flowering.form);
+  const layers = [0, 1, 2].map(k => corollaModel(shape, b.flowerDiameterCm, style, k));
+  const radius = (k: number, angle: number, z: number) => { const q = layers[k].point(angle - layers[k].turn, z / (1 + 0.15 * k)); return Math.hypot(q.x, q.y); };
+  for (let z = 0.01; z < shape.tubeFraction; z += 0.03) for (const k of [1, 2]) for (let i = 0; i < 240; i++) {
+    const angle = i / 240 * Math.PI * 2;
+    assert(radius(k, angle, z) < radius(k - 1, angle, z), `layer ${k} pokes through layer ${k - 1} at z=${z.toFixed(2)}, angle ${angle.toFixed(2)}`);
   }
 }
 
@@ -74,5 +103,5 @@ for (const p of [fixtures.monstera, fixtures.basil, fixtures.cactus]) assert.equ
   const a = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 - 1e-7 }, v), b = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 + 1e-7 }, v);
   for (const leaf of a.organs) assert(b.organs.find(x => x.id === leaf.id)!.matrix.elements.every((n, i) => Math.abs(n - leaf.matrix.elements[i]) < 1e-5));
 }
-console.log('Passed: measured trumpets rendered as one fused corolla of the measured length, every flower/bud/fruit attached to a stalk, drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
+console.log('Passed: measured trumpets rendered as one fused corolla of the measured length, nested datura corollas with lobe tails, furled buds and spiny capsules, every flower/bud/fruit attached to a stalk, drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
 

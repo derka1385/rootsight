@@ -1,0 +1,320 @@
+{
+  "visual": {
+    "seed": "datura-metel-double-purple-01",
+    "silhouette": {
+      "widthToHeight": 0.75,
+      "leanDeg": 5,
+      "leanDirectionDeg": 90,
+      "symmetry": 0.5
+    },
+    "stems": {
+      "count": 3,
+      "thicknessCm": 1.2,
+      "internodeCm": 8,
+      "tipColor": "#5a4450"
+    },
+    "leaves": {
+      "widthToLength": 0.6,
+      "sizeVariation": 0.35,
+      "tip": "pointed",
+      "base": "rounded",
+      "edge": "smooth",
+      "fenestration": 0,
+      "curl": 0.1,
+      "twist": 0.1,
+      "gloss": 0.25,
+      "undersideColor": "#8fb07a",
+      "arrangement": "alternate",
+      "droop": 0.3,
+      "variegation": "none",
+      "variegationAmount": 0,
+      "variegationColor": "#8fb07a"
+    },
+    "condition": {
+      "yellowing": 0,
+      "brownTips": 0,
+      "legginess": 0.2
+    },
+    "pot": {
+      "color": "#3a3a3a",
+      "material": "none",
+      "diameterToHeight": 0.4,
+      "heightToDiameter": 0.85,
+      "soilVisible": false
+    }
+  },
+  "individual": {
+    "seed": "886901933a302f9da84ed0b6",
+    "crownShape": "irregular",
+    "crownDensity": 0.55,
+    "maturity": 0.7,
+    "estimatedBranchCount": 4,
+    "averageLeafAngleDeg": 65,
+    "leafAsymmetry": 0.4,
+    "stemTaper": 0.5,
+    "stemCurvature": 0.3,
+    "depthToWidth": 0.6,
+    "occupancy": [
+      "00000011",
+      "00000001",
+      "10000110",
+      "77300067",
+      "96600078",
+      "43510079",
+      "66420037",
+      "98763378"
+    ],
+    "stems": [
+      {
+        "baseX": -0.3,
+        "tipX": 0.2,
+        "tipY": 0.75,
+        "layer": "middle",
+        "thicknessMm": 12
+      },
+      {
+        "baseX": -0.9,
+        "tipX": -0.2,
+        "tipY": 0.25,
+        "layer": "foreground",
+        "thicknessMm": 14
+      },
+      {
+        "baseX": 0.4,
+        "tipX": 0.6,
+        "tipY": 0.55,
+        "layer": "background",
+        "thicknessMm": 9
+      }
+    ],
+    "leaves": [
+      {
+        "id": "leaf-0",
+        "x": -0.55,
+        "y": 0.6,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 80,
+        "azimuthDeg": -80,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-1",
+        "x": -0.2,
+        "y": 0.62,
+        "layer": "middle",
+        "size": 0.7,
+        "angleDeg": 70,
+        "azimuthDeg": -40,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-2",
+        "x": -0.3,
+        "y": 0.72,
+        "layer": "background",
+        "size": 0.75,
+        "angleDeg": 40,
+        "azimuthDeg": -30,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-3",
+        "x": 0.5,
+        "y": 0.7,
+        "layer": "background",
+        "size": 0.85,
+        "angleDeg": 70,
+        "azimuthDeg": 80,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-4",
+        "x": 0.6,
+        "y": 0.5,
+        "layer": "middle",
+        "size": 0.7,
+        "angleDeg": 80,
+        "azimuthDeg": 90,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-5",
+        "x": 0.75,
+        "y": 0.4,
+        "layer": "middle",
+        "size": 0.75,
+        "angleDeg": 85,
+        "azimuthDeg": 100,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-6",
+        "x": 0.85,
+        "y": 0.2,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 95,
+        "azimuthDeg": 110,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-7",
+        "x": -0.6,
+        "y": 0.12,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 95,
+        "azimuthDeg": -60,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-8",
+        "x": 0.3,
+        "y": 0.05,
+        "layer": "foreground",
+        "size": 0.5,
+        "angleDeg": 85,
+        "azimuthDeg": 20,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-9",
+        "x": 0.9,
+        "y": 0.95,
+        "layer": "background",
+        "size": 0.6,
+        "angleDeg": 35,
+        "azimuthDeg": 60,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-10",
+        "x": 0.1,
+        "y": 0.4,
+        "layer": "background",
+        "size": 0.5,
+        "angleDeg": 75,
+        "azimuthDeg": 30,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-11",
+        "x": 0.2,
+        "y": 0.1,
+        "layer": "middle",
+        "size": 0.55,
+        "angleDeg": 80,
+        "azimuthDeg": 10,
+        "stemIndex": 1
+      }
+    ],
+    "blooms": {
+      "flowers": 1,
+      "buds": 1,
+      "fruits": 0,
+      "flowerColor": "#8a2a9a",
+      "centerColor": "#d9c7b0",
+      "budColor": "#4e2c45",
+      "fruitColor": "#6f8f4a",
+      "flowerDiameterCm": 9,
+      "fruitDiameterCm": 4,
+      "placement": "axillary",
+      "stalkCm": 2,
+      "flowerShape": {
+        "lengthCm": 18,
+        "tubeFraction": 0.6,
+        "tubeDiameterCm": 1.6,
+        "flare": 0.45,
+        "lobes": 5,
+        "calyxLengthCm": 7,
+        "axisDeg": 8,
+        "layers": 3,
+        "tipTail": 0.85,
+        "ribs": 0.85,
+        "innerColor": "#d9c7b0"
+      },
+      "fruitSurface": "spiny",
+      "landmarks": [
+        {
+          "id": "flower-0",
+          "kind": "flower",
+          "x": 0.1,
+          "y": 0.85,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "up"
+        },
+        {
+          "id": "bud-0",
+          "kind": "bud",
+          "x": -0.35,
+          "y": 0.35,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "up"
+        }
+      ]
+    }
+  },
+  "species": {
+    "commonName": "Double Purple Devil's Trumpet",
+    "scientificName": "Datura metel 'Double Purple' (Fastuosa group)",
+    "confidence": 0.9,
+    "flowering": {
+      "form": "trumpet",
+      "petals": 5,
+      "petalWidthToLength": 0.35,
+      "inflorescence": "solitary",
+      "flowerColor": "#8a2a9a",
+      "centerColor": "#d9c7b0",
+      "fruit": "capsule"
+    }
+  },
+  "wiki": {
+    "family": "Solanaceae",
+    "nativeRegion": "Tropical Asia (widely naturalised; origin possibly Central America)",
+    "summary": "Datura metel is a shrubby annual or short-lived perennial grown for its large upward-facing trumpet flowers. The 'Double Purple' form bears nested, triple corollas that are deep violet outside and creamy within, followed by spiny round capsules. All parts contain potent tropane alkaloids and are highly poisonous.",
+    "difficulty": "medium",
+    "toxicToPets": true
+  },
+  "morphology": {
+    "growthForm": "upright-branching",
+    "currentHeightCm": 60,
+    "matureHeightCm": 100,
+    "stemColor": "#4a3a40",
+    "branchingAngleDeg": 45,
+    "branchingDepth": 2,
+    "leaf": {
+      "shape": "ovate",
+      "color": "#6f9a55",
+      "lengthCm": 15,
+      "countNow": 18
+    }
+  },
+  "growth": {
+    "rateCmPerMonth": 10,
+    "monthsToMaturity": 5
+  },
+  "roots": {
+    "type": "taproot",
+    "maxDepthCm": 40,
+    "maxSpreadCm": 40
+  },
+  "care": {
+    "waterIntervalDays": 3,
+    "light": "full-sun",
+    "humidity": "medium",
+    "tempMinC": 10,
+    "tempMaxC": 35,
+    "soil": "Rich, well-drained potting mix with compost; feed regularly in summer"
+  },
+  "facts": [
+    "Each double flower has three nested corollas stacked inside one another.",
+    "Flowers open at dusk and release a sweet fragrance at night.",
+    "Every part of the plant contains scopolamine and hyoscyamine.",
+    "Its spiny seed capsule gives the name thorn-apple.",
+    "Individual blooms often last only a day or two."
+  ],
+  "healthNotes": "Looks healthy: fresh green leaves without yellowing or brown tips, dark sturdy stems, one triple flower unfurling and a second bud opening. No pests visible."
+}
