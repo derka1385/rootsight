@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, ConeGeometry, InstancedBufferAttribute, MeshDepthMaterial, RGBADepthPacking, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
+import { BufferGeometry, Color, ConeGeometry, InstancedBufferAttribute, MeshDepthMaterial, RGBADepthPacking, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { Material } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "./visual";
@@ -63,7 +63,8 @@ function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantSta
     depth.onBeforeCompile = deformLeaf;
     const materials = [0, 1, 2, 3].map(i => leafSurface(profile, v, i));
     // Believable living tissue: the photographed stem colour, a little deeper, matte, few environment glints.
-    const stem = new MeshStandardMaterial({ color: new Color(profile.morphology.stemColor).multiplyScalar(0.88), roughness: 0.8, envMapIntensity: 0.5, vertexColors: true, map: stemTexture() });
+    // Living tissue in the same family as leaves and petals: matte with a soft velvet sheen at the edges.
+    const stem = new MeshPhysicalMaterial({ color: new Color(profile.morphology.stemColor).multiplyScalar(0.88), roughness: 0.74, envMapIntensity: 0.5, vertexColors: true, map: stemTexture(), sheen: 0.35, sheenRoughness: 0.6, sheenColor: new Color(v.stems.tipColor).lerp(new Color("#ffffff"), 0.4) });
     stem.onBeforeCompile = shader => {
       shader.uniforms.tipColor = { value: new Color(v.stems.tipColor) };
       shader.vertexShader = 'varying float stemAge;\n' + shader.vertexShader;

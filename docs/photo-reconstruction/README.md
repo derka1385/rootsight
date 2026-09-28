@@ -96,6 +96,20 @@ A diameter plus a species form ("trumpet") could not describe a long trumpet, an
   - Buds are spindles of the measured length.
 - **Fixture:** `brugmansia` is a live scan of a CC photo ([Brugmansia suaveolens, Yercaud](https://commons.wikimedia.org/wiki/File:Brugmansia_suaveolens-yercaud-salem-India.jpg), CC BY-SA 4.0). It measured 28 cm long, 60 % tube, a 2.5 cm tube, 5 lobes, a 10 cm calyx, hanging at 160°.
 
+## Grown stems (stylized botanical)
+
+- **Curves.** Stems, branches and petioles are cubic Bézier centrelines, not polylines. The same curve places the leaves and branches, so the old straight-line attachments that no longer matched the drawn stem are gone.
+  - Main stems leave the soil upright, bow gently by the photographed curvature, and turn up at the tip.
+  - Branches leave outward and curve up.
+  - Petioles rise, arch, and arrive along their blade's axis.
+- **Thickness hierarchy.**
+  - Stems are 1.35× the measured thickness, never below 0.45 % of plant height.
+  - A branch starts at 72 % of its parent's radius at that point.
+  - Twigs thicken with their length.
+  - Flower stalks are sized to what they carry.
+  - A smoother taper (t^1.6) and soft collars at every junction complete it.
+- **Material.** Stems use the same family as leaves and petals: matte with a soft sheen.
+
 ## Run it live
 
 ```sh

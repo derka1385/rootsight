@@ -17,15 +17,16 @@ export function stemGeometry(paths: StemPath[]): BufferGeometry {
     const r = seededRandom(`stem-geometry:${path.id}`);
     const curve = new CatmullRomCurve3(path.points, false, "centripetal");
     const rings = Math.min(28, Math.max(8, Math.round(8 + curve.getLength() * 90)));
-    const sides = path.depth >= 3 ? 6 : 9;
+    const sides = [10, 9, 8, 7, 6][Math.min(4, path.depth)];
     const frames = curve.computeFrenetFrames(rings, false);
     const phase = r() * 6.28, oval = 0.05 + r() * 0.07, swell = 0.025 + r() * 0.025, turn = (r() - 0.5) * 3;
-    const flare = [0.28, 0.14, 0.06, 0.04, 0.02][Math.min(4, path.depth)];
+    // Collar where a stem leaves the soil or its parent: a soft fillet instead of a hard joint.
+    const flare = [0.3, 0.38, 0.3, 0.18, 0.1][Math.min(4, path.depth)], collar = [9, 16, 18, 18, 18][Math.min(4, path.depth)];
     const woody = [1, 0.55, 0.12, 0.05, 0][Math.min(4, path.depth)];
     const offset = positions.length / 3;
     for (let i = 0; i <= rings; i++) {
       const t = i / rings, center = curve.getPointAt(t);
-      const radius = path.radius * (1 - path.taper * Math.pow(t, 1.15)) * (1 + flare * Math.exp(-t * 9)) * (1 + swell * Math.sin(t * 6.1 + phase) * Math.sin(t * 2.3 + phase * 0.7));
+      const radius = path.radius * (1 - path.taper * Math.pow(t, 1.6)) * (1 + flare * Math.exp(-t * collar)) * (1 + swell * Math.sin(t * 6.1 + phase) * Math.sin(t * 2.3 + phase * 0.7));
       // Woody and darker toward the base of main stems, fresher toward every tip; a slow streaky variation.
       const age = woody * (1 - t) ** 1.4, streak = 1 + 0.045 * Math.sin(t * 13 + phase * 2);
       // Junction occlusion: darker where a stalk leaves its parent, and under the head it carries.

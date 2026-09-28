@@ -161,7 +161,8 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
     const nodding = facing.y < -0.2;
     // A nodding head hangs from a stalk that rises past it and arches over; others meet it from below.
     const crest = nodding ? into.clone().add(new Vector3(0, size * 0.6, 0)).addScaledVector(new Vector3(anchor.x - into.x, 0, anchor.z - into.z), 0.15) : anchor.clone().lerp(into, 0.6).add(new Vector3(0, size * 0.2, 0));
-    const stalkRadius = Math.min(0.004, Math.max(0.0009, size * 0.035 * Math.sqrt(n)));
+    // Stalks strong enough for what they carry (stylized: a touch fuller than life).
+    const stalkRadius = Math.min(0.006, Math.max(0.0012, size * 0.045 * Math.sqrt(n)));
     stalks.push({ id: `stalk-${c.id}`, points: [anchor, anchor.clone().lerp(crest, 0.55).add(new Vector3(0, (crest.y - anchor.y) * 0.08, 0)), crest, into, end], radius: stalkRadius, taper: 0.3, depth: 3 });
     if (n > 1) for (const m of members) {
       stalks.push({ id: `pedicel-${m.id}`, points: [end, end.clone().lerp(m.base, 0.5).addScaledVector(facing, size * 0.1), m.base.clone().addScaledVector(m.facing, -m.size * 0.2), m.base], radius: stalkRadius * 0.45, taper: 0.25, depth: 4 });
