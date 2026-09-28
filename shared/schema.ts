@@ -1,9 +1,15 @@
 // Shared contract between server and web. Announce any change here to the whole team.
 import { z } from "zod";
+import { PlantVisual } from "./visual-profile";
+import { IndividualPlantProfile } from "./morphology";
+export { IndividualPlantProfile } from "./morphology";
+export { speciesProfileOf, SpeciesProfile } from "./species-profile";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).describe("Hex color like #3a7d44");
 
 export const PlantProfile = z.object({
+  visual: PlantVisual.optional(),
+  individual: IndividualPlantProfile.optional(),
   species: z.object({
     commonName: z.string(),
     scientificName: z.string(),
@@ -51,6 +57,11 @@ export const PlantProfile = z.object({
   healthNotes: z.string().describe("What is visible in the photo: yellowing, pests, dry tips, etc."),
 });
 export type PlantProfile = z.infer<typeof PlantProfile>;
+/** Vision must return observations; saved legacy profiles may omit them. Seed is assigned server-side. */
+export const VisionPlantProfile = PlantProfile.extend({
+  visual: PlantVisual,
+  individual: IndividualPlantProfile.omit({ seed: true }).required(),
+});
 
 /** Output of simulate(): a snapshot of growth/soil/watering state at a point in time. */
 export const PlantState = z.object({

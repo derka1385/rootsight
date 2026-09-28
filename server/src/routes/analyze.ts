@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 import { setTimeout as sleep } from "node:timers/promises";
-import { AnalyzeRequest, PlantProfile } from "@rootsight/shared/schema";
-import { fixtures } from "@rootsight/shared/fixtures";
+import { AnalyzeRequest, PlantProfile, VisionPlantProfile } from "@rootsight/shared/schema";
+import { observedMonstera } from "../../../shared/fixtures/observed";
 import { askJson, imageBlock, useMock } from "../claude";
 import { ANALYZE_PROMPT } from "../prompts";
 
@@ -10,7 +11,9 @@ export async function analyze(req: Request, res: Response) {
   const photo = AnalyzeRequest.parse(req.body);
   if (useMock()) {
     await sleep(600);
-    return res.json(fixtures.monstera);
+    return res.json(observedMonstera);
   }
-  res.json(await askJson(PlantProfile, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this plant." }]));
+  const result = await askJson(VisionPlantProfile, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this individual plant and locate its visible major leaves." }]);
+  const seed = createHash("sha256").update(photo.imageBase64).digest("hex").slice(0, 24);
+  res.json(PlantProfile.parse({ ...result, individual: { ...result.individual, seed } }));
 }

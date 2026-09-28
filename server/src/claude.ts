@@ -31,6 +31,7 @@ export async function askJson<S extends z.ZodType>(
     const res = await client.messages.create({
       model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
       max_tokens: 16000,
+      temperature: 0,
       system,
       messages: [{ role: "user", content: [...content, ...retryNote] }],
       // TODO(claude-owner): tune effort (low = fastest for live demos).
