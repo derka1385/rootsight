@@ -1,9 +1,9 @@
 // Shared contract between server and web. Announce any change here to the whole team.
 import { z } from "zod";
 import { PlantVisual } from "./visual-profile";
-import { IndividualPlantProfile } from "./morphology";
+import { BloomInventory, FlowerShape, IndividualPlantProfile } from "./morphology";
 import { SpeciesFlowering } from "./species-profile";
-export { IndividualPlantProfile, BloomInventory, BloomObservation, StemObservation, Occupancy } from "./morphology";
+export { IndividualPlantProfile, FlowerShape, BloomInventory, BloomObservation, StemObservation, Occupancy } from "./morphology";
 export { speciesProfileOf, SpeciesProfile, SpeciesFlowering } from "./species-profile";
 
 /*
@@ -72,7 +72,8 @@ export type PlantProfile = z.infer<typeof PlantProfile>;
 export const VisionPlantProfile = PlantProfile.extend({
   species: PlantProfile.shape.species.extend({ flowering: SpeciesFlowering }),
   visual: PlantVisual,
-  individual: IndividualPlantProfile.omit({ seed: true }).required(),
+  // Vision must also measure the flower's own form (required here, optional in saved profiles).
+  individual: IndividualPlantProfile.omit({ seed: true }).required().extend({ blooms: BloomInventory.extend({ flowerShape: FlowerShape }) }),
 });
 
 /** Output of simulate(): a snapshot of growth/soil/watering state at a point in time. */

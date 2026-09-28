@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
-import type { SpeciesFlowering } from "@rootsight/shared/schema";
+import type { FlowerShape, SpeciesFlowering } from "@rootsight/shared/schema";
 import { stemGeometry } from "./StemGeometry";
 import { seededRandom } from "./procedural";
 import { thinTissue } from "./shading";
 import { stemTexture } from "./textures";
-import { bloomLayout, type BloomOrgan } from "./bloomLayout";
+import { bloomLayout, isCorolla, type BloomOrgan } from "./bloomLayout";
 import type { RenderProfile as PlantProfile, Visual } from "./visual";
 
 /*
@@ -79,6 +79,52 @@ function budGeometry(): BufferGeometry {
 
 const SPHERE = new SphereGeometry(1, 16, 12);
 const SPADIX = new CylinderGeometry(0.75, 1, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5);
+/** Calyx sheath around a tubular flower's base: a slim cylinder from the stalk end (z = 0) forward to z = 1. */
+const SHEATH = new CylinderGeometry(1, 0.8, 1, 16, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 0.5);
+
+/**
+ * One fused corolla, length 1 along +z from its base: a narrow tube that widens into the measured mouth
+ * (a funnel for low flare, a trumpet bell for high flare), a rim split into rounded lobes that sit a little
+ * forward of the notches, and an edge that rolls back on strongly flared flowers. Radii come from the
+ * photo's measurements relative to the flower's length, so the proportions are the photographed ones.
+ */
+function corollaGeometry(shape: FlowerShape, mouthDiameterCm: number): BufferGeometry {
+  const L = shape.lengthCm, Rt = Math.max(0.012, shape.tubeDiameterCm / 2 / L), Rm = Math.max(Rt * 1.2, mouthDiameterCm / 2 / L);
+  const f = Math.min(0.95, Math.max(0.05, shape.tubeFraction)), F = shape.flare, N = shape.lobes >= 2 ? shape.lobes : 0;
+  const U = 56, V = 36, pos: number[] = [], uv: number[] = [], t01: number[] = [], index: number[] = [];
+  for (let j = 0; j <= V; j++) {
+    const v = j / V, s = Math.max(0, (v - f) / (1 - f));
+    for (let i = 0; i <= U; i++) {
+      const a = i / U * Math.PI * 2;
+      // The tube itself widens gently (a funnel), then the limb opens: gradually for a funnel, late and
+      // wide for a flared trumpet.
+      let r = v <= f ? Rt * (0.7 + 0.45 * v / f) : Rt * 1.15 + (Rm - Rt * 1.15) * Math.pow(s, 1 + 1.2 * F);
+      let z = v;
+      const rim = Math.max(0, (s - 0.5) / 0.5) ** 2;
+      if (N) {
+        // Lobes end in points (sharper peaks than a cosine), the notches between them sit back.
+        const lobe = Math.pow(0.5 + 0.5 * Math.cos(N * a), 2.2);
+        z -= (1 - lobe) * 0.12 * rim * (1 - f + 0.25);
+        r *= 1 - (1 - lobe) * 0.07 * rim;
+      }
+      z -= F * F * 0.07 * s ** 4; // the flared edge rolls back
+      pos.push(Math.cos(a) * r, Math.sin(a) * r, z);
+      uv.push((i / U) * Math.max(1, N || 5), v);
+      t01.push(v);
+    }
+  }
+  for (let j = 0; j < V; j++) for (let i = 0; i < U; i++) {
+    const p = j * (U + 1) + i, q = p + U + 1;
+    index.push(p, q, p + 1, p + 1, q, q + 1);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  g.setAttribute("petalUv", new Float32BufferAttribute(uv, 2));
+  g.setAttribute("petalT", new Float32BufferAttribute(t01, 1));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
+}
 const BUD = budGeometry();
 /**
  * Calyx / receptacle: a truncated cone from the stalk end (origin, radius 0.28 so it is as thick as the
@@ -99,7 +145,9 @@ function basis(axis: Vector3, up: Vector3) {
   return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(side, y, axis));
 }
 
-export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowering, colors: { flower: string; center: string; bud: string; fruit: string }, seed: string, wilt: number) {
+export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowering, colors: { flower: string; center: string; bud: string; fruit: string }, seed: string, wilt: number, shape?: FlowerShape) {
+  const corollas: Instance[] = [], sheaths: Instance[] = [];
+  const fused = isCorolla(shape, flowering.form);
   const petals: Instance[] = [], centres: Instance[] = [], buds: Instance[] = [], fruits: Instance[] = [], spadices: Instance[] = [], calyces: Instance[] = [];
   const white = new Color(1, 1, 1);
   // The green cup that joins the stalk to the organ: from the stalk end to just inside the petals or bud.
@@ -113,12 +161,24 @@ export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowerin
   for (const o of organs) {
     const r = seededRandom(`${seed}:bloom-organ:${o.id}`);
     if (o.kind === "bud") {
-      buds.push({ matrix: new Matrix4().compose(o.position, basis(o.facing, UP), new Vector3(o.size * 0.3, o.size * 0.3, o.size * 0.5)), color: new Color(colors.bud).offsetHSL(0, 0, (r() - 0.5) * 0.06) });
-      calyx(o, 0.55, 0.24);
+      // A bud is as long as measured (a furled trumpet is a long spindle), its width from the flower's tube.
+      const width = fused ? Math.max(o.size * 0.12, shape!.tubeDiameterCm / 100 * 0.75) : o.size * 0.3;
+      buds.push({ matrix: new Matrix4().compose(o.position, basis(o.facing, UP), new Vector3(width, width, o.length / 2.7)), color: new Color(colors.bud).offsetHSL(0, 0, (r() - 0.5) * 0.06) });
+      if (fused && shape!.calyxLengthCm > 0) sheaths.push({ matrix: new Matrix4().compose(o.base, basis(o.facing, UP), new Vector3(width * 1.15, width * 1.15, Math.min(o.length * 0.5, shape!.calyxLengthCm / 100 * 0.8))), color: white });
+      else calyx(o, 0.55, 0.24);
       continue;
     }
     if (o.kind === "fruit") {
       fruits.push({ matrix: new Matrix4().compose(o.position, new Quaternion(), new Vector3().setScalar(o.size / 2)), color: new Color(colors.fruit).offsetHSL(0, 0, (r() - 0.5) * 0.05) });
+      continue;
+    }
+    if (fused) {
+      // One continuous corolla from the calyx to the flaring mouth, then a calyx sheath over its base.
+      const tint = new Color(colors.flower).offsetHSL((r() - 0.5) * 0.02, 0, (r() - 0.5) * 0.05);
+      corollas.push({ matrix: new Matrix4().compose(o.base, basis(o.facing, UP).multiply(new Quaternion().setFromAxisAngle(Z, r() * 6.28)), new Vector3().setScalar(o.length)), color: tint });
+      const tubeR = shape!.tubeDiameterCm / 200 * (o.length / (shape!.lengthCm / 100));
+      if (shape!.calyxLengthCm > 0) sheaths.push({ matrix: new Matrix4().compose(o.base, basis(o.facing, UP), new Vector3(tubeR * 1.3, tubeR * 1.3, Math.min(o.length * 0.6, shape!.calyxLengthCm / 100 * (o.length / (shape!.lengthCm / 100))))), color: white });
+      else calyx(o, 0.4, 0.1);
       continue;
     }
     // Petals fan around the face axis; drought closes and droops them a little.
@@ -148,7 +208,7 @@ export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowerin
     if (flowering.form === "spathe") spadices.push({ matrix: new Matrix4().compose(o.position, basis(F.clone().lerp(UP, 0.4).normalize(), UP), new Vector3(o.size * 0.05, o.size * 0.05, o.size * 0.5)), color: center });
     else centres.push({ matrix: new Matrix4().compose(o.position.clone().addScaledVector(F, o.size * 0.03), new Quaternion(), new Vector3().setScalar(o.size * (flowering.form === "daisy" ? 0.16 : 0.08))), color: center });
   }
-  return { petals, centres, buds, fruits, spadices, calyces };
+  return { petals, centres, buds, fruits, spadices, calyces, corollas, sheaths };
 }
 
 /** Instanced part with per-instance colours; remounts when its capacity changes. */
@@ -175,7 +235,8 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
     flower: inv?.flowerColor ?? flowering.flowerColor, center: inv?.centerColor ?? flowering.centerColor,
     bud: inv?.budColor ?? flowering.flowerColor, fruit: inv?.fruitColor ?? "#8a3a2a",
   }), [inv, flowering]);
-  const parts = useMemo(() => flowerInstances(layout.organs, flowering, colors, v.seed, state.wilt), [layout, flowering, colors, v.seed, state.wilt]);
+  const shape = inv?.flowerShape;
+  const parts = useMemo(() => flowerInstances(layout.organs, flowering, colors, v.seed, state.wilt, shape), [layout, flowering, colors, v.seed, state.wilt, shape]);
   const resources = useMemo(() => {
     // Soft velvety petals: sheen, gentle roughness, light through thin tissue; faint veins and a paler back.
     const petal = new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.55, side: DoubleSide, envMapIntensity: 0.75, sheen: 0.4, sheenRoughness: 0.5, sheenColor: new Color(colors.flower).lerp(new Color("#ffffff"), 0.55), specularIntensity: 0.3 });
@@ -195,6 +256,7 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
     petal.customProgramCacheKey = () => "rootsight-petal-v2";
     return {
       petalGeometry: petalGeometry(flowering.form === "spathe" ? Math.max(0.8, flowering.petalWidthToLength) : flowering.petalWidthToLength, flowering.form),
+      corollaGeometry: shape && isCorolla(shape, flowering.form) ? corollaGeometry(shape, inv!.flowerDiameterCm) : null,
       petal,
       centre: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.7 }),
       bud: new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.55, sheen: 0.5, sheenRoughness: 0.6, sheenColor: new Color("#ffffff") }),
@@ -203,14 +265,16 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
       stalk: new MeshStandardMaterial({ color: new Color(v.stems.tipColor).lerp(new Color(profile.morphology.stemColor), 0.35).multiplyScalar(0.82), roughness: 0.8, envMapIntensity: 0.5, vertexColors: true, map: stemTexture() }),
       calyx: new MeshStandardMaterial({ color: new Color(v.stems.tipColor).lerp(new Color(profile.morphology.leaf.color), 0.6).multiplyScalar(0.85), roughness: 0.75, envMapIntensity: 0.5 }),
     };
-  }, [flowering, colors, v.stems.tipColor, profile.morphology.stemColor, profile.morphology.leaf.color]);
-  useEffect(() => () => { resources.petalGeometry.dispose(); [resources.petal, resources.centre, resources.bud, resources.fruit, resources.stalk, resources.calyx].forEach(m => m.dispose()); }, [resources]);
+  }, [flowering, colors, v.stems.tipColor, profile.morphology.stemColor, profile.morphology.leaf.color, shape, inv?.flowerDiameterCm]);
+  useEffect(() => () => { resources.petalGeometry.dispose(); resources.corollaGeometry?.dispose(); [resources.petal, resources.centre, resources.bud, resources.fruit, resources.stalk, resources.calyx].forEach(m => m.dispose()); }, [resources]);
   const stalks = useMemo(() => stemGeometry(layout.stalks), [layout]);
   useEffect(() => () => stalks.dispose(), [stalks]);
   if (!layout.organs.length) return null;
   return <group>
     {layout.stalks.length > 0 && <mesh geometry={stalks} material={resources.stalk} castShadow receiveShadow dispose={null} />}
     <Part key={`p${parts.petals.length}`} geometry={resources.petalGeometry} material={resources.petal} items={parts.petals} />
+    {resources.corollaGeometry && <Part key={`t${parts.corollas.length}`} geometry={resources.corollaGeometry} material={resources.petal} items={parts.corollas} />}
+    <Part key={`h${parts.sheaths.length}`} geometry={SHEATH} material={resources.calyx} items={parts.sheaths} />
     <Part key={`c${parts.centres.length}`} geometry={SPHERE} material={resources.centre} items={parts.centres} />
     <Part key={`s${parts.spadices.length}`} geometry={SPADIX} material={resources.centre} items={parts.spadices} />
     <Part key={`k${parts.calyces.length}`} geometry={CALYX} material={resources.calyx} items={parts.calyces} />

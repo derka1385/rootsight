@@ -24,7 +24,7 @@ for (const name of ['cyclamen', 'kalanchoe'] as const) {
   // Attached, never floating: a stalk (or pedicel) ends exactly at every organ's base, inside the organ.
   for (const o of layout.organs) {
     assert(layout.stalks.some(st => st.points.at(-1)!.distanceTo(o.base) < 1e-9), `${name}: ${o.id} has no stalk ending at its base`);
-    assert(o.base.distanceTo(o.position) < o.size * 0.6, `${name}: ${o.id} attaches outside its own body`);
+    assert(o.base.distanceTo(o.position) <= o.length / 2 + 1e-9, `${name}: ${o.id} attaches outside its own body`);
   }
   assert.deepEqual(bloomLayout(p, stateOf(p), v), layout, `${name}: bloom layout must be deterministic`);
   // Observed landmarks stay where the photo put them (single-floret ones sit exactly at their centre).
@@ -36,6 +36,21 @@ for (const name of ['cyclamen', 'kalanchoe'] as const) {
 for (const p of [fixtures.monstera, fixtures.basil, fixtures.cactus]) assert.equal(bloomLayout(p, stateOf(p), visualOf(p)).organs.length, 0, 'no inventory, no flowers');
 const noBlooms = PlantProfile.parse({ ...fixtures.cyclamen, individual: { ...fixtures.cyclamen.individual, blooms: { ...fixtures.cyclamen.individual!.blooms!, flowers: 0, buds: 0, fruits: 0, landmarks: [] } } });
 assert.equal(bloomLayout(noBlooms, stateOf(noBlooms), visualOf(noBlooms)).organs.length, 0, 'a plant photographed without flowers renders none');
+
+// 1b. A measured trumpet stays a trumpet: one fused corolla per flower, as long as measured, joined at its base.
+{
+  const p = fixtures.brugmansia, v = visualOf(p), b = p.individual!.blooms!, shape = b.flowerShape!;
+  assert(shape.tubeFraction >= 0.4 && shape.lengthCm > b.flowerDiameterCm, 'fixture is a long trumpet');
+  const layout = bloomLayout(p, stateOf(p), v), flowers = layout.organs.filter(o => o.kind === 'flower');
+  const parts = flowerInstances(layout.organs, v.botanical.flowering, { flower: b.flowerColor, center: b.centerColor, bud: b.budColor, fruit: b.fruitColor }, v.seed, 0, shape);
+  assert.equal(parts.corollas.length, b.flowers, 'every trumpet is one continuous corolla');
+  assert.equal(parts.petals.length, 0, 'no loose petal fan for a fused corolla');
+  for (const o of flowers) {
+    assert(Math.abs(o.length - shape.lengthCm / 100) < shape.lengthCm / 100 * 0.12, `${o.id} keeps the measured length`);
+    assert(Math.abs(o.base.distanceTo(o.position) - o.length / 2) < 1e-9, `${o.id} stalk joins the base of the tube`);
+    assert(o.facing.y < -0.8, `${o.id} hangs as measured (axis ${shape.axisDeg} deg)`);
+  }
+}
 
 // 2. A dense photo never renders sparse: an undercounted but dense canopy is filled to its density floor.
 const sparseCount = PlantProfile.parse({ ...fixtures.kalanchoe, morphology: { ...fixtures.kalanchoe.morphology, leaf: { ...fixtures.kalanchoe.morphology.leaf, countNow: 4 } }, individual: { ...fixtures.kalanchoe.individual, crownDensity: 0.95, leaves: [] } });
@@ -59,5 +74,5 @@ for (const p of [fixtures.monstera, fixtures.basil, fixtures.cactus]) assert.equ
   const a = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 - 1e-7 }, v), b = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 + 1e-7 }, v);
   for (const leaf of a.organs) assert(b.organs.find(x => x.id === leaf.id)!.matrix.elements.every((n, i) => Math.abs(n - leaf.matrix.elements[i]) < 1e-5));
 }
-console.log('Passed: every flower/bud/fruit attached to a stalk, drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
+console.log('Passed: measured trumpets rendered as one fused corolla of the measured length, every flower/bud/fruit attached to a stalk, drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
 

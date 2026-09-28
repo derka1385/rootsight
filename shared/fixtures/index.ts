@@ -5,6 +5,7 @@ import cactus from "./cactus.json" with { type: "json" };
 // Live Claude scans of two CC-licensed flowering-plant photos (sources in docs/photo-reconstruction/README.md).
 import cyclamen from "./cyclamen.json" with { type: "json" };
 import kalanchoe from "./kalanchoe.json" with { type: "json" };
+import brugmansia from "./brugmansia.json" with { type: "json" };
 
 // Parsed at import so a fixture that drifts from the schema fails loudly.
 export const fixtures = {
@@ -13,4 +14,5 @@ export const fixtures = {
   cactus: PlantProfile.parse(cactus),
   cyclamen: PlantProfile.parse(cyclamen),
   kalanchoe: PlantProfile.parse(kalanchoe),
+  brugmansia: PlantProfile.parse(brugmansia),
 };

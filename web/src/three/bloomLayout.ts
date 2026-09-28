@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import type { BloomObservation, PlantState } from "@rootsight/shared/schema";
+import type { BloomObservation, FlowerShape, PlantState } from "@rootsight/shared/schema";
 import { architectureOf, foliageExtent, LAYER_DEPTH, occupancyOf, photoFrame, sampleFoliage, TOWARD } from "./architecture";
 import { seededRandom } from "./procedural";
 import type { StemPath } from "./StemGeometry";
@@ -18,10 +18,13 @@ export type BloomKind = BloomObservation["kind"];
  * One flower (or floret), bud or fruit: its centre, the way its face points, its diameter in metres and
  * the point where its stalk joins it (behind the petals, at the back of a bud, the top of a fruit).
  */
-export type BloomOrgan = { id: string; kind: BloomKind; position: Vector3; facing: Vector3; size: number; base: Vector3 };
+export type BloomOrgan = { id: string; kind: BloomKind; position: Vector3; facing: Vector3; size: number; length: number; base: Vector3 };
 
-/** How far behind an organ's centre its stalk attaches, as a fraction of its size (inside the organ: no gap). */
-export const ATTACH: Record<BloomKind, number> = { flower: 0.14, bud: 0.58, fruit: 0.45 };
+/** An organ's depth along its axis relative to its size when no flower shape was measured (flat flower, round bud/fruit). */
+const DEPTH: Record<BloomKind, number> = { flower: 0.28, bud: 1.16, fruit: 0.9 };
+
+/** Flowers drawn as one fused corolla (tube + flaring mouth) rather than separate petals. */
+export const isCorolla = (shape: FlowerShape | undefined, form: string) => !!shape && (shape.tubeFraction >= 0.2 || form === "trumpet" || form === "tubular" || form === "bell");
 export type BloomLayout = { organs: BloomOrgan[]; stalks: StemPath[] };
 
 /** Organs drawn one by one; larger inventories draw their clusters a little denser instead. */
@@ -36,13 +39,14 @@ type Cluster = { id: string; kind: BloomKind; x: number; y: number; depth: numbe
  * The organ's face direction: away from the plant's axis, turned toward the camera by `toCamera` (the
  * photo saw these organs from there, so they present to the viewer as in the photo, never to the wall).
  */
-function facingVector(facing: BloomObservation["facing"], position: Vector3, random: () => number, toCamera: number) {
+function facingVector(facing: BloomObservation["facing"], position: Vector3, random: () => number, toCamera: number, axisDeg?: number) {
   const out = new Vector3(position.x, 0, position.z);
   if (out.lengthSq() < 1e-8) out.set(Math.sin(random() * 6.28), 0, Math.cos(random() * 6.28));
   out.normalize().multiplyScalar(1 - toCamera).addScaledVector(TOWARD, toCamera);
   if (out.lengthSq() < 1e-4) out.copy(TOWARD);
   out.normalize();
-  const up = facing === "up" ? 0.85 : facing === "out" ? 0.3 : -0.8;
+  // A measured flower axis (0 up, 90 horizontal, 180 hanging) beats the coarse up/out/down.
+  const up = axisDeg !== undefined ? Math.cos(axisDeg * Math.PI / 180) : facing === "up" ? 0.85 : facing === "out" ? 0.3 : -0.8;
   return out.multiplyScalar(Math.sqrt(1 - up * up)).addScaledVector(UP, up).normalize();
 }
 
@@ -50,6 +54,7 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
   const inv = p.individual?.blooms;
   if (!inv || inv.flowers + inv.buds + inv.fruits === 0) return EMPTY;
   const flowering = v.botanical.flowering;
+  const shape = inv.flowerShape;
   const frame = photoFrame(p, state, v);
   const grid = occupancyOf(p);
   const rosette = architectureOf(p, v) === "aroid" || architectureOf(p, v) === "grass";
@@ -112,7 +117,7 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
   for (const c of clusters) {
     const rc = seededRandom(`${v.seed}:cluster:${c.id}`);
     const centre = frame.at(c.x, c.y, c.depth);
-    const facing = facingVector(c.facing, centre, rc, c.id.includes("-extra-") ? 0.35 : 0.65);
+    const facing = facingVector(c.facing, centre, rc, c.id.includes("-extra-") ? 0.35 : 0.65, c.kind === "fruit" ? undefined : shape?.axisDeg);
     // Drought: heads nod and hang first.
     facing.lerp(new Vector3(facing.x, -1, facing.z), state.wilt * 0.6).normalize();
     const size = sizeOf(c.kind);
@@ -143,8 +148,12 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
         position = centre.clone().addScaledVector(out, radial).addScaledVector(spike ? UP : facing, lift);
         face = facing.clone().lerp(out, spike ? 0.8 : 0.45).normalize();
       }
-      const organSize = size * (0.9 + rc() * 0.2);
-      members.push({ id: n > 1 ? `${c.id}-${f}` : c.id, kind: c.kind, position, facing: face, size: organSize, base: position.clone().addScaledVector(face, -organSize * ATTACH[c.kind]) });
+      const scale = 0.9 + rc() * 0.2, organSize = size * scale;
+      // Its own depth along the axis: the measured flower length (a trumpet is long), a bud about 60% of it.
+      const measured = shape && c.kind !== "fruit" ? shape.lengthCm / 100 * (c.kind === "bud" ? 0.6 : 1) * scale * Math.pow(frame.growth, 0.1) : 0;
+      const length = measured || organSize * DEPTH[c.kind];
+      // Centred on its landmark; the stalk joins it at the back end of its length (inside it: no gap).
+      members.push({ id: n > 1 ? `${c.id}-${f}` : c.id, kind: c.kind, position, facing: face, size: organSize, length, base: position.clone().addScaledVector(face, -length / 2) });
     }
     // The stalk ends exactly where the organ (or the cluster's node) begins, entering along its axis.
     const end = n > 1 ? centre.clone().addScaledVector(facing, -size * 0.6) : members[0].base;

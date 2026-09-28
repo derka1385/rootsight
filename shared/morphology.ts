@@ -27,6 +27,20 @@ export const BloomObservation = z.object({
   facing: z.enum(["up", "out", "down"]).describe("Where the open face points: up, out toward the viewer/side, or nodding down"),
 });
 
+/**
+ * The flower's own 3D form as photographed: what makes a trumpet a trumpet. A diameter alone cannot tell a
+ * long angel's-trumpet from a flat daisy; length, tube, flare, lobes and calyx can.
+ */
+export const FlowerShape = z.object({
+  lengthCm: z.number().min(0.2).max(60).describe("Along the flower's axis, from where it leaves its stalk (calyx base) to the mouth or petal tips"),
+  tubeFraction: unit.describe("Share of that length that is one closed, fused tube: 0 separate petals from the base, 0.3 a short cup, 0.6+ a long trumpet"),
+  tubeDiameterCm: z.number().min(0.05).max(20).describe("Diameter of the narrow part of the tube (or of the flower's base)"),
+  flare: unit.describe("How the mouth opens: 0 straight tube, 0.5 funnel, 1 wide flat or rolled-back rim"),
+  lobes: z.number().int().min(0).max(12).describe("Lobes or points on the rim of a fused tube (0 = entire rim), or petal count when petals are separate"),
+  calyxLengthCm: z.number().min(0).max(30).describe("Visible green calyx sheath around the flower base (0 if none)"),
+  axisDeg: z.number().min(0).max(180).describe("The flower's axis from straight up: 0 facing the sky, 90 horizontal, 150+ hanging down"),
+});
+
 /** Reproductive organs visible on THIS plant. Counts include estimated hidden ones; nothing is invented. */
 export const BloomInventory = z.object({
   flowers: z.number().int().min(0).max(400).describe("Open flowers (or florets of clustered flowers) visible now; 0 if none"),
@@ -40,6 +54,7 @@ export const BloomInventory = z.object({
   fruitDiameterCm: z.number().min(0.1).max(30),
   placement: z.enum(["above-foliage", "terminal", "among-foliage", "axillary", "basal"]).describe("Where flowers sit relative to the leaves"),
   stalkCm: z.number().min(0).max(120).describe("Length of the flower stalks (peduncles) as seen"),
+  flowerShape: FlowerShape.optional(),
   landmarks: z.array(BloomObservation).max(24).describe("Up to 24 clearly visible flowers/buds/fruits or clusters, largest first"),
 });
 
@@ -82,3 +97,4 @@ export type LeafObservation = z.infer<typeof LeafObservation>;
 export type BloomObservation = z.infer<typeof BloomObservation>;
 export type BloomInventory = z.infer<typeof BloomInventory>;
 export type StemObservation = z.infer<typeof StemObservation>;
+export type FlowerShape = z.infer<typeof FlowerShape>;

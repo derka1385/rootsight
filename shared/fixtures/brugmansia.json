@@ -1,0 +1,488 @@
+{
+  "visual": {
+    "seed": "brugmansia-white-angels-trumpet-forest-01",
+    "silhouette": {
+      "widthToHeight": 1.2,
+      "leanDeg": 5,
+      "leanDirectionDeg": 90,
+      "symmetry": 0.45
+    },
+    "stems": {
+      "count": 5,
+      "thicknessCm": 2.5,
+      "internodeCm": 6,
+      "tipColor": "#6f8f4a"
+    },
+    "leaves": {
+      "widthToLength": 0.45,
+      "sizeVariation": 0.35,
+      "tip": "pointed",
+      "base": "tapered",
+      "edge": "smooth",
+      "fenestration": 0,
+      "curl": 0.1,
+      "twist": 0.1,
+      "gloss": 0.35,
+      "undersideColor": "#6f8f5c",
+      "arrangement": "alternate",
+      "droop": 0.45,
+      "variegation": "none",
+      "variegationAmount": 0,
+      "variegationColor": "#3f6b35"
+    },
+    "condition": {
+      "yellowing": 0.03,
+      "brownTips": 0.02,
+      "legginess": 0.2
+    },
+    "pot": {
+      "color": "#4a3a2a",
+      "material": "none",
+      "diameterToHeight": 0.1,
+      "heightToDiameter": 0.3,
+      "soilVisible": false
+    }
+  },
+  "individual": {
+    "seed": "254284037878f0970563de4e",
+    "crownShape": "spreading",
+    "crownDensity": 0.65,
+    "maturity": 0.8,
+    "estimatedBranchCount": 8,
+    "averageLeafAngleDeg": 75,
+    "leafAsymmetry": 0.4,
+    "stemTaper": 0.5,
+    "stemCurvature": 0.35,
+    "depthToWidth": 0.6,
+    "occupancy": [
+      "58999875",
+      "79888986",
+      "67656668",
+      "55433556",
+      "44211456",
+      "34211356",
+      "23311246",
+      "12200235"
+    ],
+    "stems": [
+      {
+        "baseX": -0.1,
+        "tipX": -0.9,
+        "tipY": 0.95,
+        "layer": "middle",
+        "thicknessMm": 25
+      },
+      {
+        "baseX": 0,
+        "tipX": -0.2,
+        "tipY": 1,
+        "layer": "middle",
+        "thicknessMm": 22
+      },
+      {
+        "baseX": 0.1,
+        "tipX": 0.4,
+        "tipY": 0.98,
+        "layer": "background",
+        "thicknessMm": 20
+      },
+      {
+        "baseX": 0.15,
+        "tipX": 0.9,
+        "tipY": 0.75,
+        "layer": "foreground",
+        "thicknessMm": 18
+      },
+      {
+        "baseX": -0.05,
+        "tipX": -0.7,
+        "tipY": 0.6,
+        "layer": "background",
+        "thicknessMm": 15
+      }
+    ],
+    "leaves": [
+      {
+        "id": "leaf-0",
+        "x": -0.75,
+        "y": 0.9,
+        "layer": "middle",
+        "size": 1,
+        "angleDeg": 80,
+        "azimuthDeg": -90,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-1",
+        "x": -0.55,
+        "y": 0.95,
+        "layer": "background",
+        "size": 0.9,
+        "angleDeg": 70,
+        "azimuthDeg": -60,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-2",
+        "x": -0.45,
+        "y": 0.72,
+        "layer": "middle",
+        "size": 1.1,
+        "angleDeg": 95,
+        "azimuthDeg": -90,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-3",
+        "x": -0.3,
+        "y": 0.85,
+        "layer": "background",
+        "size": 0.8,
+        "angleDeg": 85,
+        "azimuthDeg": -40,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-4",
+        "x": -0.05,
+        "y": 0.93,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 80,
+        "azimuthDeg": -70,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-5",
+        "x": 0.05,
+        "y": 0.8,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 110,
+        "azimuthDeg": 30,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-6",
+        "x": 0.2,
+        "y": 0.78,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 100,
+        "azimuthDeg": 60,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-7",
+        "x": 0.25,
+        "y": 0.92,
+        "layer": "middle",
+        "size": 0.85,
+        "angleDeg": 75,
+        "azimuthDeg": 80,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-8",
+        "x": 0.45,
+        "y": 0.95,
+        "layer": "background",
+        "size": 0.7,
+        "angleDeg": 70,
+        "azimuthDeg": 90,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-9",
+        "x": 0.55,
+        "y": 0.88,
+        "layer": "middle",
+        "size": 1,
+        "angleDeg": 95,
+        "azimuthDeg": 100,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-10",
+        "x": 0.8,
+        "y": 0.55,
+        "layer": "foreground",
+        "size": 1.1,
+        "angleDeg": 160,
+        "azimuthDeg": 20,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-11",
+        "x": 0.75,
+        "y": 0.45,
+        "layer": "foreground",
+        "size": 0.8,
+        "angleDeg": 110,
+        "azimuthDeg": -60,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-12",
+        "x": 0.6,
+        "y": 0.3,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 150,
+        "azimuthDeg": 0,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-13",
+        "x": -0.2,
+        "y": 0.66,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 90,
+        "azimuthDeg": -80,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-14",
+        "x": -0.6,
+        "y": 0.5,
+        "layer": "background",
+        "size": 0.7,
+        "angleDeg": 100,
+        "azimuthDeg": -100,
+        "stemIndex": 4
+      },
+      {
+        "id": "leaf-15",
+        "x": -0.9,
+        "y": 0.3,
+        "layer": "background",
+        "size": 0.6,
+        "angleDeg": 120,
+        "azimuthDeg": -120,
+        "stemIndex": 4
+      },
+      {
+        "id": "leaf-16",
+        "x": 0.1,
+        "y": 0.6,
+        "layer": "middle",
+        "size": 0.7,
+        "angleDeg": 120,
+        "azimuthDeg": 10,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-17",
+        "x": 0.35,
+        "y": 0.2,
+        "layer": "background",
+        "size": 0.8,
+        "angleDeg": 160,
+        "azimuthDeg": 0,
+        "stemIndex": 2
+      }
+    ],
+    "blooms": {
+      "flowers": 11,
+      "buds": 2,
+      "fruits": 0,
+      "flowerColor": "#f4f4ee",
+      "centerColor": "#e6ecd4",
+      "budColor": "#c9d9a0",
+      "fruitColor": "#7a8f4a",
+      "flowerDiameterCm": 14,
+      "fruitDiameterCm": 5,
+      "placement": "among-foliage",
+      "stalkCm": 6,
+      "flowerShape": {
+        "lengthCm": 28,
+        "tubeFraction": 0.6,
+        "tubeDiameterCm": 2.5,
+        "flare": 0.7,
+        "lobes": 5,
+        "calyxLengthCm": 10,
+        "axisDeg": 160
+      },
+      "landmarks": [
+        {
+          "id": "fl-0",
+          "kind": "flower",
+          "x": -0.05,
+          "y": 0.5,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-1",
+          "kind": "flower",
+          "x": 0.35,
+          "y": 0.45,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-2",
+          "kind": "flower",
+          "x": -0.75,
+          "y": 0.45,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-3",
+          "kind": "flower",
+          "x": 0.45,
+          "y": 0.68,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-4",
+          "kind": "flower",
+          "x": 0.05,
+          "y": 0.22,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-5",
+          "kind": "flower",
+          "x": -0.6,
+          "y": 0.2,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-6",
+          "kind": "flower",
+          "x": -0.9,
+          "y": 0.2,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-7",
+          "kind": "flower",
+          "x": 0.9,
+          "y": 0.1,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-8",
+          "kind": "flower",
+          "x": -0.3,
+          "y": 0.62,
+          "layer": "background",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-9",
+          "kind": "flower",
+          "x": -0.05,
+          "y": 0.66,
+          "layer": "background",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fl-10",
+          "kind": "flower",
+          "x": -0.45,
+          "y": 0.14,
+          "layer": "background",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bud-0",
+          "kind": "bud",
+          "x": -0.45,
+          "y": 0.28,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bud-1",
+          "kind": "bud",
+          "x": 0,
+          "y": 0.55,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        }
+      ]
+    }
+  },
+  "species": {
+    "commonName": "White Angel's Trumpet",
+    "scientificName": "Brugmansia suaveolens",
+    "confidence": 0.6,
+    "flowering": {
+      "form": "trumpet",
+      "petals": 5,
+      "petalWidthToLength": 0.4,
+      "inflorescence": "solitary",
+      "flowerColor": "#f5f5ef",
+      "centerColor": "#e3ebcf",
+      "fruit": "capsule"
+    }
+  },
+  "wiki": {
+    "family": "Solanaceae",
+    "nativeRegion": "Southeastern Brazil (South America)",
+    "summary": "Brugmansia suaveolens is a semi-woody shrub or small tree bearing large, pendulous trumpet-shaped flowers that are especially fragrant in the evening. It is widely grown as an ornamental in warm climates and in large containers elsewhere. All parts of the plant contain tropane alkaloids and are highly poisonous.",
+    "difficulty": "medium",
+    "toxicToPets": true
+  },
+  "morphology": {
+    "growthForm": "tree",
+    "currentHeightCm": 250,
+    "matureHeightCm": 200,
+    "stemColor": "#5f7a42",
+    "branchingAngleDeg": 45,
+    "branchingDepth": 3,
+    "leaf": {
+      "shape": "ovate",
+      "color": "#3f6b35",
+      "lengthCm": 25,
+      "countNow": 180
+    }
+  },
+  "growth": {
+    "rateCmPerMonth": 8,
+    "monthsToMaturity": 30
+  },
+  "roots": {
+    "type": "fibrous",
+    "maxDepthCm": 60,
+    "maxSpreadCm": 100
+  },
+  "care": {
+    "waterIntervalDays": 2,
+    "light": "full-sun",
+    "humidity": "medium",
+    "tempMinC": 7,
+    "tempMaxC": 32,
+    "soil": "Rich, moisture-retentive, well-drained potting mix; feed heavily in summer"
+  },
+  "facts": [
+    "Flowers release their strongest fragrance at night to attract moths.",
+    "Single blooms can reach 30 cm long.",
+    "Extinct in the wild; survives only in cultivation.",
+    "Every part contains scopolamine and atropine.",
+    "Closely related to tomatoes, potatoes and Datura."
+  ],
+  "healthNotes": "Looks healthy: vigorous deep-green foliage and a heavy flush of fresh white trumpets; no visible yellowing, pests or browning."
+}

@@ -84,6 +84,18 @@ Flowers are anchored by geometry, shadow and light. Otherwise they look pasted o
 - **Occlusion.** Petals darken where they crowd into the calyx, and stalks darken where they leave their parent and under the head they carry.
 - **Coherent light.** Petals use the leaves' thin-tissue shading, with less sheen and environment light, so a flower no longer glows apart from its plant.
 
+## Flower morphology (trumpets)
+
+A diameter plus a species form ("trumpet") could not describe a long trumpet, and "trumpet" was drawn as five loose petals fanned from a point. Now:
+
+- **Analysis:** `individual.blooms.flowerShape` is measured on the photo. It holds the length along the axis, the fused-tube fraction, the tube diameter, the flare, the rim lobes, the calyx length and the axis angle. Claude must fill it. It is optional in saved profiles.
+- **Generation:** a flower with a real tube (`tubeFraction` ≥ 0.2, or a trumpet, tubular or bell form) is one continuous corolla.
+  - The tube widens into the measured mouth.
+  - The rim has pointed lobes and a rolled edge.
+  - A green calyx sheath covers the base, and the stalk joins the base of the tube.
+  - Buds are spindles of the measured length.
+- **Fixture:** `brugmansia` is a live scan of a CC photo ([Brugmansia suaveolens, Yercaud](https://commons.wikimedia.org/wiki/File:Brugmansia_suaveolens-yercaud-salem-India.jpg), CC BY-SA 4.0). It measured 28 cm long, 60 % tube, a 2.5 cm tube, 5 lobes, a 10 cm calyx, hanging at 160°.
+
 ## Run it live
 
 ```sh

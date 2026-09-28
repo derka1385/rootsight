@@ -62,7 +62,9 @@ export async function askJson<S extends z.ZodType>(
     }).finalMessage();
     console.log(`[claude] ${res.model} effort=${effort} ${Date.now() - started} ms stop=${res.stop_reason}`);
     const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-    const parsed = schema.safeParse(extractJson(text));
+    const json = extractJson(text);
+    if (json === undefined) console.warn(`[claude] no parseable JSON (${text.length} chars): ${text.slice(0, 200)} … ${text.slice(-200)}`);
+    const parsed = schema.safeParse(json);
     if (parsed.success) return parsed.data;
     error = res.stop_reason === "end_turn" ? parsed.error.message : `stop_reason: ${res.stop_reason}`;
   }
