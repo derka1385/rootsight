@@ -62,13 +62,14 @@ function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantSta
     const depth = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide });
     depth.onBeforeCompile = deformLeaf;
     const materials = [0, 1, 2, 3].map(i => leafSurface(profile, v, i));
-    const stem = new MeshStandardMaterial({ color: profile.morphology.stemColor, roughness: 0.72, vertexColors: true, map: stemTexture() });
+    // Believable living tissue: the photographed stem colour, a little deeper, matte, few environment glints.
+    const stem = new MeshStandardMaterial({ color: new Color(profile.morphology.stemColor).multiplyScalar(0.88), roughness: 0.8, envMapIntensity: 0.5, vertexColors: true, map: stemTexture() });
     stem.onBeforeCompile = shader => {
       shader.uniforms.tipColor = { value: new Color(v.stems.tipColor) };
       shader.vertexShader = 'varying float stemAge;\n' + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nstemAge = uv.y;');
       shader.fragmentShader = 'uniform vec3 tipColor; varying float stemAge;\n' + shader.fragmentShader;
-      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, tipColor, stemAge * 0.45);');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, tipColor * 0.9, stemAge * 0.3);');
     };
     return { blades, materials, stem, depth };
   }, [profile, v]);

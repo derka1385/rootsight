@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import type { BloomObservation, PlantState } from "@rootsight/shared/schema";
-import { architectureOf, foliageExtent, LAYER_DEPTH, occupancyOf, photoFrame, sampleFoliage } from "./architecture";
+import { architectureOf, foliageExtent, LAYER_DEPTH, occupancyOf, photoFrame, sampleFoliage, TOWARD } from "./architecture";
 import { seededRandom } from "./procedural";
 import type { StemPath } from "./StemGeometry";
 import type { RenderProfile as PlantProfile, Visual } from "./visual";
@@ -14,8 +14,14 @@ import type { RenderProfile as PlantProfile, Visual } from "./visual";
  */
 
 export type BloomKind = BloomObservation["kind"];
-/** One flower (or floret), bud or fruit: its centre, the way its face points and its diameter in metres. */
-export type BloomOrgan = { id: string; kind: BloomKind; position: Vector3; facing: Vector3; size: number };
+/**
+ * One flower (or floret), bud or fruit: its centre, the way its face points, its diameter in metres and
+ * the point where its stalk joins it (behind the petals, at the back of a bud, the top of a fruit).
+ */
+export type BloomOrgan = { id: string; kind: BloomKind; position: Vector3; facing: Vector3; size: number; base: Vector3 };
+
+/** How far behind an organ's centre its stalk attaches, as a fraction of its size (inside the organ: no gap). */
+export const ATTACH: Record<BloomKind, number> = { flower: 0.14, bud: 0.58, fruit: 0.45 };
 export type BloomLayout = { organs: BloomOrgan[]; stalks: StemPath[] };
 
 /** Organs drawn one by one; larger inventories draw their clusters a little denser instead. */
@@ -26,10 +32,15 @@ const EMPTY: BloomLayout = { organs: [], stalks: [] };
 
 type Cluster = { id: string; kind: BloomKind; x: number; y: number; depth: number; florets: number; facing: BloomObservation["facing"] };
 
-/** The flower's face direction in the scene for a photo facing, pointing away from the plant's axis. */
-function facingVector(facing: BloomObservation["facing"], position: Vector3, random: () => number) {
+/**
+ * The organ's face direction: away from the plant's axis, turned toward the camera by `toCamera` (the
+ * photo saw these organs from there, so they present to the viewer as in the photo, never to the wall).
+ */
+function facingVector(facing: BloomObservation["facing"], position: Vector3, random: () => number, toCamera: number) {
   const out = new Vector3(position.x, 0, position.z);
   if (out.lengthSq() < 1e-8) out.set(Math.sin(random() * 6.28), 0, Math.cos(random() * 6.28));
+  out.normalize().multiplyScalar(1 - toCamera).addScaledVector(TOWARD, toCamera);
+  if (out.lengthSq() < 1e-4) out.copy(TOWARD);
   out.normalize();
   const up = facing === "up" ? 0.85 : facing === "out" ? 0.3 : -0.8;
   return out.multiplyScalar(Math.sqrt(1 - up * up)).addScaledVector(UP, up).normalize();
@@ -101,7 +112,7 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
   for (const c of clusters) {
     const rc = seededRandom(`${v.seed}:cluster:${c.id}`);
     const centre = frame.at(c.x, c.y, c.depth);
-    const facing = facingVector(c.facing, centre, rc);
+    const facing = facingVector(c.facing, centre, rc, c.id.includes("-extra-") ? 0.35 : 0.65);
     // Drought: heads nod and hang first.
     facing.lerp(new Vector3(facing.x, -1, facing.z), state.wilt * 0.6).normalize();
     const size = sizeOf(c.kind);
@@ -110,12 +121,8 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
     const anchor = rosette
       ? new Vector3(centre.x * 0.15, 0.005, centre.z * 0.15)
       : new Vector3(centre.x * 0.55, Math.max(0.005, centre.y - stalkLength), centre.z * 0.55);
-    const head = centre.clone().addScaledVector(facing, -size * (n > 1 ? 0.6 : 0.35));
-    const nodding = facing.y < -0.2;
-    // A nodding head hangs from a stalk that rises past it and arches over; others meet it from below.
-    const crest = nodding ? head.clone().add(new Vector3(0, size * 0.9, 0)).addScaledVector(new Vector3(anchor.x - head.x, 0, anchor.z - head.z), 0.15) : anchor.clone().lerp(head, 0.6).add(new Vector3(0, size * 0.25, 0));
-    const stalkRadius = Math.min(0.004, Math.max(0.0008, size * 0.035 * Math.sqrt(n)));
-    stalks.push({ id: `stalk-${c.id}`, points: [anchor, anchor.clone().lerp(crest, 0.55).add(new Vector3(0, (crest.y - anchor.y) * 0.08, 0)), crest, head], radius: stalkRadius, taper: 0.35, depth: 3 });
+    // Organs first (their final size decides where the stalk must end), then the stalks that carry them.
+    const members: BloomOrgan[] = [];
     for (let f = 0; f < n; f++) {
       let position = centre.clone(), face = facing.clone();
       if (n > 1) {
@@ -130,10 +137,22 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
         const out = side.clone().multiplyScalar(Math.cos(a)).addScaledVector(other, Math.sin(a));
         position = centre.clone().addScaledVector(out, radial).addScaledVector(spike ? UP : facing, lift);
         face = facing.clone().lerp(out, spike ? 0.8 : 0.45).normalize();
-        stalks.push({ id: `pedicel-${c.id}-${f}`, points: [head, head.clone().lerp(position, 0.5).addScaledVector(facing, size * 0.1), position.clone().addScaledVector(face, -size * 0.2)], radius: stalkRadius * 0.45, taper: 0.3, depth: 4 });
       }
-      organs.push({ id: n > 1 ? `${c.id}-${f}` : c.id, kind: c.kind, position, facing: face, size: size * (0.9 + rc() * 0.2) });
+      const organSize = size * (0.9 + rc() * 0.2);
+      members.push({ id: n > 1 ? `${c.id}-${f}` : c.id, kind: c.kind, position, facing: face, size: organSize, base: position.clone().addScaledVector(face, -organSize * ATTACH[c.kind]) });
     }
+    // The stalk ends exactly where the organ (or the cluster's node) begins, entering along its axis.
+    const end = n > 1 ? centre.clone().addScaledVector(facing, -size * 0.6) : members[0].base;
+    const into = end.clone().addScaledVector(facing, -size * 0.35);
+    const nodding = facing.y < -0.2;
+    // A nodding head hangs from a stalk that rises past it and arches over; others meet it from below.
+    const crest = nodding ? into.clone().add(new Vector3(0, size * 0.6, 0)).addScaledVector(new Vector3(anchor.x - into.x, 0, anchor.z - into.z), 0.15) : anchor.clone().lerp(into, 0.6).add(new Vector3(0, size * 0.2, 0));
+    const stalkRadius = Math.min(0.004, Math.max(0.0009, size * 0.035 * Math.sqrt(n)));
+    stalks.push({ id: `stalk-${c.id}`, points: [anchor, anchor.clone().lerp(crest, 0.55).add(new Vector3(0, (crest.y - anchor.y) * 0.08, 0)), crest, into, end], radius: stalkRadius, taper: 0.3, depth: 3 });
+    if (n > 1) for (const m of members) {
+      stalks.push({ id: `pedicel-${m.id}`, points: [end, end.clone().lerp(m.base, 0.5).addScaledVector(facing, size * 0.1), m.base.clone().addScaledVector(m.facing, -m.size * 0.2), m.base], radius: stalkRadius * 0.45, taper: 0.25, depth: 4 });
+    }
+    organs.push(...members);
   }
   return { organs, stalks };
 }

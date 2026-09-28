@@ -31,6 +31,8 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
       const box = new Box3().setFromObject(subject.current);
       if (!box.isEmpty()) {
         box.getCenter(center.current);
+        // Pivot a little above the middle: orbiting turns around the foliage and flowers, not the pot.
+        center.current.y += (box.max.y - box.min.y) * 0.08;
         const inverse = camera.quaternion.clone().invert();
         let distance = 0;
         // Project per-instance bounds instead of a single oversized world-axis box.

@@ -122,22 +122,22 @@ export const woodTexture = () =>
     }
   }, 2);
 
-/** Stem/stalk detail: near-white with fine fibres running along the stem (v) and a few lenticels. */
+/** Stem/stalk detail: fine darker fibres running along the stem (v) and a few lenticels; no pale specks. */
 export const stemTexture = () =>
-  make("stem", 64, 256, (g, w, h) => {
-    g.fillStyle = "#f4f4f0";
+  make("stem-v2", 64, 256, (g, w, h) => {
+    g.fillStyle = "#ecebe4";
     g.fillRect(0, 0, w, h);
     const r = rng(7);
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 90; i++) {
       const x = r() * w;
-      g.strokeStyle = r() > 0.5 ? "rgba(70,60,40,0.10)" : "rgba(255,255,240,0.18)";
-      g.lineWidth = 0.5 + r() * 1.2;
+      g.strokeStyle = r() > 0.25 ? `rgba(60,55,35,${0.08 + r() * 0.1})` : "rgba(255,250,235,0.08)";
+      g.lineWidth = 0.5 + r() * 1.3;
       g.beginPath();
       g.moveTo(x, 0);
       g.bezierCurveTo(x + (r() - 0.5) * 3, h * 0.33, x + (r() - 0.5) * 3, h * 0.66, x + (r() - 0.5) * 2, h);
       g.stroke();
     }
-    speckle(g, w, h, 40, ["rgba(120,95,60,0.5)", "rgba(230,225,200,0.6)"], 0.9, 11);
+    speckle(g, w, h, 30, ["rgba(95,70,40,0.45)"], 0.8, 11);
   });
 
 /** Matte limewash wall: near-white, soft mottling to multiply with a warm colour. */

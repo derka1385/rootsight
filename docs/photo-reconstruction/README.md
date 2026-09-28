@@ -60,6 +60,17 @@ The layout is untouched: the same organs sit in the same places. What changed is
   - a lower camera.
 - Everything is procedural, with no downloads. The cyclamen view draws about 86 calls, AO pre-pass included.
 
+## Refinement pass
+
+- **Attached blooms.** Every flower, bud and fruit has a `base` where its stalk ends: behind the petals, at the back of a bud, at the top of a fruit. Stalks end exactly there and enter along the organ's axis. A calyx cone joins stalk and petals, so there are no floating heads. `verify.ts` asserts it.
+- **Structured flowers.** Petals are evenly spaced with little jitter and a shared twist (stronger on swept-back forms). Photographed blooms face the camera side as in the photo, so they never face the wall.
+- **Stems.** Deeper and matte, with darker fibres and fewer environment glints, and a softer blend toward the tip colour. They never read pale or white.
+- **Inspection.**
+  - Orbit goes all the way around, from table level to overhead, with inertia.
+  - Zoom goes toward the cursor.
+  - The pivot sits a little above the middle of the plant.
+  - The wall and window hide themselves when the camera passes behind them.
+
 ## Run it live
 
 ```sh

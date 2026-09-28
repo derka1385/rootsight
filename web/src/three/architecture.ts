@@ -20,7 +20,7 @@ export const MAX_LEAVES = 400;
 /** The default camera's azimuth: "photo left/right/toward" are relative to it. */
 export const CAMERA_AZ = Math.atan2(1.6, 2.4);
 const RIGHT = new Vector3(Math.cos(CAMERA_AZ), 0, -Math.sin(CAMERA_AZ));
-const TOWARD = new Vector3(Math.sin(CAMERA_AZ), 0, Math.cos(CAMERA_AZ));
+export const TOWARD = new Vector3(Math.sin(CAMERA_AZ), 0, Math.cos(CAMERA_AZ));
 export const LAYER_DEPTH = { foreground: 1, middle: 0, background: -1 } as const;
 
 /**

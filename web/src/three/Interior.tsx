@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from "react";
-import { BoxGeometry, Color, Euler, MeshBasicMaterial, MeshStandardMaterial, Path, PlaneGeometry, Shape, ShapeGeometry, Vector3 } from "three";
+import { useEffect, useMemo, useRef } from "react";
+import { BoxGeometry, Color, Euler, type Group, MeshBasicMaterial, MeshStandardMaterial, Path, PlaneGeometry, Shape, ShapeGeometry, Vector3 } from "three";
+import { useFrame } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { CAMERA_AZ } from "./architecture";
 import { plasterTexture, woodTexture } from "./textures";
@@ -15,6 +16,7 @@ import { plasterTexture, woodTexture } from "./textures";
 const SUN = new Vector3(0.62, 0.5, -0.6).normalize();
 const FRAME = new Euler(0, CAMERA_AZ, 0);
 const toWorld = (v: Vector3) => v.clone().applyEuler(FRAME);
+const TO_ROOM = new Euler(0, -CAMERA_AZ, 0);
 
 export default function Interior({ floorY, height, halfWidth }: { floorY: number; height: number; halfWidth: number }) {
   const S = Math.max(0.3, height - floorY);
@@ -59,6 +61,14 @@ export default function Interior({ floorY, height, halfWidth }: { floorY: number
     [win.x, winY, bar * 0.7, win.h, depth * 0.8], [win.x, win.bottom + win.h * 0.66, win.w, bar * 0.7, depth * 0.8],
   ];
   const aim = new Vector3(0, height * 0.4, 0);
+  // Orbiting behind the plant takes the camera through the wall: hide the wall (and its window) then, so
+  // the room never blocks inspection. The table stays; it is below the plant.
+  const wallGroup = useRef<Group>(null);
+  const local = useMemo(() => new Vector3(), []);
+  useFrame(({ camera }) => {
+    const behind = local.copy(camera.position).applyEuler(TO_ROOM).z < wallZ + 0.05;
+    if (wallGroup.current && wallGroup.current.visible === behind) wallGroup.current.visible = !behind;
+  });
   const reach = Math.max(1.2, S * 2.4);
 
   return <>
@@ -77,13 +87,15 @@ export default function Interior({ floorY, height, halfWidth }: { floorY: number
     </Environment>
 
     <group rotation={FRAME}>
-      <mesh geometry={res.wall} material={res.plaster} position={[0, 0, wallZ]} receiveShadow castShadow />
-      {frame.map(([x, y, w, h, d], i) => (
-        <mesh key={i} material={res.frameWood} position={[x, y, wallZ + d / 2 - 0.02]} castShadow receiveShadow>
-          <boxGeometry args={[w, h, d]} />
-        </mesh>
-      ))}
-      <mesh geometry={res.sky} material={res.outside} position={[win.x, winY, wallZ - 1.2]} />
+      <group ref={wallGroup}>
+        <mesh geometry={res.wall} material={res.plaster} position={[0, 0, wallZ]} receiveShadow castShadow />
+        {frame.map(([x, y, w, h, d], i) => (
+          <mesh key={i} material={res.frameWood} position={[x, y, wallZ + d / 2 - 0.02]} castShadow receiveShadow>
+            <boxGeometry args={[w, h, d]} />
+          </mesh>
+        ))}
+        <mesh geometry={res.sky} material={res.outside} position={[win.x, winY, wallZ - 1.2]} />
+      </group>
       {onFloor
         ? <mesh geometry={res.floor} material={res.oak} rotation-x={-Math.PI / 2} position={[0, floorY - 0.001, 0]} receiveShadow />
         : <mesh geometry={res.table} material={res.oak} position={[0, floorY - 0.02, tableZ]} receiveShadow castShadow />}

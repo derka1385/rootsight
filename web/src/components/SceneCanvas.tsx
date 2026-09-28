@@ -13,7 +13,7 @@ import Roots from "../three/Roots";
 import Pot from "../three/Pot";
 import CameraFit from "../three/CameraFit";
 import { visualOf, potDimensions } from "../three/visual";
-import { architectureOf, CAMERA_AZ } from "../three/architecture";
+import { architectureOf } from "../three/architecture";
 import Interior from "../three/Interior";
 
 // One metre per world unit; the photographed soil line is y=0.
@@ -42,7 +42,8 @@ export default function SceneCanvas({ state, profile, cutaway = false, children 
       <Interior floorY={table} height={state.heightCm / 100} halfWidth={Math.max(potR, plantWidth / 2)} />
       <AmbientOcclusion radius={Math.max(0.03, state.heightCm / 100 * 0.12)} />
 
-      <OrbitControls makeDefault target={[0, 0.3, 0]} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2 - 0.08} minAzimuthAngle={CAMERA_AZ - 1.3} maxAzimuthAngle={CAMERA_AZ + 1} enablePan={false} />
+      {/* Free orbit all the way around the plant (the room gets out of the way), from table level to overhead. */}
+      <OrbitControls makeDefault target={[0, 0.3, 0]} minPolarAngle={0.12} maxPolarAngle={Math.PI / 2 - 0.06} enablePan={false} enableDamping dampingFactor={0.12} rotateSpeed={0.8} zoomToCursor />
       <CameraFit subject={subject} revision={profile} state={state} bottom={-table} width={Math.max(potR * 2.2, plantWidth)} />
 
       {trailing && <mesh position-y={(table - potD) / 2} receiveShadow castShadow>

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
+import { BufferGeometry, Color, ConeGeometry, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { SpeciesFlowering } from "@rootsight/shared/schema";
 import { stemGeometry } from "./StemGeometry";
@@ -80,6 +80,9 @@ function budGeometry(): BufferGeometry {
 const SPHERE = new SphereGeometry(1, 16, 12);
 const SPADIX = new CylinderGeometry(0.75, 1, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5);
 const BUD = budGeometry();
+/** Calyx / receptacle: a cone with its apex at the stalk end (origin) and its rim at z = 1. */
+const CALYX = new ConeGeometry(1, 1, 14).rotateX(-Math.PI / 2).translate(0, 0, 0.5);
+const Z = new Vector3(0, 0, 1);
 const UP = new Vector3(0, 1, 0);
 
 type Instance = { matrix: Matrix4; color: Color };
@@ -94,7 +97,13 @@ function basis(axis: Vector3, up: Vector3) {
 }
 
 export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowering, colors: { flower: string; center: string; bud: string; fruit: string }, seed: string, wilt: number) {
-  const petals: Instance[] = [], centres: Instance[] = [], buds: Instance[] = [], fruits: Instance[] = [], spadices: Instance[] = [];
+  const petals: Instance[] = [], centres: Instance[] = [], buds: Instance[] = [], fruits: Instance[] = [], spadices: Instance[] = [], calyces: Instance[] = [];
+  const white = new Color(1, 1, 1);
+  // The green cup that joins the stalk to the organ: from the stalk end to just inside the petals or bud.
+  const calyx = (o: BloomOrgan, reach: number, radius: number) => {
+    const length = o.base.distanceTo(o.position) * reach + o.size * 0.02;
+    calyces.push({ matrix: new Matrix4().compose(o.base, basis(o.facing, UP), new Vector3(o.size * radius, o.size * radius, length)), color: white });
+  };
   const form = FORMS[flowering.form];
   const petalCount = flowering.form === "spathe" ? 1 : Math.max(3, flowering.form === "daisy" ? Math.max(13, flowering.petals) : flowering.petals || 5);
   const flower = new Color(colors.flower), center = new Color(colors.center);
@@ -102,6 +111,7 @@ export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowerin
     const r = seededRandom(`${seed}:bloom-organ:${o.id}`);
     if (o.kind === "bud") {
       buds.push({ matrix: new Matrix4().compose(o.position, basis(o.facing, UP), new Vector3(o.size * 0.3, o.size * 0.3, o.size * 0.5)), color: new Color(colors.bud).offsetHSL(0, 0, (r() - 0.5) * 0.06) });
+      calyx(o, 0.55, 0.24);
       continue;
     }
     if (o.kind === "fruit") {
@@ -114,25 +124,28 @@ export function flowerInstances(organs: BloomOrgan[], flowering: SpeciesFlowerin
     const w = new Vector3().crossVectors(F, u);
     const tint = flower.clone().offsetHSL((r() - 0.5) * 0.02, 0, (r() - 0.5) * 0.06);
     const rings = flowering.form === "double" ? 2 : 1;
+    // Structured, not random: evenly spaced petals, a shared twist (strong on swept-back forms), tiny jitter.
+    const twist = new Quaternion().setFromAxisAngle(Z, flowering.form === "reflexed" ? 0.38 : 0.08);
+    calyx(o, 1, flowering.form === "spathe" ? 0.06 : 0.11);
     for (let ring = 0; ring < rings; ring++) {
       const phase = r() * Math.PI * 2 + ring * Math.PI / petalCount;
       for (let i = 0; i < petalCount; i++) {
-        const phi = phase + (i / petalCount) * Math.PI * 2 + (r() - 0.5) * 0.25;
+        const phi = phase + (i / petalCount) * Math.PI * 2 + (r() - 0.5) * 0.06;
         const plane = u.clone().multiplyScalar(Math.cos(phi)).addScaledVector(w, Math.sin(phi));
         // Drought closes cup-like flowers a little; swept-back petals just stay as they are (the head nods instead).
-        const open = (form.open - ring * 30 + (r() - 0.5) * 16) * (form.open <= 90 ? 1 - wilt * 0.25 : 1) * Math.PI / 180;
+        const open = (form.open - ring * 30 + (r() - 0.5) * 5) * (form.open <= 90 ? 1 - wilt * 0.25 : 1) * Math.PI / 180;
         const axis = F.clone().multiplyScalar(Math.cos(open)).addScaledVector(plane, Math.sin(open)).normalize();
         // Orchids: the lower petal is the broad lip.
         const lip = flowering.form === "orchid" && i === 0 ? 1.35 : 1;
-        const length = o.size * form.length * (ring ? 0.72 : 1) * lip * (0.92 + r() * 0.16);
+        const length = o.size * form.length * (ring ? 0.72 : 1) * lip * (0.97 + r() * 0.06);
         const base = o.position.clone().addScaledVector(plane, o.size * 0.05);
-        petals.push({ matrix: new Matrix4().compose(base, basis(axis, F), new Vector3().setScalar(length)), color: tint });
+        petals.push({ matrix: new Matrix4().compose(base, basis(axis, F).multiply(twist), new Vector3().setScalar(length)), color: tint });
       }
     }
     if (flowering.form === "spathe") spadices.push({ matrix: new Matrix4().compose(o.position, basis(F.clone().lerp(UP, 0.4).normalize(), UP), new Vector3(o.size * 0.05, o.size * 0.05, o.size * 0.5)), color: center });
     else centres.push({ matrix: new Matrix4().compose(o.position.clone().addScaledVector(F, o.size * 0.03), new Quaternion(), new Vector3().setScalar(o.size * (flowering.form === "daisy" ? 0.16 : 0.08))), color: center });
   }
-  return { petals, centres, buds, fruits, spadices };
+  return { petals, centres, buds, fruits, spadices, calyces };
 }
 
 /** Instanced part with per-instance colours; remounts when its capacity changes. */
@@ -181,10 +194,12 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
       centre: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.7 }),
       bud: new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.55, sheen: 0.5, sheenRoughness: 0.6, sheenColor: new Color("#ffffff") }),
       fruit: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.32 }),
-      stalk: new MeshStandardMaterial({ color: v.stems.tipColor, roughness: 0.66, vertexColors: true, map: stemTexture() }),
+      // Stalks take the photographed stem colour, deepened a little so thin stalks never read pale.
+      stalk: new MeshStandardMaterial({ color: new Color(v.stems.tipColor).lerp(new Color(profile.morphology.stemColor), 0.35).multiplyScalar(0.82), roughness: 0.8, envMapIntensity: 0.5, vertexColors: true, map: stemTexture() }),
+      calyx: new MeshStandardMaterial({ color: new Color(v.stems.tipColor).lerp(new Color(profile.morphology.leaf.color), 0.6).multiplyScalar(0.85), roughness: 0.75, envMapIntensity: 0.5 }),
     };
-  }, [flowering, colors, v.stems.tipColor]);
-  useEffect(() => () => { resources.petalGeometry.dispose(); [resources.petal, resources.centre, resources.bud, resources.fruit, resources.stalk].forEach(m => m.dispose()); }, [resources]);
+  }, [flowering, colors, v.stems.tipColor, profile.morphology.stemColor, profile.morphology.leaf.color]);
+  useEffect(() => () => { resources.petalGeometry.dispose(); [resources.petal, resources.centre, resources.bud, resources.fruit, resources.stalk, resources.calyx].forEach(m => m.dispose()); }, [resources]);
   const stalks = useMemo(() => stemGeometry(layout.stalks), [layout]);
   useEffect(() => () => stalks.dispose(), [stalks]);
   if (!layout.organs.length) return null;
@@ -193,6 +208,7 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
     <Part key={`p${parts.petals.length}`} geometry={resources.petalGeometry} material={resources.petal} items={parts.petals} />
     <Part key={`c${parts.centres.length}`} geometry={SPHERE} material={resources.centre} items={parts.centres} />
     <Part key={`s${parts.spadices.length}`} geometry={SPADIX} material={resources.centre} items={parts.spadices} />
+    <Part key={`k${parts.calyces.length}`} geometry={CALYX} material={resources.calyx} items={parts.calyces} />
     <Part key={`b${parts.buds.length}`} geometry={BUD} material={resources.bud} items={parts.buds} />
     <Part key={`f${parts.fruits.length}`} geometry={SPHERE} material={resources.fruit} items={parts.fruits} />
   </group>;

@@ -21,6 +21,11 @@ for (const name of ['cyclamen', 'kalanchoe'] as const) {
     assert.equal(layout.organs.filter(o => o.kind === kind).length, counted, `${name}: ${kind}s drawn = counted`);
   }
   assert(layout.organs.every(o => finite(o.position) && finite(o.facing) && o.size > 0));
+  // Attached, never floating: a stalk (or pedicel) ends exactly at every organ's base, inside the organ.
+  for (const o of layout.organs) {
+    assert(layout.stalks.some(st => st.points.at(-1)!.distanceTo(o.base) < 1e-9), `${name}: ${o.id} has no stalk ending at its base`);
+    assert(o.base.distanceTo(o.position) < o.size * 0.6, `${name}: ${o.id} attaches outside its own body`);
+  }
   assert.deepEqual(bloomLayout(p, stateOf(p), v), layout, `${name}: bloom layout must be deterministic`);
   // Observed landmarks stay where the photo put them (single-floret ones sit exactly at their centre).
   const parts = flowerInstances(layout.organs, v.botanical.flowering, { flower: b.flowerColor, center: b.centerColor, bud: b.budColor, fruit: b.fruitColor }, v.seed, 0);
@@ -54,5 +59,5 @@ for (const p of [fixtures.monstera, fixtures.basil, fixtures.cactus]) assert.equ
   const a = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 - 1e-7 }, v), b = plantLayout(p, { ...s, heightCm: s.heightCm * 1.2 + 1e-7 }, v);
   for (const leaf of a.organs) assert(b.organs.find(x => x.id === leaf.id)!.matrix.elements.every((n, i) => Math.abs(n - leaf.matrix.elements[i]) < 1e-5));
 }
-console.log('Passed: flowers/buds/fruits drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
+console.log('Passed: every flower/bud/fruit attached to a stalk, drawn exactly as counted and never invented, species petal counts, deterministic blooms, density floor, silhouette-bound fill leaves, growth continuity.');
 

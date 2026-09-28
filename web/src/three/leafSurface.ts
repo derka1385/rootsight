@@ -103,7 +103,7 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
     shader.uniforms.underside = { value: underside };
     shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + 0.035 * sin(vMapUv.y * 31.0 + vMapUv.x * 9.0), 0.35, 1.0);");
     shader.fragmentShader = "uniform vec3 underside; varying float bladeSide;\n" + shader.fragmentShader;
-    shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (bladeSide < 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, underside * diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.65);");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (bladeSide < 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, underside * mix(vec3(1.0), diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.35), 0.6);");
   };
   material.customProgramCacheKey = () => `leaf-v2:${base.getHexString()}`;
   return material;
