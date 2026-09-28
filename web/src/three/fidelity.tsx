@@ -5,6 +5,7 @@ import { PlantProfile } from "@rootsight/shared/schema";
 import { fixtures } from "@rootsight/shared/fixtures";
 import { simulate } from "@rootsight/shared/simulation";
 import SceneCanvas from "../components/SceneCanvas";
+import { observedMonstera } from "../../../shared/fixtures/observed";
 import { photoProfiles, architectureProfiles } from "./photoProfiles";
 import type { RenderProfile } from "./visual";
 
@@ -24,7 +25,7 @@ function Probe() {
 
 function Lab() {
   const params = new URLSearchParams(location.search);
-  const catalog: Record<string, RenderProfile> = { ...fixtures, ...photoProfiles, ...architectureProfiles };
+  const catalog: Record<string, RenderProfile> = { ...fixtures, ...photoProfiles, ...architectureProfiles, observed: observedMonstera };
   const [profile, setProfile] = useState<RenderProfile>(catalog[params.get("profile") ?? "monstera"] ?? fixtures.monstera);
   const [error, setError] = useState("");
   const [photo, setPhoto] = useState("");

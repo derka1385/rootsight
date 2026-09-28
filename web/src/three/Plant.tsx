@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, ConeGeometry, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
+import { BufferGeometry, Color, ConeGeometry, InstancedBufferAttribute, MeshDepthMaterial, RGBADepthPacking, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { Material } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { RenderProfile as PlantProfile } from "./visual";
-import { seededRandom, SEGMENT } from "./procedural";
+import { stemGeometry } from "./StemGeometry";
+import { deformLeaf } from "./leafDeformation";
+import { seededRandom } from "./procedural";
 import { leafBlade } from "./leafBlade";
 import { leafSurface } from "./leafSurface";
 import { architectureOf, plantLayout } from "./architecture";
@@ -16,24 +18,30 @@ export function archetypeOf(p: PlantProfile): "rosette" | "branching" | "cactus"
 }
 
 /** All stems share one draw call, all blades at most four, irrespective of visible leaf count. */
-function Instances({ geometry, material, matrices, capacity }: { geometry: BufferGeometry; material: Material; matrices: Matrix4[]; capacity: number }) {
+function Instances({ geometry, material, matrices, capacity, maturities, depthMaterial }: { geometry: BufferGeometry; material: Material; matrices: Matrix4[]; capacity: number; maturities?: number[]; depthMaterial?: MeshDepthMaterial }) {
   const ref = useRef<InstancedMesh>(null);
+  const maturity = useMemo(() => new InstancedBufferAttribute(new Float32Array(capacity).fill(1), 1), [capacity]);
   useEffect(() => { const mesh = ref.current; return () => mesh?.dispose(); }, []);
   useLayoutEffect(() => {
     const mesh = ref.current!;
     matrices.forEach((m, i) => mesh.setMatrixAt(i, m));
     mesh.count = matrices.length;
+    if (maturities) {
+      geometry.setAttribute("instanceMaturity", maturity);
+      maturities.forEach((value, i) => maturity.setX(i, value));
+      maturity.needsUpdate = true;
+    }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
     mesh.computeBoundingBox();
-  }, [matrices]);
-  return <instancedMesh ref={ref} args={[geometry, material, capacity]} castShadow receiveShadow dispose={null} />;
+  }, [matrices, maturities, geometry, maturity]);
+  return <instancedMesh ref={ref} args={[geometry, material, capacity]} customDepthMaterial={depthMaterial} castShadow receiveShadow dispose={null} />;
 }
 
 export default function Plant({ state, profile }: { state: PlantState; profile: PlantProfile }) {
   const v = useMemo(() => visualOf(profile), [profile]);
   const kind = architectureOf(profile, v);
-  const lean = v.silhouette.leanDeg * Math.PI / 180;
+  const lean = (profile.individual?.leaves?.length ? 0 : v.silhouette.leanDeg) * Math.PI / 180;
   const direction = v.silhouette.leanDirectionDeg * Math.PI / 180;
   return <group rotation={[Math.sin(direction) * lean, 0, -Math.cos(direction) * lean]}>
     {kind === "cactus" ? <Cactus profile={profile} state={state} v={v} /> : <Foliage profile={profile} state={state} v={v} />}
@@ -42,7 +50,9 @@ export default function Plant({ state, profile }: { state: PlantState; profile: 
 
 function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantState; v: Visual }) {
   const resources = useMemo(() => {
-    const blades = [0, 1, 2, 3].map(i => leafBlade(v.leaves, 0.25 + i * 0.25));
+    const blades = [0, 1, 2, 3].map(() => leafBlade(v.leaves));
+    const depth = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide });
+    depth.onBeforeCompile = deformLeaf;
     const materials = [0, 1, 2, 3].map(i => leafSurface(profile, v, i));
     const stem = new MeshStandardMaterial({ color: profile.morphology.stemColor, roughness: 0.8 });
     stem.onBeforeCompile = shader => {
@@ -52,20 +62,22 @@ function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantSta
       shader.fragmentShader = 'uniform vec3 tipColor; varying float stemAge;\n' + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, tipColor, stemAge * 0.45);');
     };
-    return { blades, materials, stem };
+    return { blades, materials, stem, depth };
   }, [profile, v]);
   useEffect(() => () => {
     resources.blades.forEach(g => g.dispose());
     resources.materials.forEach(m => { m.map?.dispose(); m.dispose(); });
-    resources.stem.dispose();
+    resources.stem.dispose(); resources.depth.dispose();
   }, [resources]);
   useLayoutEffect(() => {
     resources.materials.forEach(m => m.color.set('#ffffff').lerp(new Color('#b29b6b'), state.wilt * 0.36));
   }, [resources, state.wilt]);
   const layout = useMemo(() => plantLayout(profile, state, v), [profile, state, v]);
+  const stems = useMemo(() => stemGeometry(layout.stemPaths), [layout]);
+  useEffect(() => () => stems.dispose(), [stems]);
   return <group>
-    <Instances geometry={SEGMENT} material={resources.stem} matrices={layout.stems} capacity={1024} />
-    {resources.blades.map((g, i) => <Instances key={i} geometry={g} material={resources.materials[i]} matrices={layout.leaves[i]} capacity={160} />)}
+    {layout.stemPaths.length > 0 && <mesh geometry={stems} material={resources.stem} castShadow receiveShadow dispose={null} />}
+    {resources.blades.map((g, i) => <Instances key={i} geometry={g} material={resources.materials[i]} matrices={layout.leaves[i]} maturities={layout.organs.filter(organ => organ.variant === i).map(organ => organ.maturity)} depthMaterial={resources.depth} capacity={160} />)}
   </group>;
 }
 type CactusKind = "barrel" | "column";

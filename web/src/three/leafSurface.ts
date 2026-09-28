@@ -1,6 +1,7 @@
 import { CanvasTexture, Color, DoubleSide, MeshStandardMaterial, SRGBColorSpace } from "three";
 import type { RenderProfile as PlantProfile } from "./visual";
 import type { Visual } from "./visual";
+import { deformLeaf } from "./leafDeformation";
 import { seededRandom, smoothstep } from "./procedural";
 
 /** Four shared age/condition surfaces per plant. Textures are owned and disposed with the plant. */
@@ -29,8 +30,8 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
     const tip = smoothstep(1 - v.condition.brownTips * (0.08 + age * 0.09), 1.005, t + field * v.condition.brownTips * 0.055);
     c.copy(base).lerp(patch, mask).lerp(yellow, chlorosis).lerp(brown, tip);
     // Soft vein relief stays subtle at phone scale; no opaque white midrib.
-    const veins = Math.exp(-Math.abs(u - 0.5) * 170) * 0.12 + Math.pow(Math.max(0, Math.cos((t - edge * 0.15) * 63)), 24) * 0.08;
-    c.multiplyScalar(0.92 + random() * 0.045 + veins).convertLinearToSRGB();
+    const veins = (v.leaves.venation === "subtle" ? 0.2 : 1) * (Math.exp(-Math.abs(u - 0.5) * 170) * 0.12 + Math.pow(Math.max(0, Math.cos((t - edge * 0.15) * 63)), 24) * 0.08);
+    c.multiplyScalar(0.92 + random() * 0.035 + veins - Math.exp(-Math.abs(u - 0.5) * 30) * 0.06).convertLinearToSRGB();
     const offset = (y * 128 + x) * 4;
     pixels.data[offset] = c.r * 255; pixels.data[offset + 1] = c.g * 255; pixels.data[offset + 2] = c.b * 255; pixels.data[offset + 3] = 255;
   }
@@ -38,19 +39,24 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
   ctx.strokeStyle = "rgba(195,209,143,0.26)";
   ctx.lineWidth = 0.9;
   ctx.beginPath(); ctx.moveTo(64, 256); ctx.quadraticCurveTo(65, 130, 64, 0); ctx.stroke();
-  for (let i = 1; i < 9; i++) for (const side of [-1, 1]) {
+  for (let i = 1; i < (v.leaves.venation === "subtle" ? 1 : 9); i++) for (const side of [-1, 1]) {
     const y = 256 - i * 26;
     ctx.lineWidth = 0.55;
-    ctx.beginPath(); ctx.moveTo(64, y); ctx.quadraticCurveTo(64 + side * 24, y - 10, 64 + side * 56, y - 40); ctx.stroke();
+    ctx.beginPath();
+    if (v.leaves.venation === "parallel") { ctx.moveTo(64 + side * i * 5, 256); ctx.lineTo(64 + side * i * 4, 0); }
+    else { ctx.moveTo(64, y); ctx.quadraticCurveTo(64 + side * 24, y - 10, 64 + side * 56, y - 40); }
+    ctx.stroke();
   }
   const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace; map.anisotropy = 2;
-  const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.92 - v.leaves.gloss * 0.62, side: DoubleSide, metalness: 0, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.12 });
+  const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.88 - v.leaves.gloss * 0.36, side: DoubleSide, metalness: 0, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.035 });
   material.forceSinglePass = true;
   const underside = new Color(v.leaves.undersideColor);
   material.onBeforeCompile = shader => {
+    deformLeaf(shader);
     shader.uniforms.underside = { value: underside };
-    shader.fragmentShader = "uniform vec3 underside;\n" + shader.fragmentShader;
-    shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (!gl_FrontFacing) diffuseColor.rgb = mix(diffuseColor.rgb, underside * diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.65);");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + 0.035 * sin(vMapUv.y * 31.0 + vMapUv.x * 9.0), 0.35, 1.0);");
+    shader.fragmentShader = "uniform vec3 underside; varying float bladeSide;\n" + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (bladeSide < 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, underside * diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.65);");
   };
   material.customProgramCacheKey = () => `leaf-underside:${base.getHexString()}`;
   return material;

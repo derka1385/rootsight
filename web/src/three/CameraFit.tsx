@@ -38,7 +38,7 @@ export default function CameraFit({ state, bottom = 0, width = 0, subject, revis
           if (!(object instanceof Mesh) || !object.visible) return;
           if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
           const bounds = object.geometry.boundingBox;
-          if (!bounds) return;
+          if (!bounds || bounds.isEmpty()) return;
           const count = object instanceof InstancedMesh ? object.count : 1;
           for (let i = 0; i < count; i++) {
             const transform = new Matrix4();

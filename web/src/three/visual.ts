@@ -1,11 +1,14 @@
+import { speciesProfileOf } from "@rootsight/shared/schema";
 import type { PlantProfile } from "@rootsight/shared/schema";
 
-/** Renderer bridge until the shared schema owner adds the optional visual contract. */
+/** Resolved renderer controls, with botanical defaults and defensive legacy fallbacks. */
 export type Visual = {
   seed: string;
+  botanical: ReturnType<typeof speciesProfileOf>;
   silhouette: { widthToHeight: number; leanDeg: number; leanDirectionDeg: number; symmetry: number };
-  stems: { count: number; thicknessCm: number; internodeCm: number; tipColor: string };
+  stems: { count: number; thicknessCm: number; internodeCm: number; tipColor: string; taper: number; curvature: number };
   leaves: {
+    fold: number; thickness: number; asymmetry: number; venation: "pinnate" | "parallel" | "subtle";
     widthToLength: number; sizeVariation: number; tip: "pointed" | "rounded";
     base: "tapered" | "heart" | "rounded"; edge: "smooth" | "serrated" | "lobed";
     fenestration: number; curl: number; twist: number; gloss: number; undersideColor: string;
@@ -17,7 +20,7 @@ export type Visual = {
   condition: { yellowing: number; brownTips: number; legginess: number };
   pot: { color: string; material: "terracotta" | "ceramic" | "plastic" | "none"; diameterToHeight: number; heightToDiameter: number; soilVisible: boolean };
 };
-export type VisualInput = { seed?: string } & { [K in Exclude<keyof Visual, "seed">]?: Partial<Visual[K]> };
+export type VisualInput = { seed?: string } & { [K in Exclude<keyof Visual, "seed" | "botanical">]?: Partial<Visual[K]> };
 export type RenderProfile = Omit<PlantProfile, "visual"> & { visual?: unknown };
 export type VisualProfile = Omit<PlantProfile, "visual"> & { visual?: VisualInput };
 
@@ -28,6 +31,8 @@ function choice<T extends string>(v: unknown, fallback: T, choices: readonly T[]
 
 /** Missing, null, malformed and future unknown fields all have safe, finite fallbacks. */
 export function visualOf(p: RenderProfile): Visual {
+  const botanical = speciesProfileOf(p);
+  const individual = p.individual;
   const m = p.morphology, l = m.leaf;
   const raw = obj(p.visual);
   const s = obj(raw.silhouette), st = obj(raw.stems), a = obj(raw.leaves), c = obj(raw.cactus ?? raw.succulent), co = obj(raw.condition), pot = obj(raw.pot);
@@ -38,15 +43,17 @@ export function visualOf(p: RenderProfile): Visual {
   const ratio = l.shape === "needle" ? 0.07 : l.shape === "lanceolate" ? 0.2 : l.shape === "round" ? 0.95 : aroid ? 0.8 : 0.58;
   const defaultStemCount = strap || succulent ? 1 : aroid ? 2 : m.growthForm === "tree" ? 1 : 3;
   return {
+    botanical,
     // Deliberately exclude mutable visual refinements from the fallback seed to avoid reshuffling.
-    seed: typeof raw.seed === "string" && raw.seed.length ? raw.seed.slice(0, 128) : `${p.species.scientificName}:${m.currentHeightCm}:${l.countNow}`,
+    seed: individual?.seed ?? (typeof raw.seed === "string" && raw.seed.length ? raw.seed.slice(0, 128) : `${p.species.scientificName}`),
     silhouette: { widthToHeight: num(s.widthToHeight, cactus ? 1.1 : strap ? 0.6 : aroid ? 1.1 : 0.9, 0.15, 3), leanDeg: num(s.leanDeg, 0, 0, 65), leanDirectionDeg: num(s.leanDirectionDeg, ({ right: 34, left: 214, toward: 124, away: 304 } as Record<string, number>)[String(s.leanDirection)] ?? 0, 0, 360), symmetry: num(s.symmetry, 0.75, 0, 1) },
-    stems: { count: Math.round(num(st.count ?? st.countFromSoil, defaultStemCount, 1, 12)), thicknessCm: num(st.thicknessCm ?? (typeof st.thicknessMm === "number" ? st.thicknessMm / 10 : undefined), aroid ? 0.7 : strap ? 0.1 : m.growthForm === "tree" ? 1.2 : 0.25, 0.03, 10), internodeCm: num(st.internodeCm, m.currentHeightCm / 5, 0.2, 60), tipColor: color(st.tipColor, m.stemColor) },
+    stems: { count: Math.round(num(st.count ?? st.countFromSoil, defaultStemCount, 1, 12)), thicknessCm: num(st.thicknessCm ?? (typeof st.thicknessMm === "number" ? st.thicknessMm / 10 : undefined), aroid ? 0.7 : strap ? 0.1 : m.growthForm === "tree" ? 1.2 : 0.25, 0.03, 10), internodeCm: num(st.internodeCm, m.currentHeightCm / 5, 0.2, 60), tipColor: color(st.tipColor, m.stemColor), taper: individual?.stemTaper ?? botanical.structure.taper, curvature: individual?.stemCurvature ?? botanical.structure.curvature },
     leaves: {
-      widthToLength: num(a.widthToLength, ratio, 0.03, 1.5), sizeVariation: num(a.sizeVariation, 0.25, 0, 0.8),
-      tip: choice(a.tip, "pointed", ["pointed", "rounded"]), base: choice(a.base, aroid ? "heart" : "tapered", ["tapered", "heart", "rounded"]),
-      edge: choice(a.edge, l.shape === "palmate" ? "lobed" : "smooth", ["smooth", "serrated", "lobed"]), fenestration: num(a.fenestration, l.shape === "fenestrated" ? 0.6 : 0, 0, 1),
-      curl: num(a.curl, succulent ? 0.45 : 0.18, -1, 1), twist: num(a.twist, 0.12, -1, 1), gloss: num(a.gloss, aroid ? 0.55 : 0.25, 0, 1),
+      fold: botanical.leaf.fold, thickness: botanical.leaf.thickness, asymmetry: individual?.leafAsymmetry ?? 0.1, venation: botanical.leaf.venation,
+      widthToLength: num(a.widthToLength, botanical.id === "broadleaf" ? ratio : botanical.leaf.widthToLength, 0.03, 1.5), sizeVariation: num(a.sizeVariation, 0.25, 0, 0.8),
+      tip: choice(a.tip, "pointed", ["pointed", "rounded"]), base: choice(a.base, botanical.leaf.base, ["tapered", "heart", "rounded"]),
+      edge: choice(a.edge, l.shape === "palmate" ? "lobed" : "smooth", ["smooth", "serrated", "lobed"]), fenestration: num(a.fenestration, botanical.leaf.matureFenestration, 0, 1),
+      curl: num(a.curl, botanical.leaf.curl, -1, 1), twist: num(a.twist, 0.12, -1, 1), gloss: num(a.gloss, aroid ? 0.55 : 0.25, 0, 1),
       undersideColor: color(a.undersideColor ?? a.colorUnder, "#7b985e"), arrangement: choice(a.arrangement === "basal" ? "rosette" : a.arrangement, aroid || strap || succulent ? "rosette" : m.growthForm === "vine" || m.growthForm === "tree" ? "alternate" : "opposite", ["alternate", "opposite", "whorled", "rosette"]), droop: num(a.droop, 0.15, 0, 1),
       variegation: choice(({ streaks: "striped", patches: "sectoral", speckled: "marbled" } as Record<string, string>)[String(a.variegation)] ?? a.variegation, "none", ["none", "marbled", "sectoral", "margin", "striped"]), variegationAmount: num(a.variegationAmount, a.variegation && a.variegation !== "none" ? 0.35 : 0, 0, 1), variegationColor: color(a.variegationColor, "#ddd9a8"),
     },

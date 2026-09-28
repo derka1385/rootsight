@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import { MeshStandardMaterial, SphereGeometry } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
+import { smoothstep } from "./procedural";
+import { visualOf } from "./visual";
 import type { RenderProfile as PlantProfile } from "./visual";
 import { seededRandom } from "./procedural";
 import { Chain, type Seg } from "./parts";
@@ -20,16 +22,18 @@ const LAYOUT = {
 } as const;
 
 export default function Roots({ state, profile }: { state: PlantState; profile: PlantProfile }) {
+  const visual = visualOf(profile);
+  const growth = state.heightCm / profile.morphology.currentHeightCm;
   const type = profile.roots.type;
   const L = LAYOUT[type];
   const genes = useMemo<Gene[]>(() => {
-    const r = seededRandom(profile.species.scientificName + ":roots");
+    const r = seededRandom(visualOf(profile).seed + ":roots");
     return Array.from({ length: L.primaries }, () => ({
       az: r(), tilt: r(), len: r(),
       wob: Array.from({ length: 6 }, () => r() - 0.5),
       lat: Array.from({ length: 6 }, () => r()),
     }));
-  }, [profile.species.scientificName, L.primaries]);
+  }, [profile, L.primaries]);
   const mat = useMemo(() => new MeshStandardMaterial({ color: "#d6c29c", roughness: 0.92 }), []);
   const fine = useMemo(() => new MeshStandardMaterial({ color: "#bba27a", roughness: 0.95 }), []);
   useEffect(() => () => { mat.dispose(); fine.dispose(); }, [mat, fine]);
@@ -54,16 +58,18 @@ export default function Roots({ state, profile }: { state: PlantState; profile: 
           bz: g.wob[k + 1] * 0.25,
         }));
         const at: Record<number, ReactNode> = {};
-        for (let k = 0; k < L.laterals; k++) {
+        for (let k = 0; k < L.laterals + 2; k++) {
+          const emergence = k < L.laterals ? 1 : smoothstep(1 + (k - L.laterals + 1) * 0.4, 1.6 + (k - L.laterals + 1) * 0.4, growth);
+          if (emergence <= 1e-8) continue;
           const node = 1 + (k % (n - 2));
-          const ll = len * (central ? 0.55 : 0.35) * (0.6 + 0.6 * g.lat[k % 6]);
+          const ll = emergence * (0.7 + visual.botanical.roots.lateralGrowth * 0.5) * len * (central ? 0.55 : 0.35) * (0.6 + 0.6 * g.lat[k % 6]);
           at[node] = (
             <>
               {at[node]}
-              <group rotation-y={g.lat[(k + 2) % 6] * Math.PI * 2}>
+              <group name={`root-${i}/lateral-${k}`} rotation-y={g.lat[(k + 2) % 6] * Math.PI * 2}>
                 <Chain
                   material={fine}
-                  segs={Array.from({ length: 3 }, (_, q) => ({ len: ll / 3, r: r0 * 0.38 * Math.pow(0.7, q), bx: q === 0 ? 0.9 + g.lat[k % 6] * 0.4 : -0.18, bz: g.wob[q] * 0.3 }))}
+                  segs={Array.from({ length: 3 }, (_, q) => ({ len: ll / 3, r: r0 * 0.38 * Math.pow(0.7, q) * emergence, bx: q === 0 ? 0.9 + g.lat[k % 6] * 0.4 : -0.18, bz: g.wob[q] * 0.3 }))}
                 />
               </group>
             </>
@@ -74,7 +80,7 @@ export default function Roots({ state, profile }: { state: PlantState; profile: 
           at[2] = <>{at[2]}<mesh geometry={TUBER} material={mat} scale={[t, t * 1.5, t]} /></>;
         }
         return (
-          <group key={i} rotation-y={central ? 0 : (i / genes.length) * Math.PI * 2 + (g.az - 0.5) * 0.7}>
+          <group key={i} name={`root-${i}`} rotation-y={central ? 0 : (i / genes.length) * Math.PI * 2 + (g.az - 0.5) * 0.7}>
             <Chain segs={segs} material={mat} at={at} />
           </group>
         );

@@ -1,0 +1,167 @@
+{
+  "errors": [],
+  "results": [
+    {
+      "device": "mobile",
+      "name": "observed",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "mobile",
+      "name": "observed-grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 132258,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "mobile",
+      "name": "observed-wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "mobile",
+      "name": "monstera",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "device": "mobile",
+      "name": "basil",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 74338,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "device": "mobile",
+      "name": "cactus",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 40738,
+      "geometries": 21,
+      "textures": 10
+    },
+    {
+      "device": "mobile",
+      "name": "grass",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 54538,
+      "geometries": 22,
+      "textures": 14
+    },
+    {
+      "device": "mobile",
+      "name": "succulent",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 123538,
+      "geometries": 22,
+      "textures": 14
+    },
+    {
+      "device": "mobile",
+      "name": "tree",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 84222,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "desktop",
+      "name": "observed",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "desktop",
+      "name": "observed-grown",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 132258,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "desktop",
+      "name": "observed-wilt",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 13
+    },
+    {
+      "device": "desktop",
+      "name": "monstera",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 60078,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "device": "desktop",
+      "name": "basil",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 74338,
+      "geometries": 23,
+      "textures": 14
+    },
+    {
+      "device": "desktop",
+      "name": "cactus",
+      "peakCalls": 15,
+      "calls": 15,
+      "triangles": 40738,
+      "geometries": 21,
+      "textures": 10
+    },
+    {
+      "device": "desktop",
+      "name": "grass",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 54538,
+      "geometries": 22,
+      "textures": 14
+    },
+    {
+      "device": "desktop",
+      "name": "succulent",
+      "peakCalls": 17,
+      "calls": 17,
+      "triangles": 123538,
+      "geometries": 22,
+      "textures": 14
+    },
+    {
+      "device": "desktop",
+      "name": "tree",
+      "peakCalls": 19,
+      "calls": 19,
+      "triangles": 84222,
+      "geometries": 23,
+      "textures": 13
+    }
+  ]
+}
