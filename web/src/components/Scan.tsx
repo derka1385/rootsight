@@ -48,7 +48,7 @@ export default function Scan({ busy, error, onPhoto, onSample }: Props) {
             <div className="hint">
               <ScanIcon />
               <strong>Point at a plant</strong>
-              <span style={{ opacity: 0.75, fontSize: 14 }}>Claude identifies the species, then grows it in 3D with its roots.</span>
+              <span style={{ opacity: 0.75, fontSize: 14 }}>Claude inventories your plant (leaves, flowers, buds) and rebuilds it in 3D.</span>
             </div>
           )
         )}

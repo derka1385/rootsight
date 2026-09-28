@@ -1,0 +1,465 @@
+{
+  "visual": {
+    "seed": "cyclamen-pink-terracotta-plastic-01",
+    "silhouette": {
+      "widthToHeight": 0.96,
+      "leanDeg": 2,
+      "leanDirectionDeg": 90,
+      "symmetry": 0.75
+    },
+    "stems": {
+      "count": 1,
+      "thicknessCm": 0.3,
+      "internodeCm": 0.5,
+      "tipColor": "#b07a78"
+    },
+    "leaves": {
+      "widthToLength": 0.95,
+      "sizeVariation": 0.3,
+      "tip": "rounded",
+      "base": "heart",
+      "edge": "serrated",
+      "fenestration": 0,
+      "curl": 0.15,
+      "twist": 0.05,
+      "gloss": 0.45,
+      "undersideColor": "#7a5a5a",
+      "arrangement": "rosette",
+      "droop": 0.35,
+      "variegation": "marbled",
+      "variegationAmount": 0.3,
+      "variegationColor": "#b8c9a8"
+    },
+    "condition": {
+      "yellowing": 0.03,
+      "brownTips": 0,
+      "legginess": 0.1
+    },
+    "pot": {
+      "color": "#b5451f",
+      "material": "plastic",
+      "diameterToHeight": 0.72,
+      "heightToDiameter": 0.62,
+      "soilVisible": true
+    }
+  },
+  "individual": {
+    "seed": "8c0ff6097d8a79b99e94784a",
+    "crownShape": "mound",
+    "crownDensity": 0.8,
+    "maturity": 0.7,
+    "estimatedBranchCount": 0,
+    "averageLeafAngleDeg": 78,
+    "leafAsymmetry": 0.3,
+    "stemTaper": 0.3,
+    "stemCurvature": 0.4,
+    "depthToWidth": 0.8,
+    "occupancy": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "01332420",
+      "15788650",
+      "58999976",
+      "79999997",
+      "68999974"
+    ],
+    "stems": [],
+    "leaves": [
+      {
+        "id": "leaf-0",
+        "x": -0.13,
+        "y": 0.17,
+        "layer": "foreground",
+        "size": 1.1,
+        "angleDeg": 80,
+        "azimuthDeg": 0,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-1",
+        "x": -0.54,
+        "y": 0.1,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 95,
+        "azimuthDeg": -30,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-2",
+        "x": 0.36,
+        "y": 0.17,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 85,
+        "azimuthDeg": 20,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-3",
+        "x": 0.49,
+        "y": 0.06,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 110,
+        "azimuthDeg": 40,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-4",
+        "x": 0.6,
+        "y": 0.22,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 90,
+        "azimuthDeg": 70,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-5",
+        "x": 0.85,
+        "y": 0.2,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 105,
+        "azimuthDeg": 90,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-6",
+        "x": 0.72,
+        "y": 0.32,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 80,
+        "azimuthDeg": 70,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-7",
+        "x": 0.47,
+        "y": 0.49,
+        "layer": "background",
+        "size": 0.7,
+        "angleDeg": 60,
+        "azimuthDeg": 30,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-8",
+        "x": 0.63,
+        "y": 0.4,
+        "layer": "background",
+        "size": 0.75,
+        "angleDeg": 75,
+        "azimuthDeg": 80,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-9",
+        "x": 0.09,
+        "y": 0.32,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 60,
+        "azimuthDeg": 0,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-10",
+        "x": -0.2,
+        "y": 0.32,
+        "layer": "middle",
+        "size": 0.85,
+        "angleDeg": 65,
+        "azimuthDeg": -10,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-11",
+        "x": -0.57,
+        "y": 0.3,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 80,
+        "azimuthDeg": -60,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-12",
+        "x": -0.8,
+        "y": 0.17,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 100,
+        "azimuthDeg": -90,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-13",
+        "x": -0.88,
+        "y": 0.08,
+        "layer": "foreground",
+        "size": 0.7,
+        "angleDeg": 110,
+        "azimuthDeg": -80,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-14",
+        "x": -0.49,
+        "y": 0.41,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 70,
+        "azimuthDeg": -30,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-15",
+        "x": -0.6,
+        "y": 0.48,
+        "layer": "background",
+        "size": 0.7,
+        "angleDeg": 60,
+        "azimuthDeg": -60,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-16",
+        "x": 0,
+        "y": 0.42,
+        "layer": "middle",
+        "size": 0.75,
+        "angleDeg": 50,
+        "azimuthDeg": 0,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-17",
+        "x": -0.26,
+        "y": 0.51,
+        "layer": "background",
+        "size": 0.65,
+        "angleDeg": 40,
+        "azimuthDeg": 0,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-18",
+        "x": -0.32,
+        "y": 0.25,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 75,
+        "azimuthDeg": -20,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-19",
+        "x": 0.8,
+        "y": 0.11,
+        "layer": "middle",
+        "size": 0.7,
+        "angleDeg": 110,
+        "azimuthDeg": 80,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-20",
+        "x": -0.78,
+        "y": 0.25,
+        "layer": "middle",
+        "size": 0.7,
+        "angleDeg": 95,
+        "azimuthDeg": -90,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-21",
+        "x": 0.18,
+        "y": 0.43,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 60,
+        "azimuthDeg": 20,
+        "stemIndex": 0
+      }
+    ],
+    "blooms": {
+      "flowers": 8,
+      "buds": 3,
+      "fruits": 0,
+      "flowerColor": "#e9768f",
+      "centerColor": "#8c1f4f",
+      "budColor": "#f0a0c0",
+      "fruitColor": "#6b4a2a",
+      "flowerDiameterCm": 4.5,
+      "fruitDiameterCm": 1,
+      "placement": "above-foliage",
+      "stalkCm": 14,
+      "landmarks": [
+        {
+          "id": "bloom-0",
+          "kind": "flower",
+          "x": 0.07,
+          "y": 0.8,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bloom-1",
+          "kind": "flower",
+          "x": -0.34,
+          "y": 0.82,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bloom-2",
+          "kind": "flower",
+          "x": 0.43,
+          "y": 0.85,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bloom-3",
+          "kind": "flower",
+          "x": -0.16,
+          "y": 0.92,
+          "layer": "background",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bloom-4",
+          "kind": "flower",
+          "x": 0.51,
+          "y": 0.75,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "out"
+        },
+        {
+          "id": "bloom-5",
+          "kind": "flower",
+          "x": 0.24,
+          "y": 0.46,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "out"
+        },
+        {
+          "id": "bloom-6",
+          "kind": "flower",
+          "x": -0.3,
+          "y": 0.65,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bloom-7",
+          "kind": "flower",
+          "x": 0.32,
+          "y": 0.63,
+          "layer": "middle",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bud-0",
+          "kind": "bud",
+          "x": -0.68,
+          "y": 0.53,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bud-1",
+          "kind": "bud",
+          "x": -0.03,
+          "y": 0.59,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        },
+        {
+          "id": "bud-2",
+          "kind": "bud",
+          "x": 0.13,
+          "y": 0.61,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "down"
+        }
+      ]
+    }
+  },
+  "species": {
+    "commonName": "Florist's cyclamen",
+    "scientificName": "Cyclamen persicum",
+    "confidence": 0.95,
+    "flowering": {
+      "form": "reflexed",
+      "petals": 5,
+      "petalWidthToLength": 0.4,
+      "inflorescence": "solitary",
+      "flowerColor": "#e9768f",
+      "centerColor": "#8c1f4f",
+      "fruit": "capsule"
+    }
+  },
+  "wiki": {
+    "family": "Primulaceae",
+    "nativeRegion": "Eastern Mediterranean (Turkey, Levant, Greek islands, North Africa)",
+    "summary": "Cyclamen persicum is a tuberous perennial grown worldwide as a winter-flowering houseplant. Its heart-shaped, silver-marbled leaves rise from a flattened tuber, and swept-back flowers in pink, red, purple or white nod on slender stalks above the foliage. It goes dormant in summer in its native dry climate.",
+    "difficulty": "medium",
+    "toxicToPets": true
+  },
+  "morphology": {
+    "growthForm": "rosette",
+    "currentHeightCm": 21,
+    "matureHeightCm": 30,
+    "stemColor": "#b07a78",
+    "branchingAngleDeg": 30,
+    "branchingDepth": 1,
+    "leaf": {
+      "shape": "round",
+      "color": "#3f7a3a",
+      "lengthCm": 6,
+      "countNow": 38
+    }
+  },
+  "growth": {
+    "rateCmPerMonth": 1,
+    "monthsToMaturity": 15
+  },
+  "roots": {
+    "type": "tuberous",
+    "maxDepthCm": 12,
+    "maxSpreadCm": 14
+  },
+  "care": {
+    "waterIntervalDays": 6,
+    "light": "bright-indirect",
+    "humidity": "medium",
+    "tempMinC": 10,
+    "tempMaxC": 20,
+    "soil": "Well-draining peat-based potting mix with perlite; keep tuber top above soil and water from below"
+  },
+  "facts": [
+    "The swept-back petals make flowers look like tiny shuttlecocks or butterflies.",
+    "Its tuber can live and flower for decades.",
+    "Seed stalks coil like springs to pull pods down to the soil.",
+    "Ants disperse cyclamen seeds, attracted by a sugary coating.",
+    "It prefers cool rooms; warmth shortens bloom time dramatically."
+  ],
+  "healthNotes": "Looks healthy: dense, compact leaf mound with crisp silver marbling, many open flowers and several buds still coming. No visible pests, yellowing or brown tips; a few leaves at the edges look paler only from the bright backlight."
+}

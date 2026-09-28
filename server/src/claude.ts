@@ -8,18 +8,41 @@ export const useMock = () => process.env.USE_MOCK !== "false";
 
 let client: Anthropic | undefined;
 
+// The vision profile (species + visual + individual inventory) is too big for strict structured outputs
+// ("compiled grammar is too large"), so the JSON Schema goes in the prompt and zod enforces it on the
+// answer (see the retry in askJson). Bounds and patterns stay in the text as hints.
+const schemaText = new WeakMap<z.ZodType, string>();
+function jsonInstructions(schema: z.ZodType): string {
+  let t = schemaText.get(schema);
+  if (!t) schemaText.set(schema, (t = JSON.stringify(zodOutputFormat(schema).schema)));
+  return `\n\nReply with ONLY one JSON object, no prose and no code fences, valid against this JSON Schema:\n${t}`;
+}
+
+/** Tolerates stray prose or ```json fences around the object. */
+function extractJson(text: string): unknown {
+  const start = text.indexOf("{"), end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return undefined;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return undefined;
+  }
+}
+
 export function imageBlock({ imageBase64, mediaType }: ImageInput): Anthropic.ImageBlockParam {
   return { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } };
 }
 
 /**
- * One Claude call with structured outputs, validated by `schema`.
+ * One Claude call whose JSON answer is validated by `schema`.
  * On validation failure, retries once with the error appended, then throws (-> 502).
+ * No `temperature`: current models reject sampling parameters.
  */
 export async function askJson<S extends z.ZodType>(
   schema: S,
   system: string,
   content: Anthropic.ContentBlockParam[],
+  effort: NonNullable<Anthropic.Messages.OutputConfig["effort"]> = "low",
 ): Promise<z.infer<S>> {
   client ??= new Anthropic(); // reads ANTHROPIC_API_KEY
   let error = "";
@@ -27,22 +50,19 @@ export async function askJson<S extends z.ZodType>(
     const retryNote: Anthropic.TextBlockParam[] = error
       ? [{ type: "text", text: `Your previous answer failed validation:\n${error}\nReturn corrected JSON.` }]
       : [];
+    const started = Date.now();
     // API/auth errors throw straight through (the SDK already retries 429/5xx).
-    const res = await client.messages.create({
+    // Streaming: high effort on a big profile can exceed the SDK's non-streaming time limit.
+    const res = await client.messages.stream({
       model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
-      max_tokens: 16000,
-      temperature: 0,
-      system,
+      max_tokens: 32000,
+      system: system + jsonInstructions(schema),
       messages: [{ role: "user", content: [...content, ...retryNote] }],
-      // TODO(claude-owner): tune effort (low = fastest for live demos).
-      output_config: { format: zodOutputFormat(schema), effort: "low" },
-    });
+      output_config: { effort },
+    }).finalMessage();
+    console.log(`[claude] ${res.model} effort=${effort} ${Date.now() - started} ms stop=${res.stop_reason}`);
     const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-    let json: unknown;
-    try {
-      json = JSON.parse(text);
-    } catch {}
-    const parsed = schema.safeParse(json);
+    const parsed = schema.safeParse(extractJson(text));
     if (parsed.success) return parsed.data;
     error = res.stop_reason === "end_turn" ? parsed.error.message : `stop_reason: ${res.stop_reason}`;
   }

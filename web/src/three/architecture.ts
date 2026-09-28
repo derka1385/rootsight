@@ -14,6 +14,118 @@ export type LeafOrgan = { id: string; parentId: string; birth: number; maturity:
 export type PlantLayout = { stems: Matrix4[]; stemPaths: StemPath[]; leaves: Matrix4[][]; organs: LeafOrgan[] };
 const UP = new Vector3(0, 1, 0);
 const GOLDEN = 2.399963;
+/** Most blades one plant draws; also the instance capacity of each leaf age group. */
+export const MAX_LEAVES = 400;
+
+/** The default camera's azimuth: "photo left/right/toward" are relative to it. */
+export const CAMERA_AZ = Math.atan2(1.6, 2.4);
+const RIGHT = new Vector3(Math.cos(CAMERA_AZ), 0, -Math.sin(CAMERA_AZ));
+const TOWARD = new Vector3(Math.sin(CAMERA_AZ), 0, Math.cos(CAMERA_AZ));
+export const LAYER_DEPTH = { foreground: 1, middle: 0, background: -1 } as const;
+
+/**
+ * The photo frame at a growth state. Observations use x in [-1, 1] across the half canopy width, y as a
+ * fraction of plant height and depth in [-1, 1] from background to foreground. Observed organs keep their
+ * place as the plant grows; the frame only widens gently (growth^0.3).
+ */
+export function photoFrame(p: PlantProfile, state: PlantState, v: Visual) {
+  const initialH = p.morphology.currentHeightCm / 100;
+  const growth = state.heightCm / 100 / initialH;
+  const H = initialH * Math.pow(growth, 0.3), W = H * v.silhouette.widthToHeight;
+  const depthToWidth = p.individual?.depthToWidth ?? 0.4;
+  // In a photo the plant visibly starts at the pot rim (the soil is hidden): y = 0 is the rim, y = 1 the top.
+  const rim = v.pot.material === "none" ? 0 : potDimensions(p).depth * 0.075;
+  const at = (x: number, y: number, depth: number) =>
+    RIGHT.clone().multiplyScalar(x * W / 2).addScaledVector(TOWARD, depth * W * depthToWidth / 2).setY(y * H + rim * (1 - Math.min(1, Math.max(0, y))));
+  return { H, W, growth, depthToWidth, at };
+}
+
+/** The photographed foliage silhouette as 8×8 weights (top row first), or null when not observed. */
+export function occupancyOf(p: PlantProfile): number[][] | null {
+  const grid = p.individual?.occupancy?.map(row => [...row].map(c => Number(c) / 9));
+  return grid && grid.flat().some(w => w > 0) ? grid : null;
+}
+
+/**
+ * A deterministic point in the photographed foliage mass: a cell drawn by its occupancy, a position in it,
+ * and a depth inside that row's elliptical cross-section. Dense canopies put leaves on the outer shell,
+ * sparse ones spread them through the volume.
+ */
+export function sampleFoliage(grid: number[][], random: () => number, density: number) {
+  const cells = grid.flat(), total = cells.reduce((a, b) => a + b, 0);
+  let pick = random() * total, index = cells.length - 1;
+  for (let i = 0; i < cells.length; i++) { pick -= cells[i]; if (pick <= 0 && cells[i] > 0) { index = i; break; } }
+  while (cells[index] <= 0) index--; // float drift past the end
+  const row = Math.floor(index / 8), col = index % 8;
+  const x = ((col + random()) / 8) * 2 - 1, y = 1 - (row + random()) / 8;
+  const filled = grid[row].map((w, c) => (w > 0.15 ? c : -1)).filter(c => c >= 0);
+  const left = ((filled[0] ?? col) / 8) * 2 - 1, right = (((filled.at(-1) ?? col) + 1) / 8) * 2 - 1;
+  const cx = (left + right) / 2, half = Math.max(0.125, (right - left) / 2);
+  const reach = half * Math.sqrt(Math.max(0.05, 1 - ((x - cx) / half) ** 2));
+  const u = random() * 2 - 1;
+  const depth = Math.sign(u) * Math.pow(Math.abs(u), 1 - 0.6 * density) * reach;
+  return { x, y, depth };
+}
+
+/** Top and bottom of the photographed foliage (fractions of plant height), from the occupancy rows. */
+export function foliageExtent(grid: number[][]) {
+  const rows = grid.map(row => Math.max(...row) >= 0.3);
+  const top = rows.indexOf(true), bottom = rows.lastIndexOf(true);
+  return top < 0 ? { top: 0.8, bottom: 0 } : { top: 1 - top / 8, bottom: 1 - (bottom + 1) / 8 };
+}
+
+/**
+ * Outward normal of the photographed foliage mass at a sampled point, treating the canopy as an
+ * ellipsoid over its occupancy extent. Leaves on a full canopy lie tangent to it, top face out; lower
+ * leaves face outward rather than into the soil.
+ */
+function canopyNormal(grid: number[][], s: { x: number; y: number; depth: number }, W: number, H: number, depthToWidth: number) {
+  // A dome standing on its base: upper leaves face the sky, side leaves face out.
+  const { top, bottom } = foliageExtent(grid);
+  const cy = bottom, halfY = Math.max(0.1, top - bottom);
+  const X = s.x * W / 2, Y = (s.y - cy) * H, Z = s.depth * W * depthToWidth / 2;
+  const ax = W / 2, by = halfY * H, cz = Math.max(0.01, W * depthToWidth / 2);
+  const n = RIGHT.clone().multiplyScalar(X / (ax * ax)).addScaledVector(UP, Y / (by * by)).addScaledVector(TOWARD, Z / (cz * cz));
+  if (n.lengthSq() < 1e-10) n.copy(UP);
+  // Leaves turn their faces to the light: tilt every normal up a little.
+  n.normalize().addScaledVector(UP, 0.5).normalize();
+  if (n.y < -0.15) { n.y = -0.15; n.normalize(); }
+  return n;
+}
+
+/** Blade orientation: local +z along the blade axis, local +y (top face) as close to `face` as possible. */
+function bladeFrame(axis: Vector3, face: Vector3, roll: number) {
+  const z = axis.clone().normalize();
+  const y = face.clone().addScaledVector(z, -face.dot(z));
+  if (y.lengthSq() < 1e-8) y.copy(UP).addScaledVector(z, -z.y);
+  y.normalize();
+  const x = new Vector3().crossVectors(y, z);
+  return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), roll));
+}
+
+/**
+ * Leaves the photographed canopy needs to look as full as observed. Claude outlines the blades it can
+ * resolve, which undercounts a bushy plant; this floor is the count that makes the observed foliage area
+ * as opaque as its observed density (leaves overlap about 1.6 deep). Only for vision-observed plants.
+ */
+export function densityLeafFloor(p: PlantProfile, v: Visual): number {
+  const density = p.individual?.crownDensity;
+  if (density === undefined || p.morphology.leaf.countNow === 0) return 0;
+  const H = p.morphology.currentHeightCm / 100, W = H * v.silhouette.widthToHeight;
+  const grid = occupancyOf(p);
+  const fill = grid ? grid.flat().reduce((a, b) => a + b, 0) / 64 : 0.55;
+  const blade = (p.morphology.leaf.lengthCm / 100 * 0.8) ** 2 * v.leaves.widthToLength * 0.62;
+  return Math.min(MAX_LEAVES, Math.round(Math.pow(density, 1.4) * 1.6 * W * H * fill / Math.max(1e-6, blade)));
+}
+
+/** Blade direction for an azimuth and a pitch from vertical (0 up, pi/2 horizontal, pi hanging). */
+const bladeDirection = (az: number, pitch: number) => new Vector3(Math.sin(pitch) * Math.sin(az), Math.cos(pitch), Math.sin(pitch) * Math.cos(az));
+
+/** Closest point to `p` on the segment a-b, as a fraction along it. */
+function along(a: Vector3, b: Vector3, p: Vector3) {
+  const ab = b.clone().sub(a);
+  return Math.min(1, Math.max(0, p.clone().sub(a).dot(ab) / Math.max(1e-9, ab.lengthSq())));
+}
 
 /** One instanced segment between two points; radius tapers along each sampled path. */
 export function segmentMatrix(a: Vector3, b: Vector3, radius: number) {
@@ -28,8 +140,11 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
   const landmarks = [...(individual?.leaves ?? [])].sort((a, b) => a.id.localeCompare(b.id));
   const H = state.heightCm / 100, initialH = m.currentHeightCm / 100;
   const growth = H / initialH;
-  const observed = Math.min(160, m.leaf.countNow);
-  const count = Math.min(160, observed * growth);
+  const frame = photoFrame(p, state, v);
+  const grid = occupancyOf(p);
+  // A dense photo never renders sparse: the photographed count, raised to what the canopy needs.
+  const observed = Math.min(MAX_LEAVES, Math.max(m.leaf.countNow, densityLeafFloor(p, v)));
+  const count = Math.min(MAX_LEAVES, observed * growth);
   const length = m.leaf.lengthCm / 100 * Math.min(1.6, Math.pow(growth, 0.28));
   const radius = v.stems.thicknessCm / 200 * Math.sqrt(growth);
   const soilR = potDimensions(p).radius;
@@ -38,8 +153,13 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
   const spread = Math.max(0, H * v.silhouette.widthToHeight / 2 - length * 0.42) * crownWidth * (1.2 - density * 0.35);
   const stemPaths: StemPath[] = [], organs: LeafOrgan[] = [];
   const stems: Matrix4[] = [], leaves: Matrix4[][] = [[], [], [], []];
-  const nStems = Math.min(v.stems.count, Math.max(1, observed));
-  const bases = Array.from({ length: nStems }, (_, i) => new Vector3(Math.sin(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems), 0, Math.cos(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems)));
+  // Main stems: as photographed when observed (base in the pot, tip where the photo shows it), else generated.
+  const seen = individual?.stems?.length ? individual.stems : null;
+  const nStems = seen ? seen.length : Math.min(v.stems.count, Math.max(1, observed));
+  const bases = seen
+    ? seen.map(s => RIGHT.clone().multiplyScalar(Math.max(-0.85, Math.min(0.85, s.baseX * frame.W / 2 / Math.max(0.01, soilR))) * soilR).addScaledVector(TOWARD, LAYER_DEPTH[s.layer] * soilR * 0.25))
+    : Array.from({ length: nStems }, (_, i) => new Vector3(Math.sin(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems), 0, Math.cos(i * GOLDEN) * soilR * 0.28 * Math.sqrt(i / nStems)));
+  const stemRadius = (i: number) => (seen ? seen[i].thicknessMm / 2000 * Math.sqrt(growth) : radius);
   const path = (id: string, points: Vector3[], r: number, depth = 0) => {
     const random = seededRandom(v.seed + id);
     const curvature = v.stems.curvature * (random() - 0.5);
@@ -47,7 +167,9 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     const curved = points.map((point, i) => point.clone().add(new Vector3(Math.sin(i / (points.length - 1) * Math.PI) * delta.length() * curvature * 0.2, 0, Math.sin(i / (points.length - 1) * Math.PI) * delta.length() * curvature * 0.1)));
     stemPaths.push({ id, points: curved, radius: r, taper: v.stems.taper, depth });
   };
+  const leafTop = grid ? foliageExtent(grid).top : 1.5;
   const stemTip = (stem: number) => {
+    if (seen) return frame.at(seen[stem].tipX, Math.min(seen[stem].tipY, leafTop), LAYER_DEPTH[seen[stem].layer] * 0.6);
     const a = stem * GOLDEN;
     const jitter = 1 - (1 - v.silhouette.symmetry) * (0.15 + stem % 3 * 0.14);
     return new Vector3(Math.sin(a) * spread * 0.62, initialH * Math.pow(growth, 0.25) * 0.84 * jitter, Math.cos(a) * spread * 0.62);
@@ -64,7 +186,7 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     const length = (spread * 0.65 + initialH * 0.12) * show * Math.pow(growth, 0.2);
     const end = start.clone().add(new Vector3(Math.sin(az) * Math.sin(angle) * length, Math.cos(angle) * length, Math.cos(az) * Math.sin(angle) * length));
     const id = `branch-${b}`;
-    path(id, [start, start.clone().lerp(end, 0.5).add(new Vector3(0, length * 0.08, 0)), end], radius * v.botanical.structure.branchRadius * show, 1);
+    path(id, [start, start.clone().lerp(end, 0.5).add(new Vector3(0, length * 0.08, 0)), end], stemRadius(stem) * v.botanical.structure.branchRadius * show, 1);
     majorBranches.push({ id, stem, start, end, birth: Math.max(0, b - initialBranches + 1) });
     highestNode[stem] = Math.max(highestNode[stem], level);
   }
@@ -72,7 +194,27 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     const a = stem * GOLDEN, reach = H * v.silhouette.widthToHeight * 0.5;
     return bases[stem].clone().add(new Vector3(Math.sin(a) * reach * Math.sin(t * 1.4), H * (0.12 * Math.sin(t * Math.PI) - t * 0.9), Math.cos(a) * reach * Math.sin(t * 1.4)));
   };
-  if (kind === "vine") bases.forEach((_, i) => path(`stem-${i}`, Array.from({ length: 13 }, (_, j) => vinePoint(i, j / 12)), radius));
+  if (kind === "vine") bases.forEach((_, i) => path(`stem-${i}`, Array.from({ length: 13 }, (_, j) => vinePoint(i, j / 12)), stemRadius(i)));
+
+  // Where a photographed foliage silhouette exists, leaves that are not individually observed fill it
+  // (rosettes and branching plants); otherwise they follow the species' phyllotaxis as before.
+  const fillsSilhouette = !!grid && (kind === "aroid" || kind === "branching" || kind === "tree");
+  // Nearest wood to hang a silhouette leaf on: a main stem or an already-born major branch.
+  const nearestWood = (target: Vector3) => {
+    let best = { parentId: `stem-0`, stem: 0, point: bases[0].clone(), distance: Infinity, t: 0 };
+    for (let s = 0; s < nStems; s++) {
+      const tip = stemTip(s), t = Math.max(0.08, along(bases[s], tip, target)), point = bases[s].clone().lerp(tip, t);
+      const distance = point.distanceTo(target);
+      if (distance < best.distance) best = { parentId: `stem-${s}`, stem: s, point, distance, t };
+    }
+    for (const branch of majorBranches) {
+      if (branch.birth > 0) continue;
+      const t = Math.max(0.2, along(branch.start, branch.end, target)), point = branch.start.clone().lerp(branch.end, t);
+      const distance = point.distanceTo(target);
+      if (distance < best.distance) best = { parentId: branch.id, stem: branch.stem, point, distance, t: -1 };
+    }
+    return best;
+  };
 
   for (let i = 0; i < Math.ceil(count); i++) {
     const observation = i < observed ? landmarks[i] : undefined;
@@ -89,9 +231,33 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
     const asym = (r[1] - 0.5) * (1 - v.silhouette.symmetry);
     let az = i * GOLDEN + asym * 2;
     let point = bases[stem].clone(), attachment = bases[stem].clone(), pitch = 0.7;
+    let orientation: Quaternion | null = null;
     let parentId = `stem-${stem}`;
     const droop = v.leaves.droop * 0.8 + state.wilt * 0.9;
-    if (kind === "aroid") {
+    if (fillsSilhouette && !observation) {
+      // Blade centred on a sampled point of the photographed foliage mass, facing out from the plant.
+      const place = seededRandom(v.seed + ":place:" + id);
+      const s = sampleFoliage(grid!, place, density);
+      const centre = frame.at(s.x, s.y, s.depth);
+      az = Math.hypot(centre.x, centre.z) > frame.W * 0.06 ? Math.atan2(centre.x, centre.z) + (place() - 0.5) * 0.9 : place() * Math.PI * 2;
+      // The blade lies on the canopy surface, as close to the photographed leaf angle as that allows.
+      const angle = Math.min(170, Math.max(10, (individual?.averageLeafAngleDeg ?? 90) + (place() - 0.5) * 36)) * Math.PI / 180 + droop;
+      const face = canopyNormal(grid!, s, frame.W, frame.H, frame.depthToWidth);
+      const wanted = bladeDirection(az, angle);
+      const axis = wanted.clone().addScaledVector(face, -wanted.dot(face));
+      if (axis.lengthSq() < 1e-6) axis.copy(bladeDirection(az, Math.PI / 2));
+      axis.normalize();
+      orientation = bladeFrame(axis, face, (r[4] - 0.5) * 0.3);
+      point = centre.addScaledVector(axis, -size * 0.5 * grow);
+      if (kind === "aroid") attachment = bases[stem].clone();
+      else {
+        const wood = nearestWood(point);
+        attachment = wood.point; parentId = wood.parentId;
+        if (wood.t >= 0) highestNode[wood.stem] = Math.max(highestNode[wood.stem], wood.t);
+      }
+      const lift = kind === "aroid" ? Math.max(0.02, point.y - attachment.y) * 0.35 : attachment.distanceTo(point) * 0.2;
+      path(`petiole-${id}`, [attachment, attachment.clone().lerp(point, 0.5).add(new Vector3(0, lift, 0)), point], (kind === "aroid" ? radius * (0.7 + 0.3 * youth) : radius * v.botanical.structure.petioleRadius) * grow, 2);
+    } else if (kind === "aroid") {
       const level = individual?.crownShape === "round" ? 0.52 + 0.25 * r[2] : 0.40 + 0.44 * r[2];
       const reach = spread * (0.35 + r[3] * 0.65);
       point.add(new Vector3(Math.sin(az) * reach, H * level * grow, Math.cos(az) * reach));
@@ -138,28 +304,35 @@ export function plantLayout(p: PlantProfile, state: PlantState, v: Visual): Plan
       pitch = 1.35 + t * 0.3 + droop;
       size *= 1 - Math.min(0.2, node / Math.max(1, totalNodes) * 0.2);
     }
-    if (!observation && individual?.crownShape === "fan") point.z *= 0.55;
-    if (individual?.averageLeafAngleDeg !== undefined && !observation) pitch = individual.averageLeafAngleDeg * Math.PI / 180 + droop + (r[4] - 0.5) * 0.15;
+    if (!observation && !fillsSilhouette && individual?.crownShape === "fan") point.z *= 0.55;
+    if (individual?.averageLeafAngleDeg !== undefined && !observation && !fillsSilhouette) pitch = individual.averageLeafAngleDeg * Math.PI / 180 + droop + (r[4] - 0.5) * 0.15;
     if (observation) {
-      const cameraAz = Math.atan2(1.6, 2.4), depth = ({ foreground: 1, middle: 0, background: -1 } as const)[observation.layer];
-      const width = initialH * v.silhouette.widthToHeight * Math.pow(growth, 0.3);
-      point = new Vector3(Math.cos(cameraAz) * observation.x * width / 2 + Math.sin(cameraAz) * depth * width * (individual?.depthToWidth ?? 0.4) / 2, observation.y * initialH * Math.pow(growth, 0.3), -Math.sin(cameraAz) * observation.x * width / 2 + Math.cos(cameraAz) * depth * width * (individual?.depthToWidth ?? 0.4) / 2);
+      point = frame.at(observation.x, observation.y, LAYER_DEPTH[observation.layer]);
       size = length * observation.size;
-      az = cameraAz + observation.azimuthDeg * Math.PI / 180;
+      az = CAMERA_AZ + observation.azimuthDeg * Math.PI / 180;
       pitch = observation.angleDeg * Math.PI / 180 + state.wilt * 0.65;
+      // A photographed blade was seen from the camera: it shows that side (its upper face) to the camera.
+      orientation = bladeFrame(bladeDirection(az, pitch), TOWARD.clone().add(UP).normalize(), (r[4] - 0.5) * 0.22);
+      if (seen && kind !== "aroid") {
+        // An observed blade hangs on its observed stem, at the height the photo shows it.
+        const tip = stemTip(stem), t = Math.max(0.08, along(bases[stem], tip, point));
+        attachment = bases[stem].clone().lerp(tip, t);
+        highestNode[stem] = Math.max(highestNode[stem], t);
+      }
       path(`petiole-${id}`, [attachment, attachment.clone().lerp(point, 0.5).add(new Vector3(0, initialH * 0.05, 0)), point], radius * (kind === "aroid" ? 0.8 : v.botanical.structure.petioleRadius), 2);
     }
     size *= 1 - v.botanical.growth.senescence * smoothstep(1, 4, growth) * (i < observed ? 1 - i / Math.max(1, observed) : 0);
-    const rotation = new Quaternion().setFromEuler(new Euler(0, az, 0)).multiply(new Quaternion().setFromEuler(new Euler(-Math.PI / 2 + pitch, 0, (r[4] - 0.5) * 0.22)));
+    const rotation = orientation ?? new Quaternion().setFromEuler(new Euler(0, az, 0)).multiply(new Quaternion().setFromEuler(new Euler(-Math.PI / 2 + pitch, 0, (r[4] - 0.5) * 0.22)));
     const age = i >= observed ? 0 : Math.min(3, Math.floor((1 - i / Math.max(1, observed)) * 4));
     const matrix = new Matrix4().compose(point, rotation, new Vector3(size, size, size));
     const maturity = Math.min(1, (i < observed ? (individual?.maturity ?? 0.65) + (1 - i / Math.max(1, observed)) * 0.25 : 0.1) + Math.max(0, count - Math.max(observed, i + 1)) * 0.12);
     leaves[age].push(matrix);
     organs.push({ id, parentId, birth: i < observed ? 0 : i - observed + 1, maturity, matrix, variant: age });
   }
+  // Observed stems are drawn to their photographed tip; generated ones up to the highest leaf they carry.
   if (["branching", "tree"].includes(kind)) bases.forEach((base, i) => {
-    const tip = base.clone().lerp(stemTip(i), highestNode[i]);
-    path(`stem-${i}`, Array.from({ length: 6 }, (_, j) => base.clone().lerp(tip, j / 5)), radius * (kind === "tree" ? 1.4 : 1));
+    const tip = base.clone().lerp(stemTip(i), seen ? Math.max(1, highestNode[i]) : highestNode[i]);
+    path(`stem-${i}`, Array.from({ length: 6 }, (_, j) => base.clone().lerp(tip, j / 5)), stemRadius(i) * (kind === "tree" ? 1.4 : 1));
   });
   // Metadata and centerline matrices remain useful for determinism/continuity tests.
   for (const stem of stemPaths) {

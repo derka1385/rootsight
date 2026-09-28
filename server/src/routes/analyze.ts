@@ -13,7 +13,11 @@ export async function analyze(req: Request, res: Response) {
     await sleep(600);
     return res.json(observedMonstera);
   }
-  const result = await askJson(VisionPlantProfile, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Identify this individual plant and locate its visible major leaves." }]);
+  const t0 = Date.now();
+  // High effort: this one call is what the whole 3D reconstruction is built from.
+  const result = await askJson(VisionPlantProfile, ANALYZE_PROMPT, [imageBlock(photo), { type: "text", text: "Inventory this individual plant, then describe it." }], "high");
+  const b = result.individual.blooms;
+  console.log(`[analyze] ${result.species.scientificName} in ${Date.now() - t0} ms: ${result.morphology.leaf.countNow} leaves, density ${result.individual.crownDensity}, ${b.flowers} flowers, ${b.buds} buds, ${b.fruits} fruits`);
   const seed = createHash("sha256").update(photo.imageBase64).digest("hex").slice(0, 24);
   res.json(PlantProfile.parse({ ...result, individual: { ...result.individual, seed } }));
 }

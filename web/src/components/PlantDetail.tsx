@@ -27,6 +27,7 @@ export default function PlantDetail(p: Props) {
   const age = saved ? (Date.now() - addedAt(saved)) / (30.44 * 86_400_000) : 0;
   const [month, setMonth] = useState(0);
   const [water, setWater] = useState(profile.care.waterIntervalDays);
+  const [roots, setRoots] = useState(false);
   const [question, setQuestion] = useState("What if I water every 2 weeks?");
   const state = useMemo(() => simulate(profile, age + month, water), [profile, age, month, water]);
   const stage = stageOf(profile, state);
@@ -37,7 +38,7 @@ export default function PlantDetail(p: Props) {
   return (
     <div className="detail">
       <div className="stage3d">
-        <SceneCanvas state={state} profile={profile} />
+        <SceneCanvas state={state} profile={profile} cutaway={roots} />
         <div className="top-bar">
           <button className="icon-btn" onClick={p.onBack} aria-label="Back"><BackIcon /></button>
           {saved ? (
@@ -80,6 +81,9 @@ export default function PlantDetail(p: Props) {
             <input id="water" type="range" min={1} max={60} value={water} onChange={(e) => setWater(+e.target.value)} />
             <span className="small muted">Ideal: every {care.waterIntervalDays} days. Stretch it and watch the leaves droop.</span>
           </div>
+          <label className="row small" style={{ gap: 8, marginTop: 12 }}>
+            <input type="checkbox" checked={roots} onChange={(e) => setRoots(e.target.checked)} /> Show roots (cut-away pot)
+          </label>
           <p className="tracker" style={{ margin: "14px 0 0" }}>
             Reaches <input type="number" min={1} value={target} onChange={(e) => setTarget(+e.target.value)} aria-label="Target height in cm" /> cm{" "}
             <strong>{weeks === null ? "never with this watering" : weeks === 0 ? "already" : `in ~${weeks} week${weeks > 1 ? "s" : ""}`}</strong>

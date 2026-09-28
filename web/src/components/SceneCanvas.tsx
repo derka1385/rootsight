@@ -13,7 +13,8 @@ import { architectureOf } from "../three/architecture";
 import PlantLighting from "../three/PlantLighting";
 
 // One metre per world unit; the photographed soil line is y=0.
-export default function SceneCanvas({ state, profile, cutaway = true, children }: { state: PlantState; profile: PlantProfile; cutaway?: boolean; children?: ReactNode }) {
+// The main view shows the plant as photographed: an intact pot. Roots (a cut-away pot) are opt-in.
+export default function SceneCanvas({ state, profile, cutaway = false, children }: { state: PlantState; profile: PlantProfile; cutaway?: boolean; children?: ReactNode }) {
   const subject = useRef<Group>(null);
   const visual = visualOf(profile);
   const { radius: potR, depth: potD } = potDimensions(profile);

@@ -8,7 +8,8 @@ import { deformLeaf } from "./leafDeformation";
 import { seededRandom } from "./procedural";
 import { leafBlade } from "./leafBlade";
 import { leafSurface } from "./leafSurface";
-import { architectureOf, plantLayout } from "./architecture";
+import { architectureOf, MAX_LEAVES, plantLayout } from "./architecture";
+import Flowers from "./Flowers";
 import { visualOf, type Visual } from "./visual";
 
 /** Keep the existing thumbnail API while the renderer uses the richer architecture internally. */
@@ -45,6 +46,8 @@ export default function Plant({ state, profile }: { state: PlantState; profile: 
   const direction = v.silhouette.leanDirectionDeg * Math.PI / 180;
   return <group rotation={[Math.sin(direction) * lean, 0, -Math.cos(direction) * lean]}>
     {kind === "cactus" ? <Cactus profile={profile} state={state} v={v} /> : <Foliage profile={profile} state={state} v={v} />}
+    {/* Flowers, buds and fruits seen in the photo, for every architecture. */}
+    <Flowers profile={profile} state={state} v={v} />
   </group>;
 }
 
@@ -77,7 +80,7 @@ function Foliage({ profile, state, v }: { profile: PlantProfile; state: PlantSta
   useEffect(() => () => stems.dispose(), [stems]);
   return <group>
     {layout.stemPaths.length > 0 && <mesh geometry={stems} material={resources.stem} castShadow receiveShadow dispose={null} />}
-    {resources.blades.map((g, i) => <Instances key={i} geometry={g} material={resources.materials[i]} matrices={layout.leaves[i]} maturities={layout.organs.filter(organ => organ.variant === i).map(organ => organ.maturity)} depthMaterial={resources.depth} capacity={160} />)}
+    {resources.blades.map((g, i) => <Instances key={i} geometry={g} material={resources.materials[i]} matrices={layout.leaves[i]} maturities={layout.organs.filter(organ => organ.variant === i).map(organ => organ.maturity)} depthMaterial={resources.depth} capacity={MAX_LEAVES} />)}
   </group>;
 }
 type CactusKind = "barrel" | "column";

@@ -17,13 +17,15 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
   for (let y = 0; y < 256; y++) for (let x = 0; x < 128; x++) {
     const u = x / 127, t = 1 - y / 255, edge = Math.abs(u - 0.5) * 2;
     const field = 0.5 + 0.22 * Math.sin(u * 27 + Math.sin(t * 18 + age) * 3) + 0.18 * Math.cos(t * 39 + u * 13) + 0.1 * Math.sin(t * 73 - u * 61);
+    // Marbling is soft, blotchy and follows the leaf (a silver zone inside the margin), not stripes.
+    const blotch = 0.5 + 0.3 * Math.sin(u * 7.5 + Math.sin(t * 5 + age) * 1.6) * Math.cos(t * 6.5 - u * 3) + 0.2 * Math.sin((edge * 5.5 + t * 2.5) + age);
     const amount = v.leaves.variegationAmount;
     let mask = 0;
     switch (v.leaves.variegation) {
       case "sectoral": mask = smoothstep(1 - amount - 0.04, 1 - amount + 0.04, u + Math.sin(t * 13 + age) * 0.06); break;
       case "margin": mask = smoothstep(1 - amount, 1 - amount + 0.05, edge); break;
       case "striped": mask = smoothstep(1 - amount, 1 - amount + 0.06, 0.5 + 0.5 * Math.sin(t * 75 + Math.sin(u * 18) * 2)); break;
-      case "marbled": mask = smoothstep(1 - amount - 0.06, 1 - amount + 0.06, field); break;
+      case "marbled": mask = 0.7 * smoothstep(1 - amount - 0.12, 1 - amount + 0.12, blotch) * smoothstep(0.95, 0.55, edge); break;
     }
     if (amount === 0) mask = 0;
     const chlorosis = v.condition.yellowing * (0.25 + age * 0.25) * (0.5 + 0.5 * field);

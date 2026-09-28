@@ -2,8 +2,18 @@
 import { z } from "zod";
 import { PlantVisual } from "./visual-profile";
 import { IndividualPlantProfile } from "./morphology";
-export { IndividualPlantProfile } from "./morphology";
-export { speciesProfileOf, SpeciesProfile } from "./species-profile";
+import { SpeciesFlowering } from "./species-profile";
+export { IndividualPlantProfile, BloomInventory, BloomObservation, StemObservation, Occupancy } from "./morphology";
+export { speciesProfileOf, SpeciesProfile, SpeciesFlowering } from "./species-profile";
+
+/*
+ * Two layers drive the 3D plant:
+ *   SpeciesProfile (species-profile.ts)      botanical defaults: topology, leaf and stem habit, flower structure
+ *                                             (species.flowering from Claude, presets otherwise).
+ *   IndividualPlantProfile (morphology.ts)   THIS plant as photographed: silhouette, density, foliage occupancy,
+ *                                             main stems, major leaves, flowers/buds/fruits and their positions.
+ * The renderer combines both; photo observations always win over species defaults.
+ */
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).describe("Hex color like #3a7d44");
 
@@ -14,6 +24,7 @@ export const PlantProfile = z.object({
     commonName: z.string(),
     scientificName: z.string(),
     confidence: z.number().min(0).max(1),
+    flowering: SpeciesFlowering.optional(),
   }),
   wiki: z.object({
     family: z.string(),
@@ -59,6 +70,7 @@ export const PlantProfile = z.object({
 export type PlantProfile = z.infer<typeof PlantProfile>;
 /** Vision must return observations; saved legacy profiles may omit them. Seed is assigned server-side. */
 export const VisionPlantProfile = PlantProfile.extend({
+  species: PlantProfile.shape.species.extend({ flowering: SpeciesFlowering }),
   visual: PlantVisual,
   individual: IndividualPlantProfile.omit({ seed: true }).required(),
 });

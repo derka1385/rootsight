@@ -18,7 +18,7 @@ export async function refine(req: Request, res: Response) {
       { type: "text", text: "Image 2, our render:" },
       imageBlock(renderScreenshot),
       { type: "text", text: `Current PlantProfile:\n${JSON.stringify(profile)}` },
-    ]);
+    ], "high");
   // Refining appearance must not replace this specimen's procedural identity.
   res.json(PlantProfile.parse({ ...corrected, individual: { ...corrected.individual, seed: profile.individual?.seed ?? profile.visual?.seed ?? profile.species.scientificName } }));
 }

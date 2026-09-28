@@ -1,0 +1,378 @@
+{
+  "visual": {
+    "seed": "kalanchoe-warli-pot-buds",
+    "silhouette": {
+      "widthToHeight": 1,
+      "leanDeg": 3,
+      "leanDirectionDeg": 90,
+      "symmetry": 0.65
+    },
+    "stems": {
+      "count": 4,
+      "thicknessCm": 0.6,
+      "internodeCm": 1.2,
+      "tipColor": "#7a9a5a"
+    },
+    "leaves": {
+      "widthToLength": 0.7,
+      "sizeVariation": 0.35,
+      "tip": "rounded",
+      "base": "tapered",
+      "edge": "serrated",
+      "fenestration": 0,
+      "curl": 0.15,
+      "twist": 0.1,
+      "gloss": 0.55,
+      "undersideColor": "#6e8f5e",
+      "arrangement": "opposite",
+      "droop": 0.3,
+      "variegation": "none",
+      "variegationAmount": 0,
+      "variegationColor": "#6e8f5e"
+    },
+    "condition": {
+      "yellowing": 0.03,
+      "brownTips": 0.05,
+      "legginess": 0.2
+    },
+    "pot": {
+      "color": "#d9cfb4",
+      "material": "ceramic",
+      "diameterToHeight": 1.1,
+      "heightToDiameter": 1.05,
+      "soilVisible": true
+    }
+  },
+  "individual": {
+    "seed": "380bd125ecd7e19bc3dc60ec",
+    "crownShape": "oval",
+    "crownDensity": 0.7,
+    "maturity": 0.55,
+    "estimatedBranchCount": 6,
+    "averageLeafAngleDeg": 65,
+    "leafAsymmetry": 0.3,
+    "stemTaper": 0.4,
+    "stemCurvature": 0.2,
+    "depthToWidth": 0.8,
+    "occupancy": [
+      "00000000",
+      "00000000",
+      "01300000",
+      "02654210",
+      "25788630",
+      "36899874",
+      "47899975",
+      "24788630"
+    ],
+    "stems": [
+      {
+        "baseX": -0.15,
+        "tipX": -0.25,
+        "tipY": 0.65,
+        "layer": "middle",
+        "thicknessMm": 7
+      },
+      {
+        "baseX": 0,
+        "tipX": 0.15,
+        "tipY": 0.6,
+        "layer": "foreground",
+        "thicknessMm": 6
+      },
+      {
+        "baseX": 0.1,
+        "tipX": 0.4,
+        "tipY": 0.5,
+        "layer": "background",
+        "thicknessMm": 5
+      },
+      {
+        "baseX": -0.25,
+        "tipX": -0.55,
+        "tipY": 0.4,
+        "layer": "middle",
+        "thicknessMm": 5
+      }
+    ],
+    "leaves": [
+      {
+        "id": "leaf-0",
+        "x": -0.3,
+        "y": 0.45,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 25,
+        "azimuthDeg": -20,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-1",
+        "x": -0.1,
+        "y": 0.5,
+        "layer": "middle",
+        "size": 0.8,
+        "angleDeg": 35,
+        "azimuthDeg": 20,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-2",
+        "x": -0.35,
+        "y": 0.3,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 60,
+        "azimuthDeg": -50,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-3",
+        "x": -0.5,
+        "y": 0.3,
+        "layer": "middle",
+        "size": 0.85,
+        "angleDeg": 80,
+        "azimuthDeg": -90,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-4",
+        "x": -0.45,
+        "y": 0.12,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 110,
+        "azimuthDeg": -80,
+        "stemIndex": 3
+      },
+      {
+        "id": "leaf-5",
+        "x": 0.05,
+        "y": 0.35,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 45,
+        "azimuthDeg": 10,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-6",
+        "x": 0.2,
+        "y": 0.4,
+        "layer": "middle",
+        "size": 0.9,
+        "angleDeg": 60,
+        "azimuthDeg": 60,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-7",
+        "x": 0.25,
+        "y": 0.28,
+        "layer": "foreground",
+        "size": 1,
+        "angleDeg": 75,
+        "azimuthDeg": 80,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-8",
+        "x": 0.35,
+        "y": 0.3,
+        "layer": "background",
+        "size": 0.95,
+        "angleDeg": 85,
+        "azimuthDeg": 100,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-9",
+        "x": 0.1,
+        "y": 0.12,
+        "layer": "foreground",
+        "size": 0.9,
+        "angleDeg": 95,
+        "azimuthDeg": 30,
+        "stemIndex": 1
+      },
+      {
+        "id": "leaf-10",
+        "x": -0.15,
+        "y": 0.1,
+        "layer": "foreground",
+        "size": 0.85,
+        "angleDeg": 90,
+        "azimuthDeg": -20,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-11",
+        "x": 0.3,
+        "y": 0.5,
+        "layer": "background",
+        "size": 0.7,
+        "angleDeg": 40,
+        "azimuthDeg": 120,
+        "stemIndex": 2
+      },
+      {
+        "id": "leaf-12",
+        "x": -0.2,
+        "y": 0.6,
+        "layer": "background",
+        "size": 0.6,
+        "angleDeg": 20,
+        "azimuthDeg": -150,
+        "stemIndex": 0
+      },
+      {
+        "id": "leaf-13",
+        "x": 0.15,
+        "y": 0.58,
+        "layer": "middle",
+        "size": 0.6,
+        "angleDeg": 30,
+        "azimuthDeg": 40,
+        "stemIndex": 1
+      }
+    ],
+    "blooms": {
+      "flowers": 0,
+      "buds": 65,
+      "fruits": 0,
+      "flowerColor": "#f08a6a",
+      "centerColor": "#f2c060",
+      "budColor": "#e3a585",
+      "fruitColor": "#8a7a50",
+      "flowerDiameterCm": 1.2,
+      "fruitDiameterCm": 0.3,
+      "placement": "above-foliage",
+      "stalkCm": 5,
+      "landmarks": [
+        {
+          "id": "cluster-0",
+          "kind": "bud",
+          "x": 0.05,
+          "y": 0.94,
+          "layer": "middle",
+          "florets": 14,
+          "facing": "up"
+        },
+        {
+          "id": "cluster-1",
+          "kind": "bud",
+          "x": -0.33,
+          "y": 0.94,
+          "layer": "middle",
+          "florets": 12,
+          "facing": "up"
+        },
+        {
+          "id": "cluster-2",
+          "kind": "bud",
+          "x": 0.47,
+          "y": 0.89,
+          "layer": "foreground",
+          "florets": 14,
+          "facing": "up"
+        },
+        {
+          "id": "cluster-3",
+          "kind": "bud",
+          "x": -0.69,
+          "y": 0.84,
+          "layer": "middle",
+          "florets": 10,
+          "facing": "up"
+        },
+        {
+          "id": "cluster-4",
+          "kind": "bud",
+          "x": 0.65,
+          "y": 0.63,
+          "layer": "background",
+          "florets": 10,
+          "facing": "up"
+        },
+        {
+          "id": "bud-5",
+          "kind": "bud",
+          "x": 0.24,
+          "y": 0.6,
+          "layer": "foreground",
+          "florets": 1,
+          "facing": "up"
+        },
+        {
+          "id": "bud-6",
+          "kind": "bud",
+          "x": -0.76,
+          "y": 0.54,
+          "layer": "middle",
+          "florets": 2,
+          "facing": "out"
+        }
+      ]
+    }
+  },
+  "species": {
+    "commonName": "Flaming Katy",
+    "scientificName": "Kalanchoe blossfeldiana",
+    "confidence": 0.92,
+    "flowering": {
+      "form": "star",
+      "petals": 4,
+      "petalWidthToLength": 0.6,
+      "inflorescence": "cluster",
+      "flowerColor": "#f08a6a",
+      "centerColor": "#f2c060",
+      "fruit": "capsule"
+    }
+  },
+  "wiki": {
+    "family": "Crassulaceae",
+    "nativeRegion": "Madagascar",
+    "summary": "Kalanchoe blossfeldiana is a compact succulent perennial grown worldwide as a flowering houseplant. It bears dense cymes of small four-petalled flowers above fleshy, scalloped leaves. It is a short-day plant, blooming naturally in late winter and spring.",
+    "difficulty": "easy",
+    "toxicToPets": true
+  },
+  "morphology": {
+    "growthForm": "upright-branching",
+    "currentHeightCm": 14,
+    "matureHeightCm": 35,
+    "stemColor": "#7f9c5c",
+    "branchingAngleDeg": 35,
+    "branchingDepth": 2,
+    "leaf": {
+      "shape": "ovate",
+      "color": "#4f7a45",
+      "lengthCm": 5.5,
+      "countNow": 30
+    }
+  },
+  "growth": {
+    "rateCmPerMonth": 1,
+    "monthsToMaturity": 18
+  },
+  "roots": {
+    "type": "fibrous",
+    "maxDepthCm": 15,
+    "maxSpreadCm": 18
+  },
+  "care": {
+    "waterIntervalDays": 12,
+    "light": "bright-indirect",
+    "humidity": "low",
+    "tempMinC": 10,
+    "tempMaxC": 29,
+    "soil": "Free-draining cactus/succulent mix with perlite"
+  },
+  "facts": [
+    "Needs about 14 hours of darkness daily to set new flower buds.",
+    "Named after German seed merchant Robert Blossfeld, who introduced it in 1932.",
+    "Contains bufadienolides, cardiac toxins harmful to cats and dogs.",
+    "Individual flower clusters can stay in bloom for eight weeks.",
+    "Its fleshy leaves store water, tolerating missed waterings."
+  ],
+  "healthNotes": "Looks healthy: firm green leaves and about six bud clusters with salmon-pink buds just starting to colour, not yet open. One leaf shows a small brown spot and lower leaves have slightly darker edges; soil is visible and appears moist."
+}
