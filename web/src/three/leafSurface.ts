@@ -1,8 +1,45 @@
-import { CanvasTexture, Color, DoubleSide, MeshStandardMaterial, SRGBColorSpace } from "three";
+import { CanvasTexture, Color, DoubleSide, MeshPhysicalMaterial, NoColorSpace, SRGBColorSpace, Vector2 } from "three";
 import type { RenderProfile as PlantProfile } from "./visual";
 import type { Visual } from "./visual";
 import { deformLeaf } from "./leafDeformation";
 import { seededRandom, smoothstep } from "./procedural";
+import { thinTissue } from "./shading";
+
+const veinNormals = new Map<string, CanvasTexture>();
+/**
+ * Tangent-space normal map of the vein relief (midrib and lateral veins sunk into the blade), shared by
+ * every leaf with the same venation. Same (u across, v along) layout as the painted surface.
+ */
+function veinNormal(venation: Visual["leaves"]["venation"]): CanvasTexture {
+  const hit = veinNormals.get(venation);
+  if (hit) return hit;
+  const W = 128, H = 256, height = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const u = x / (W - 1), t = 1 - y / (H - 1), d = Math.abs(u - 0.5);
+    let h = -Math.exp(-(((d * W) / 1.6) ** 2)) * 1.2; // midrib groove
+    if (venation === "parallel") h -= 0.35 * Math.pow(Math.max(0, Math.cos(d * W * 0.42)), 18);
+    else if (venation === "pinnate") {
+      // Lateral veins leave the midrib and curve toward the tip.
+      const phase = (t - d * 0.55) * 18;
+      h -= 0.45 * Math.pow(Math.max(0, Math.cos(phase * Math.PI)), 24) * smoothstep(0.02, 0.06, d) * (1 - smoothstep(0.4, 0.5, d));
+    }
+    height[y * W + x] = h;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d")!, image = ctx.createImageData(W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const at = (xx: number, yy: number) => height[Math.min(H - 1, Math.max(0, yy)) * W + Math.min(W - 1, Math.max(0, xx))];
+    const dx = (at(x + 1, y) - at(x - 1, y)) * 0.5, dy = (at(x, y - 1) - at(x, y + 1)) * 0.5;
+    const n = [-dx, -dy, 1], len = Math.hypot(n[0], n[1], n[2]), o = (y * W + x) * 4;
+    image.data[o] = (n[0] / len * 0.5 + 0.5) * 255; image.data[o + 1] = (n[1] / len * 0.5 + 0.5) * 255; image.data[o + 2] = (n[2] / len * 0.5 + 0.5) * 255; image.data[o + 3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = NoColorSpace;
+  veinNormals.set(venation, texture);
+  return texture;
+}
 
 /** Four shared age/condition surfaces per plant. Textures are owned and disposed with the plant. */
 export function leafSurface(p: PlantProfile, v: Visual, age: number) {
@@ -50,16 +87,24 @@ export function leafSurface(p: PlantProfile, v: Visual, age: number) {
     ctx.stroke();
   }
   const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace; map.anisotropy = 2;
-  const material = new MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.0015, roughness: 0.88 - v.leaves.gloss * 0.36, side: DoubleSide, metalness: 0, emissive: new Color(p.morphology.leaf.color), emissiveIntensity: 0.035 });
+  // A waxy cuticle on glossy leaves (clearcoat), a faint velvet on matte ones (sheen); veins in relief.
+  const gloss = v.leaves.gloss;
+  const material = new MeshPhysicalMaterial({
+    map, normalMap: veinNormal(v.leaves.venation), normalScale: new Vector2(0.55, 0.55), side: DoubleSide, metalness: 0,
+    roughness: 0.68 - gloss * 0.3, clearcoat: 0.03 + gloss * 0.3, clearcoatRoughness: 0.42 - gloss * 0.2,
+    sheen: 0.12 * (1 - gloss), sheenRoughness: 0.75, sheenColor: new Color(p.morphology.leaf.color).lerp(new Color("#ffffff"), 0.35),
+    specularIntensity: 0.45,
+  });
   material.forceSinglePass = true;
   const underside = new Color(v.leaves.undersideColor);
   material.onBeforeCompile = shader => {
     deformLeaf(shader);
+    thinTissue(shader, 0.5, 0.4);
     shader.uniforms.underside = { value: underside };
     shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + 0.035 * sin(vMapUv.y * 31.0 + vMapUv.x * 9.0), 0.35, 1.0);");
     shader.fragmentShader = "uniform vec3 underside; varying float bladeSide;\n" + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\nif (bladeSide < 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, underside * diffuseColor.rgb / max(vec3(0.04), vec3(" + `${base.r},${base.g},${base.b}` + ")), 0.65);");
   };
-  material.customProgramCacheKey = () => `leaf-underside:${base.getHexString()}`;
+  material.customProgramCacheKey = () => `leaf-v2:${base.getHexString()}`;
   return material;
 }

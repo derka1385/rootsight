@@ -73,8 +73,17 @@ export function leafBlade(v: Visual["leaves"], maturity = 1): BufferGeometry {
   }
   const positions: number[] = [], juvenilePositions: number[] = [], uv: number[] = [], side: number[] = [];
   const surface = (x: number, z: number, young: boolean) => {
-    const t = Math.max(0, z), fold = v.fold * (young ? 1.4 : 1);
-    return v.curl * (x * x / ratio * 0.8 - t * t * 0.3) + v.twist * x * t * 0.55 + fold * Math.abs(x) / ratio * Math.sin(Math.PI * t) + 0.045 * Math.sin(Math.PI * t) * Math.cos(x / ratio * Math.PI * 2);
+    const t = Math.max(0, z), half = ratio / 2, a = Math.min(1, Math.abs(x) / half), fold = v.fold * (young ? 1.4 : 1);
+    const along = Math.sin(Math.PI * Math.min(1, t * 1.15));
+    // Longitudinal: the blade arches and its tip droops a little.
+    const arch = -(0.08 + 0.22 * Math.max(0, v.curl)) * t * t;
+    // Transverse: margins lift into a shallow gutter (or roll under for negative curl), a V along the midrib.
+    const cup = (0.06 + 0.3 * Math.abs(v.curl)) * Math.sign(v.curl || 1) * a * a * half * along;
+    const vee = fold * a * half * Math.sin(Math.PI * t);
+    // Midrib: a narrow groove on the upper face; soft quilting between the lateral veins.
+    const midrib = -0.011 * Math.exp(-a * 14) * along;
+    const quilt = 0.004 * Math.sin(t * Math.PI * 11 + a * 2.2) * a * (1 - a);
+    return arch + cup + vee + midrib + quilt + v.twist * x * t * 0.55;
   };
   for (const face of [1, -1]) for (let i = 0; i < vertices.length; i++) {
     const [x, z] = vertices[i], [jx, jz] = juvenile[i];

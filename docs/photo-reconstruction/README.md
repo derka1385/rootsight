@@ -40,6 +40,26 @@ All new fields are optional in `PlantProfile` (saved plants still load) and requ
   - `Flowers.tsx`: instanced petals fanned at the opening angle of the species' flower form (11 forms), blending into the photographed centre colour. Also buds, fruits and spadices. Heads nod under drought.
 - **Roots are opt-in.** The main view shows an intact pot. "Show roots (cut-away pot)" in the plant screen opens it.
 
+## Visual pass (same geometry, better rendering)
+
+The layout is untouched: the same organs sit in the same places. What changed is how they are drawn.
+
+- **Stems** (`StemGeometry.ts`): each stem is a spline that tapers progressively. Main stems have a flared base. The section is slightly oval and turns along the stem, with a gentle low-frequency swell. Vertex colours make main stems woody and darker at the base and petioles fresher. A fibre detail map finishes the surface.
+- **Leaves** (`leafBlade.ts`, `leafSurface.ts`, `Plant.tsx`):
+  - **Shape:** the blade arches, the margins form a shallow gutter, and a midrib groove and light quilting run between the veins.
+  - **Material:** a physical material with a waxy clearcoat on glossy leaves and a faint sheen on matte ones. A shared vein normal map adds relief.
+  - **Light:** thin-tissue shading lets backlit blades glow (`shading.ts`).
+  - **Variation:** four blade variants and a per-leaf tint, so no two neighbouring leaves are identical.
+- **Flowers** (`Flowers.tsx`): smooth 18×12 petals with a narrow claw, rounded or pointed tip, cup and curl per form. The velvety material has sheen and backlit translucency, fine veins, a paler margin and back, and blends into the photographed centre colour. Buds are smoother.
+- **Scene** (`Interior.tsx`, replaces the old flat lighting file):
+  - an oak table against a limewashed wall;
+  - a wood-framed window to the right of the plant;
+  - late-afternoon sun through that window, with soft PCSS shadows;
+  - warm bounce fill and environment reflections, contact shadow and half-resolution GTAO;
+  - ACES Filmic tone mapping and sRGB output;
+  - a lower camera.
+- Everything is procedural, with no downloads. The cyclamen view draws about 86 calls, AO pre-pass included.
+
 ## Run it live
 
 ```sh

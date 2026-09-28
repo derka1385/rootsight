@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
+import { BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { SpeciesFlowering } from "@rootsight/shared/schema";
 import { stemGeometry } from "./StemGeometry";
 import { seededRandom } from "./procedural";
+import { thinTissue } from "./shading";
+import { stemTexture } from "./textures";
 import { bloomLayout, type BloomOrgan } from "./bloomLayout";
 import type { RenderProfile as PlantProfile, Visual } from "./visual";
 
@@ -22,16 +24,31 @@ const FORMS: Record<Form, { open: number; length: number }> = {
   spathe: { open: 58, length: 0.95 }, reflexed: { open: 158, length: 0.62 },
 };
 
-/** Unit petal: base at the origin, tip at z = 1, front face +y, cupped toward the front. */
-function petalGeometry(widthToLength: number, pointed: boolean): BufferGeometry {
-  const ROWS = 8, COLS = 6, pos: number[] = [], t01: number[] = [], index: number[] = [];
+/** Petal cross-section cup, tip curl (+ toward the flower's face, - flaring out) and margin ruffle per form. */
+const PETAL: Record<Form, { cup: number; arch: number; ruffle: number; pointed: boolean }> = {
+  simple: { cup: 0.22, arch: 0.06, ruffle: 0.02, pointed: false }, star: { cup: 0.12, arch: -0.04, ruffle: 0.01, pointed: true },
+  daisy: { cup: 0.08, arch: -0.05, ruffle: 0, pointed: false }, cup: { cup: 0.45, arch: 0.14, ruffle: 0.02, pointed: false },
+  bell: { cup: 0.5, arch: -0.08, ruffle: 0.02, pointed: false }, trumpet: { cup: 0.55, arch: -0.16, ruffle: 0.03, pointed: false },
+  tubular: { cup: 0.6, arch: -0.05, ruffle: 0, pointed: false }, double: { cup: 0.35, arch: 0.1, ruffle: 0.04, pointed: false },
+  orchid: { cup: 0.18, arch: 0.04, ruffle: 0.03, pointed: false }, spathe: { cup: 0.28, arch: -0.1, ruffle: 0.01, pointed: true },
+  reflexed: { cup: 0.18, arch: 0.1, ruffle: 0.02, pointed: false },
+};
+
+/**
+ * Unit petal: base at the origin, tip at z = 1, front face +y. A smooth sheet (18 x 12 quads) with a
+ * narrow claw, a rounded (or pointed) blade widest past the middle, a cupped section and a curled tip.
+ */
+function petalGeometry(widthToLength: number, form: Form): BufferGeometry {
+  const { cup, arch, ruffle, pointed } = PETAL[form];
+  const ROWS = 18, COLS = 12, pos: number[] = [], uv: number[] = [], t01: number[] = [], index: number[] = [];
   for (let r = 0; r <= ROWS; r++) {
     const t = r / ROWS;
-    // Narrow claw at the base, widest past the middle, rounded (or pointed) tip.
-    const w = widthToLength / 2 * Math.pow(Math.sin(Math.PI * Math.pow(t, 1.6)), pointed ? 1.1 : 0.55);
+    const blade = Math.sin(Math.PI * Math.pow(t, 1.25));
+    const w = widthToLength / 2 * Math.pow(Math.max(0, blade), pointed ? 0.85 : 0.5) * (0.3 + 0.7 * Math.pow(Math.min(1, t / 0.2), 0.8));
     for (let c = 0; c <= COLS; c++) {
       const s = c / COLS * 2 - 1;
-      pos.push(s * w, 0.35 * s * s * w + 0.08 * t * t, t);
+      pos.push(s * w, cup * s * s * w + arch * t * t + ruffle * Math.sin(t * 8 + s * 1.3) * s * s * w, t);
+      uv.push((s + 1) / 2, t);
       t01.push(t);
     }
   }
@@ -41,6 +58,7 @@ function petalGeometry(widthToLength: number, pointed: boolean): BufferGeometry 
   }
   const g = new BufferGeometry();
   g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  g.setAttribute("petalUv", new Float32BufferAttribute(uv, 2));
   g.setAttribute("petalT", new Float32BufferAttribute(t01, 1));
   g.setIndex(index);
   g.computeVertexNormals();
@@ -49,7 +67,7 @@ function petalGeometry(widthToLength: number, pointed: boolean): BufferGeometry 
 
 /** Closed bud: a teardrop along +z, radius 1 at its widest. */
 function budGeometry(): BufferGeometry {
-  const g = new SphereGeometry(1, 12, 10).rotateX(Math.PI / 2);
+  const g = new SphereGeometry(1, 18, 14).rotateX(Math.PI / 2);
   const p = g.getAttribute("position");
   for (let i = 0; i < p.count; i++) {
     const z = p.getZ(i), taper = 1 - 0.55 * Math.max(0, z);
@@ -59,7 +77,7 @@ function budGeometry(): BufferGeometry {
   return g;
 }
 
-const SPHERE = new SphereGeometry(1, 12, 8);
+const SPHERE = new SphereGeometry(1, 16, 12);
 const SPADIX = new CylinderGeometry(0.75, 1, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5);
 const BUD = budGeometry();
 const UP = new Vector3(0, 1, 0);
@@ -143,20 +161,27 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
   }), [inv, flowering]);
   const parts = useMemo(() => flowerInstances(layout.organs, flowering, colors, v.seed, state.wilt), [layout, flowering, colors, v.seed, state.wilt]);
   const resources = useMemo(() => {
-    const petal = new MeshStandardMaterial({ color: "#ffffff", roughness: 0.55, side: DoubleSide, emissive: new Color(colors.flower), emissiveIntensity: 0.06 });
+    // Soft velvety petals: sheen, gentle roughness, light through thin tissue; faint veins and a paler back.
+    const petal = new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.52, side: DoubleSide, sheen: 0.7, sheenRoughness: 0.5, sheenColor: new Color(colors.flower).lerp(new Color("#ffffff"), 0.55), specularIntensity: 0.3 });
     petal.onBeforeCompile = shader => {
+      thinTissue(shader, 1.1, 0.6); // petals glow when the sun is behind them
       shader.uniforms.centerColor = { value: new Color(colors.center) };
-      shader.vertexShader = "attribute float petalT; varying float vPetalT;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvPetalT = petalT;");
-      shader.fragmentShader = "uniform vec3 centerColor; varying float vPetalT;\n" + shader.fragmentShader.replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb = mix(centerColor, diffuseColor.rgb, smoothstep(0.06, 0.34, vPetalT));");
+      shader.vertexShader = "attribute float petalT; attribute vec2 petalUv; varying float vPetalT; varying vec2 vPetalUv;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvPetalT = petalT; vPetalUv = petalUv;");
+      shader.fragmentShader = "uniform vec3 centerColor; varying float vPetalT; varying vec2 vPetalUv;\n" + shader.fragmentShader.replace("#include <color_fragment>", `#include <color_fragment>
+        float across = abs(vPetalUv.x - 0.5) * 2.0;
+        float vein = 0.5 + 0.5 * cos((vPetalUv.x - 0.5) * 64.0 / max(0.3, vPetalUv.y + 0.25));
+        diffuseColor.rgb *= (0.95 + 0.05 * vein) * (1.0 + 0.07 * smoothstep(0.55, 1.0, across));
+        diffuseColor.rgb = mix(centerColor, diffuseColor.rgb, smoothstep(0.06, 0.34, vPetalT));
+        if (!gl_FrontFacing) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))), 0.12) * 1.06;`);
     };
-    petal.customProgramCacheKey = () => "rootsight-petal-v1";
+    petal.customProgramCacheKey = () => "rootsight-petal-v2";
     return {
-      petalGeometry: petalGeometry(flowering.form === "spathe" ? Math.max(0.8, flowering.petalWidthToLength) : flowering.petalWidthToLength, flowering.form === "star" || flowering.form === "spathe"),
+      petalGeometry: petalGeometry(flowering.form === "spathe" ? Math.max(0.8, flowering.petalWidthToLength) : flowering.petalWidthToLength, flowering.form),
       petal,
       centre: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.7 }),
-      bud: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.5 }),
+      bud: new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.55, sheen: 0.5, sheenRoughness: 0.6, sheenColor: new Color("#ffffff") }),
       fruit: new MeshStandardMaterial({ color: "#ffffff", roughness: 0.32 }),
-      stalk: new MeshStandardMaterial({ color: v.stems.tipColor, roughness: 0.6 }),
+      stalk: new MeshStandardMaterial({ color: v.stems.tipColor, roughness: 0.66, vertexColors: true, map: stemTexture() }),
     };
   }, [flowering, colors, v.stems.tipColor]);
   useEffect(() => () => { resources.petalGeometry.dispose(); [resources.petal, resources.centre, resources.bud, resources.fruit, resources.stalk].forEach(m => m.dispose()); }, [resources]);

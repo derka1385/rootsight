@@ -121,3 +121,63 @@ export const woodTexture = () =>
       g.stroke();
     }
   }, 2);
+
+/** Stem/stalk detail: near-white with fine fibres running along the stem (v) and a few lenticels. */
+export const stemTexture = () =>
+  make("stem", 64, 256, (g, w, h) => {
+    g.fillStyle = "#f4f4f0";
+    g.fillRect(0, 0, w, h);
+    const r = rng(7);
+    for (let i = 0; i < 70; i++) {
+      const x = r() * w;
+      g.strokeStyle = r() > 0.5 ? "rgba(70,60,40,0.10)" : "rgba(255,255,240,0.18)";
+      g.lineWidth = 0.5 + r() * 1.2;
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.bezierCurveTo(x + (r() - 0.5) * 3, h * 0.33, x + (r() - 0.5) * 3, h * 0.66, x + (r() - 0.5) * 2, h);
+      g.stroke();
+    }
+    speckle(g, w, h, 40, ["rgba(120,95,60,0.5)", "rgba(230,225,200,0.6)"], 0.9, 11);
+  });
+
+/** Matte limewash wall: near-white, soft mottling to multiply with a warm colour. */
+export const plasterTexture = () =>
+  make("plaster", 512, 512, (g, w, h) => {
+    g.fillStyle = "#f2f0ec";
+    g.fillRect(0, 0, w, h);
+    const r = rng(31);
+    for (let i = 0; i < 220; i++) {
+      const x = r() * w, y = r() * h, rad = 20 + r() * 90;
+      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+      const c = r() > 0.5 ? "225,218,205" : "255,252,246";
+      grad.addColorStop(0, `rgba(${c},${0.08 + r() * 0.1})`);
+      grad.addColorStop(1, `rgba(${c},0)`);
+      g.fillStyle = grad;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    speckle(g, w, h, 900, ["rgba(180,170,150,0.35)", "rgba(255,255,255,0.5)"], 0.8, 17);
+  }, 2);
+
+/** Vertical pine boards (cabin cladding): grain along v, a seam every board. One texture ≈ 1 m. */
+export const boardTexture = () =>
+  make("boards", 512, 512, (g, w, h) => {
+    g.fillStyle = "#e3c294";
+    g.fillRect(0, 0, w, h);
+    const r = rng(43), boards = 7;
+    for (let b = 0; b < boards; b++) {
+      const x0 = (b / boards) * w, bw = w / boards;
+      g.fillStyle = `rgba(${r() > 0.5 ? "150,100,55" : "255,235,200"},${0.05 + r() * 0.08})`;
+      g.fillRect(x0, 0, bw, h);
+      for (let i = 0; i < 26; i++) {
+        const x = x0 + r() * bw;
+        g.strokeStyle = r() > 0.4 ? "rgba(140,92,48,0.13)" : "rgba(250,228,190,0.16)";
+        g.lineWidth = 0.6 + r() * 1.8;
+        g.beginPath();
+        g.moveTo(x, 0);
+        for (let y = 0; y <= h; y += 32) g.lineTo(x + Math.sin(y * 0.02 + i) * (1 + r() * 3), y);
+        g.stroke();
+      }
+      g.fillStyle = "rgba(95,62,32,0.45)"; // seam
+      g.fillRect(x0, 0, 2, h);
+    }
+  });
