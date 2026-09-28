@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, ConeGeometry, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
+import { BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from "three";
 import type { PlantState } from "@rootsight/shared/schema";
 import type { SpeciesFlowering } from "@rootsight/shared/schema";
 import { stemGeometry } from "./StemGeometry";
@@ -80,8 +80,11 @@ function budGeometry(): BufferGeometry {
 const SPHERE = new SphereGeometry(1, 16, 12);
 const SPADIX = new CylinderGeometry(0.75, 1, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5);
 const BUD = budGeometry();
-/** Calyx / receptacle: a cone with its apex at the stalk end (origin) and its rim at z = 1. */
-const CALYX = new ConeGeometry(1, 1, 14).rotateX(-Math.PI / 2).translate(0, 0, 0.5);
+/**
+ * Calyx / receptacle: a truncated cone from the stalk end (origin, radius 0.28 so it is as thick as the
+ * stalk there: a continuous junction, no pinch) to its rim inside the petals at z = 1.
+ */
+const CALYX = new CylinderGeometry(0.28, 1, 1, 14).rotateX(-Math.PI / 2).translate(0, 0, 0.5);
 const Z = new Vector3(0, 0, 1);
 const UP = new Vector3(0, 1, 0);
 
@@ -175,9 +178,9 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
   const parts = useMemo(() => flowerInstances(layout.organs, flowering, colors, v.seed, state.wilt), [layout, flowering, colors, v.seed, state.wilt]);
   const resources = useMemo(() => {
     // Soft velvety petals: sheen, gentle roughness, light through thin tissue; faint veins and a paler back.
-    const petal = new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.52, side: DoubleSide, sheen: 0.7, sheenRoughness: 0.5, sheenColor: new Color(colors.flower).lerp(new Color("#ffffff"), 0.55), specularIntensity: 0.3 });
+    const petal = new MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.55, side: DoubleSide, envMapIntensity: 0.75, sheen: 0.4, sheenRoughness: 0.5, sheenColor: new Color(colors.flower).lerp(new Color("#ffffff"), 0.55), specularIntensity: 0.3 });
     petal.onBeforeCompile = shader => {
-      thinTissue(shader, 1.1, 0.6); // petals glow when the sun is behind them
+      thinTissue(shader, 0.65, 0.45); // same thin-tissue light as the leaves: petals belong to the plant, they don't glow apart
       shader.uniforms.centerColor = { value: new Color(colors.center) };
       shader.vertexShader = "attribute float petalT; attribute vec2 petalUv; varying float vPetalT; varying vec2 vPetalUv;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvPetalT = petalT; vPetalUv = petalUv;");
       shader.fragmentShader = "uniform vec3 centerColor; varying float vPetalT; varying vec2 vPetalUv;\n" + shader.fragmentShader.replace("#include <color_fragment>", `#include <color_fragment>
@@ -185,6 +188,8 @@ export default function Flowers({ profile, state, v }: { profile: PlantProfile; 
         float vein = 0.5 + 0.5 * cos((vPetalUv.x - 0.5) * 64.0 / max(0.3, vPetalUv.y + 0.25));
         diffuseColor.rgb *= (0.95 + 0.05 * vein) * (1.0 + 0.07 * smoothstep(0.55, 1.0, across));
         diffuseColor.rgb = mix(centerColor, diffuseColor.rgb, smoothstep(0.06, 0.34, vPetalT));
+        // Occlusion where petals crowd into the calyx: the flower sits in its own shade, not on air.
+        diffuseColor.rgb *= mix(0.5, 1.0, smoothstep(0.0, 0.3, vPetalT));
         if (!gl_FrontFacing) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))), 0.12) * 1.06;`);
     };
     petal.customProgramCacheKey = () => "rootsight-petal-v2";

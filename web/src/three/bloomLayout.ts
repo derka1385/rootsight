@@ -118,9 +118,14 @@ export function bloomLayout(p: PlantProfile, state: PlantState, v: Visual): Bloo
     const size = sizeOf(c.kind);
     const n = Math.max(1, Math.round(c.florets * thin));
     // Peduncle: rosettes raise their flowers from the crown; stems carry theirs a stalk's length below.
+    // On a stemmed plant the flower stalk grows out of the nearest photographed stem's top (where the layout
+    // ends that stem), otherwise out of the plant's core: never from a point in mid-air.
+    const tips = (p.individual?.stems ?? []).map(st => frame.at(st.tipX, Math.min(st.tipY, foliageTop), LAYER_DEPTH[st.layer] * 0.6));
+    const nearestTip = tips.sort((a, b) => a.distanceTo(centre) - b.distanceTo(centre))[0];
     const anchor = rosette
       ? new Vector3(centre.x * 0.15, 0.005, centre.z * 0.15)
-      : new Vector3(centre.x * 0.55, Math.max(0.005, centre.y - stalkLength), centre.z * 0.55);
+      : nearestTip && nearestTip.y < centre.y ? nearestTip.clone()
+      : new Vector3(centre.x * 0.25, Math.max(0.005, centre.y - stalkLength * 1.2), centre.z * 0.25);
     // Organs first (their final size decides where the stalk must end), then the stalks that carry them.
     const members: BloomOrgan[] = [];
     for (let f = 0; f < n; f++) {

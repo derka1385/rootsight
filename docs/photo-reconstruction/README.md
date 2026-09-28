@@ -71,6 +71,19 @@ The layout is untouched: the same organs sit in the same places. What changed is
   - The pivot sits a little above the middle of the plant.
   - The wall and window hide themselves when the camera passes behind them.
 
+## Grounding pass
+
+Flowers are anchored by geometry, shadow and light. Otherwise they look pasted onto the plant.
+
+- **Geometry.**
+  - The calyx is a truncated cone as thick as the stalk where they meet, so there is no pinch.
+  - On stemmed plants, flower stalks grow out of the nearest photographed stem top (or the plant's core), never from mid-air.
+- **Shadow.**
+  - The sun's shadow frustum is fitted to the plant, giving sub-millimetre texels. `normalBias` went from 2 cm to 2 mm; 2 cm was larger than a petal and erased every local shadow.
+  - Tighter PCSS penumbrae and stronger GTAO add to it.
+- **Occlusion.** Petals darken where they crowd into the calyx, and stalks darken where they leave their parent and under the head they carry.
+- **Coherent light.** Petals use the leaves' thin-tissue shading, with less sheen and environment light, so a flower no longer glows apart from its plant.
+
 ## Run it live
 
 ```sh

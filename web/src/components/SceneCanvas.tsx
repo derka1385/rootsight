@@ -38,7 +38,7 @@ export default function SceneCanvas({ state, profile, cutaway = false, children 
     >
       {children}
       {/* Soft penumbrae that widen with distance, like real window light. */}
-      <SoftShadows size={16} samples={10} focus={0.6} />
+      <SoftShadows size={9} samples={12} focus={0.5} />
       <Interior floorY={table} height={state.heightCm / 100} halfWidth={Math.max(potR, plantWidth / 2)} />
       <AmbientOcclusion radius={Math.max(0.03, state.heightCm / 100 * 0.12)} />
 
@@ -71,7 +71,7 @@ function AmbientOcclusion({ radius }: { radius: number }) {
     const composer = new EffectComposer(gl);
     composer.addPass(new RenderPass(scene, camera));
     const ao = new GTAOPass(scene, camera, 512, 512);
-    ao.blendIntensity = 0.85;
+    ao.blendIntensity = 1;
     // Transparent contact-shadow planes would read as solid ground in the AO pre-pass: hide them there.
     // ponytail: patches a private GTAOPass hook; if three renames it, AO simply includes those planes again.
     const pass = ao as unknown as { _overrideVisibility: () => void; _visibilityCache: Object3D[] };
@@ -89,7 +89,7 @@ function AmbientOcclusion({ radius }: { radius: number }) {
   }, [gl, scene, camera]);
   useEffect(() => () => composer.dispose(), [composer]);
   useEffect(() => { composer.setPixelRatio(gl.getPixelRatio()); composer.setSize(size.width, size.height); }, [composer, gl, size]);
-  useEffect(() => { ao.updateGtaoMaterial({ radius, distanceExponent: 1.4, thickness: radius * 2, scale: 1, samples: 16 }); ao.updatePdMaterial({ radius: 6 }); }, [ao, radius]);
+  useEffect(() => { ao.updateGtaoMaterial({ radius, distanceExponent: 1.4, thickness: radius * 2, scale: 1.3, samples: 16 }); ao.updatePdMaterial({ radius: 6 }); }, [ao, radius]);
   // Priority 1 takes over rendering from R3F; frameloop="demand" still only renders when invalidated.
   useFrame(() => composer.render(), 1);
   return null;

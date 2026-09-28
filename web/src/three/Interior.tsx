@@ -69,13 +69,14 @@ export default function Interior({ floorY, height, halfWidth }: { floorY: number
     const behind = local.copy(camera.position).applyEuler(TO_ROOM).z < wallZ + 0.05;
     if (wallGroup.current && wallGroup.current.visible === behind) wallGroup.current.visible = !behind;
   });
-  const reach = Math.max(1.2, S * 2.4);
+  // A tight sun frustum around the plant: sub-millimetre texels, so petals and stalks shadow each other.
+  const reach = Math.max(0.5, S * 1.6);
 
   return <>
     <color attach="background" args={["#d9c3a5"]} />
     {/* Late-afternoon sun through the window; the wall around it gives the frame's soft shadow. */}
     <directionalLight position={toWorld(SUN).multiplyScalar(6).add(aim)} intensity={4.2} color="#ffc486" castShadow
-      shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
+      shadow-mapSize={[2048, 2048]} shadow-bias={-0.0002} shadow-normalBias={0.002}
       shadow-camera-left={-reach} shadow-camera-right={reach} shadow-camera-top={reach} shadow-camera-bottom={-reach} shadow-camera-near={1} shadow-camera-far={14} />
     {/* Warm bounce from the room behind the camera: the plant's front never goes flat or black. */}
     <hemisphereLight args={["#f8e9d6", "#7a5638", 0.6]} />

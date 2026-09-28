@@ -28,7 +28,9 @@ export function stemGeometry(paths: StemPath[]): BufferGeometry {
       const radius = path.radius * (1 - path.taper * Math.pow(t, 1.15)) * (1 + flare * Math.exp(-t * 9)) * (1 + swell * Math.sin(t * 6.1 + phase) * Math.sin(t * 2.3 + phase * 0.7));
       // Woody and darker toward the base of main stems, fresher toward every tip; a slow streaky variation.
       const age = woody * (1 - t) ** 1.4, streak = 1 + 0.045 * Math.sin(t * 13 + phase * 2);
-      const tint = [(1 - 0.22 * age) * streak * (1 + 0.1 * age), (1 - 0.3 * age) * streak, (1 - 0.42 * age) * streak * (1 - 0.06 * age)];
+      // Junction occlusion: darker where a stalk leaves its parent, and under the head it carries.
+      const shade = (1 - 0.22 * (1 - Math.min(1, t / 0.15))) * (path.depth >= 3 ? 1 - 0.35 * Math.max(0, (t - 0.8) / 0.2) : 1);
+      const tint = [(1 - 0.22 * age) * streak * (1 + 0.1 * age) * shade, (1 - 0.3 * age) * streak * shade, (1 - 0.42 * age) * streak * (1 - 0.06 * age) * shade];
       for (let j = 0; j <= sides; j++) {
         const angle = j / sides * Math.PI * 2;
         const ellipse = 1 + oval * Math.cos(2 * angle + turn * t + phase);
